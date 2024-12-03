@@ -8,17 +8,26 @@ package di
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/config"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/user"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
 	"github.com/ryvasa/go-super-farmer/internal/repository/user"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/internal/usecase/user"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
 )
 
 // Injectors from wire.go:
 
 func InitializeRouter() (*gin.Engine, error) {
-	db, err := config.ConnectDB()
+	envEnv, err := env.LoadEnv()
+	if err != nil {
+		return nil, err
+	}
+	string2, err := database.ProvideDSN(envEnv)
+	if err != nil {
+		return nil, err
+	}
+	db, err := database.ConnectDB(string2)
 	if err != nil {
 		return nil, err
 	}

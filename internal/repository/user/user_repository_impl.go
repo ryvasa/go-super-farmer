@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/ryvasa/go-super-farmer/internal/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
 )
 

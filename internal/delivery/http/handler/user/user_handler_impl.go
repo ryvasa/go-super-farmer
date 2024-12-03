@@ -5,15 +5,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	usecase "github.com/ryvasa/go-super-farmer/internal/usecase/user"
 )
 
 type UserHandlerImpl struct {
-	uc *usecase.UserUsecase
+	uc usecase.UserUsecase
 }
 
-func NewUserHandler(uc *usecase.UserUsecase) UserHandler {
+func NewUserHandler(uc usecase.UserUsecase) UserHandler {
 	return &UserHandlerImpl{uc: uc}
 }
 

@@ -1,45 +1,35 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
+	"os"
 
-	"github.com/ryvasa/go-super-farmer/pkg/config"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-type PostgreSQL struct {
-	db *sql.DB
+func ProvideDSN(cfg *env.Env) (string, error) {
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	name := os.Getenv("DB_NAME")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	timezone := os.Getenv("DB_TIMEZONE")
+
+	if host == "" || port == "" || name == "" || user == "" || password == "" {
+		return "", fmt.Errorf("missing database environment variables")
+	}
+
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s", host, user, password, name, port, timezone), nil
 }
 
-func ProvideDSN(cfg *config.Config) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=True&charset=utf8mb4&loc=Local", // Tambahkan charset dan loc
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Host,
-		cfg.Database.Name,
-	)
-}
-
-func NewPostgreSQL(dsn string) (*PostgreSQL, error) {
-	var db *sql.DB
-	var err error
-	db, err = sql.Open("postgres", dsn)
+func ConnectDB(dsn string) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-
-	// Pastikan koneksi berhasil sebelum mengembalikan instance
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return &PostgreSQL{db: db}, nil
-}
-
-func (p *PostgreSQL) Close() {
-	if p.db != nil {
-		p.db.Close()
-	}
+	db.AutoMigrate(&domain.User{}, &domain.Role{})
+	return db, nil
 }
