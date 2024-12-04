@@ -7,5 +7,9 @@ import (
 
 func UserRouter(r *gin.Engine, userHandler handler.UserHandler) {
 	r.POST("/users", userHandler.RegisterUser)
+	r.GET("/users", userHandler.GetAllUsers)
 	r.GET("/users/:id", userHandler.GetOneUser)
+	r.PATCH("/users/:id", userHandler.UpdateUser)
+	r.DELETE("/users/:id", userHandler.DeleteUser)
+	r.PATCH("/users/:id/restore", userHandler.RestoreUser)
 }

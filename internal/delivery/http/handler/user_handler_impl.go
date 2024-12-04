@@ -5,8 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type UserHandlerImpl struct {
@@ -18,82 +19,84 @@ func NewUserHandler(uc usecase.UserUsecase) UserHandler {
 }
 
 func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
-	var user domain.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req dto.UserCreateDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	if err := h.uc.Register(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	createdUser, err := h.uc.Register(&req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, user)
+	utils.SuccessResponse(c, http.StatusCreated, createdUser)
 }
 
 func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
 	user, err := h.uc.GetUserByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	utils.SuccessResponse(c, http.StatusOK, user)
 }
 
 func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
 	users, err := h.uc.GetAllUsers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, users)
+	utils.SuccessResponse(c, http.StatusOK, users)
 }
 
 func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	var user domain.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req dto.UserUpdateDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	user.ID = id
-	if err := h.uc.UpdateUser(id, &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	updatedUser, err := h.uc.UpdateUser(id, &req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	utils.SuccessResponse(c, http.StatusOK, updatedUser)
 }
 
 func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
 	if err := h.uc.DeleteUser(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
 
 func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	if err := h.uc.RestoreUser(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	restoredUser, err := h.uc.RestoreUser(id)
+	if err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User restored"})
+	utils.SuccessResponse(c, http.StatusOK, restoredUser)
 }
