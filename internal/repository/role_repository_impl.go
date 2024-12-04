@@ -14,8 +14,7 @@ func NewRoleRepository(db *gorm.DB) RoleRepository {
 }
 
 func (r *RoleRepositoryImpl) Create(role *domain.Role) error {
-	data := r.db.Create(role).Error
-	return data
+	return r.db.Create(role).Error
 }
 
 func (r *RoleRepositoryImpl) FindAll() (*[]domain.Role, error) {

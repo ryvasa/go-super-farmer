@@ -18,24 +18,24 @@ type MockUserUsecase struct {
 	mock.Mock
 }
 
-func (m *MockUserUsecase) Register(req *dto.UserCreateDTO) (*domain.User, error) {
+func (m *MockUserUsecase) Register(req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
 	args := m.Called(req)
-	return args.Get(0).(*domain.User), args.Error(0)
+	return args.Get(0).(*dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) GetUserByID(id int64) (*domain.User, error) {
+func (m *MockUserUsecase) GetUserByID(id int64) (*dto.UserResponseDTO, error) {
 	args := m.Called(id)
-	return args.Get(0).(*domain.User), args.Error(1)
+	return args.Get(0).(*dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) GetAllUsers() (*[]domain.User, error) {
+func (m *MockUserUsecase) GetAllUsers() (*[]dto.UserResponseDTO, error) {
 	args := m.Called()
-	return args.Get(0).(*[]domain.User), args.Error(1)
+	return args.Get(0).(*[]dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) UpdateUser(id int64, req *dto.UserUpdateDTO) (*domain.User, error) {
+func (m *MockUserUsecase) UpdateUser(id int64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	args := m.Called(req)
-	return args.Get(0).(*domain.User), args.Error(0)
+	return args.Get(0).(*dto.UserResponseDTO), args.Error(0)
 }
 
 func (m *MockUserUsecase) DeleteUser(id int64) error {
@@ -43,9 +43,9 @@ func (m *MockUserUsecase) DeleteUser(id int64) error {
 	return args.Error(0)
 }
 
-func (m *MockUserUsecase) RestoreUser(id int64) (*domain.User, error) {
+func (m *MockUserUsecase) RestoreUser(id int64) (*dto.UserResponseDTO, error) {
 	args := m.Called(id)
-	return args.Get(0).(*domain.User), args.Error(0)
+	return args.Get(0).(*dto.UserResponseDTO), args.Error(0)
 }
 
 func TestRegisterUserHandler(t *testing.T) {

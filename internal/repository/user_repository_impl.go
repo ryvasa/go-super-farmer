@@ -28,16 +28,18 @@ func (r *UserRepositoryImpl) FindById(id int64) (*domain.User, error) {
 
 func (r *UserRepositoryImpl) FindAll() (*[]domain.User, error) {
 	var users []domain.User
-	err := r.db.Find(&users).Error
+	err := r.db.Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "name")
+	}).Find(&users).Error
 	return &users, err
 }
 
 func (r *UserRepositoryImpl) Delete(id int64) error {
-	return r.db.Delete(&domain.User{}, id).Error
+	return r.db.Where("id = ?", id).Delete(&domain.User{}).Error
 }
 
 func (r *UserRepositoryImpl) Restore(id int64) error {
-	return r.db.Model(&domain.User{}).Where("deleted_at IS NOT NULL").Update("deleted_at", nil).Error
+	return r.db.Unscoped().Model(&domain.User{}).Where("id = ?", id).Update("deleted_at", nil).Error
 }
 
 func (r *UserRepositoryImpl) Update(id int64, user *domain.User) error {
@@ -46,6 +48,6 @@ func (r *UserRepositoryImpl) Update(id int64, user *domain.User) error {
 
 func (r *UserRepositoryImpl) FindDeletedById(id int64) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Model(&user).Where("id = ?", id).Where("deleted_at IS NOT NULL").First(&user).Error
+	err := r.db.Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&user).Error
 	return &user, err
 }
