@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/user"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -17,9 +18,9 @@ type MockUserUsecase struct {
 	mock.Mock
 }
 
-func (m *MockUserUsecase) Register(user *domain.User) error {
-	args := m.Called(user)
-	return args.Error(0)
+func (m *MockUserUsecase) Register(req *dto.UserCreateDTO) (*domain.User, error) {
+	args := m.Called(req)
+	return args.Get(0).(*domain.User), args.Error(0)
 }
 
 func (m *MockUserUsecase) GetUserByID(id int64) (*domain.User, error) {
@@ -27,14 +28,14 @@ func (m *MockUserUsecase) GetUserByID(id int64) (*domain.User, error) {
 	return args.Get(0).(*domain.User), args.Error(1)
 }
 
-func (m *MockUserUsecase) GetAllUsers() ([]domain.User, error) {
+func (m *MockUserUsecase) GetAllUsers() (*[]domain.User, error) {
 	args := m.Called()
-	return args.Get(0).([]domain.User), args.Error(1)
+	return args.Get(0).(*[]domain.User), args.Error(1)
 }
 
-func (m *MockUserUsecase) UpdateUser(id int64, user *domain.User) error {
-	args := m.Called(user)
-	return args.Error(0)
+func (m *MockUserUsecase) UpdateUser(id int64, req *dto.UserUpdateDTO) (*domain.User, error) {
+	args := m.Called(req)
+	return args.Get(0).(*domain.User), args.Error(0)
 }
 
 func (m *MockUserUsecase) DeleteUser(id int64) error {
@@ -42,9 +43,9 @@ func (m *MockUserUsecase) DeleteUser(id int64) error {
 	return args.Error(0)
 }
 
-func (m *MockUserUsecase) RestoreUser(id int64) error {
+func (m *MockUserUsecase) RestoreUser(id int64) (*domain.User, error) {
 	args := m.Called(id)
-	return args.Error(0)
+	return args.Get(0).(*domain.User), args.Error(0)
 }
 
 func TestRegisterUserHandler(t *testing.T) {

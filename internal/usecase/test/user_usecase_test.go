@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -23,9 +24,9 @@ func (m *MockUserRepository) FindById(id int64) (*domain.User, error) {
 	return args.Get(0).(*domain.User), args.Error(1)
 }
 
-func (m *MockUserRepository) FindAll() ([]domain.User, error) {
+func (m *MockUserRepository) FindAll() (*[]domain.User, error) {
 	args := m.Called()
-	return args.Get(0).([]domain.User), args.Error(1)
+	return args.Get(0).(*[]domain.User), args.Error(1)
 }
 
 func (m *MockUserRepository) Update(id int64, user *domain.User) error {
@@ -43,16 +44,22 @@ func (m *MockUserRepository) Restore(id int64) error {
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) FindDeletedById(id int64) (*domain.User, error) {
+	args := m.Called(id)
+	return args.Get(0).(*domain.User), args.Error(1)
+}
+
 func TestRegisterUser(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	uc := usecase.NewUserUsecase(mockRepo)
 
-	mockUser := &domain.User{Email: "test@example.com"}
+	mockUser := &dto.UserCreateDTO{Name: "John Doe", Email: "test@example.com"}
 	mockRepo.On("Create", mockUser).Return(nil)
 
-	err := uc.Register(mockUser)
+	createdUser, err := uc.Register(mockUser)
 
 	assert.NoError(t, err)
+	assert.Equal(t, mockUser, createdUser)
 	mockRepo.AssertCalled(t, "Create", mockUser)
 }
 

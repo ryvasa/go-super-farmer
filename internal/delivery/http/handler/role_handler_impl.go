@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type RoleHandlerImpl struct {
@@ -17,23 +18,24 @@ func NewRoleHandler(uc usecase.RoleUsecase) RoleHandler {
 }
 
 func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
-	var role domain.Role
-	if err := c.ShouldBindJSON(&role); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req dto.RoleCreateDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	if err := h.uc.CreateRole(&role); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	role, err := h.uc.CreateRole(&req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, role)
+	utils.SuccessResponse(c, http.StatusOK, role)
 }
 
 func (h *RoleHandlerImpl) GetAllRoles(c *gin.Context) {
 	roles, err := h.uc.GetAllRoles()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, roles)
+	utils.SuccessResponse(c, http.StatusOK, roles)
 }
