@@ -8,6 +8,6 @@ import (
 func NewRouter(userHandler handler.UserHandler) *gin.Engine {
 	r := gin.Default()
 	r.POST("/users", userHandler.RegisterUser)
-	r.GET("/users/:id", userHandler.GetUser)
+	r.GET("/users/:id", userHandler.GetOneUser)
 	return r
 }
