@@ -8,10 +8,11 @@ package di
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/user"
+	"github.com/google/wire"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/internal/repository/user"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/user"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 )
@@ -31,9 +32,19 @@ func InitializeRouter() (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	roleRepository := repository.NewRoleRepository(db)
+	roleUsecase := usecase.NewRoleUsecase(roleRepository)
+	roleHandler := handler.NewRoleHandler(roleUsecase)
 	userRepository := repository.NewUserRepository(db)
 	userUsecase := usecase.NewUserUsecase(userRepository)
 	userHandler := handler.NewUserHandler(userUsecase)
-	engine := route.NewRouter(userHandler)
+	handlers := handler.NewHandlers(roleHandler, userHandler)
+	engine := route.NewRouter(handlers)
 	return engine, nil
 }
+
+// wire.go:
+
+var roleSet = wire.NewSet(repository.NewRoleRepository, usecase.NewRoleUsecase, handler.NewRoleHandler)
+
+var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	usecase "github.com/ryvasa/go-super-farmer/internal/usecase/user"
+	"github.com/ryvasa/go-super-farmer/internal/usecase"
 )
 
 type UserHandlerImpl struct {

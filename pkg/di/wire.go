@@ -6,12 +6,24 @@ package di
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/user"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	repository "github.com/ryvasa/go-super-farmer/internal/repository/user"
-	usecase "github.com/ryvasa/go-super-farmer/internal/usecase/user"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+)
+
+var roleSet = wire.NewSet(
+	repository.NewRoleRepository,
+	usecase.NewRoleUsecase,
+	handler.NewRoleHandler,
+)
+
+var userSet = wire.NewSet(
+	repository.NewUserRepository,
+	usecase.NewUserUsecase,
+	handler.NewUserHandler,
 )
 
 func InitializeRouter() (*gin.Engine, error) {
@@ -19,10 +31,10 @@ func InitializeRouter() (*gin.Engine, error) {
 		env.LoadEnv,
 		database.ConnectDB,
 		database.ProvideDSN,
-		repository.NewUserRepository,
-		usecase.NewUserUsecase,
-		handler.NewUserHandler,
+		handler.NewHandlers,
 		route.NewRouter,
+		roleSet,
+		userSet,
 	)
 	return nil, nil
 }

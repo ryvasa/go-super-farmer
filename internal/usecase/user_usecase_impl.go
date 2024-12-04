@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	repository "github.com/ryvasa/go-super-farmer/internal/repository/user"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
 )
 
 type UserUsecaseImpl struct {

@@ -2,12 +2,10 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/user"
+	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 )
 
-func NewRouter(userHandler handler.UserHandler) *gin.Engine {
-	r := gin.Default()
+func UserRouter(r *gin.Engine, userHandler handler.UserHandler) {
 	r.POST("/users", userHandler.RegisterUser)
 	r.GET("/users/:id", userHandler.GetOneUser)
-	return r
 }

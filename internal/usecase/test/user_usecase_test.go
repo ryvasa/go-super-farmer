@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	usecase "github.com/ryvasa/go-super-farmer/internal/usecase/user"
+	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
