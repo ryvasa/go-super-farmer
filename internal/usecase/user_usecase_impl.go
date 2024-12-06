@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"context"
+
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
@@ -15,7 +17,7 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 	return &UserUsecaseImpl{repo: repo}
 }
 
-func (uc *UserUsecaseImpl) Register(req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return &dto.UserResponseDTO{}, utils.NewValidationError(err)
@@ -29,11 +31,11 @@ func (uc *UserUsecaseImpl) Register(req *dto.UserCreateDTO) (*dto.UserResponseDT
 	}
 
 	user.Password = hashedPassword
-	err = uc.repo.Create(&user)
+	err = uc.repo.Create(ctx, &user)
 	if err != nil {
 		return &dto.UserResponseDTO{}, err
 	}
-	createdUser, err := uc.repo.FindById(user.ID)
+	createdUser, err := uc.repo.FindByID(ctx, user.ID)
 	if err != nil {
 		return &dto.UserResponseDTO{}, err
 	}
@@ -41,16 +43,16 @@ func (uc *UserUsecaseImpl) Register(req *dto.UserCreateDTO) (*dto.UserResponseDT
 	return utils.UserDtoFormat(createdUser), nil
 }
 
-func (uc *UserUsecaseImpl) GetUserByID(id int64) (*dto.UserResponseDTO, error) {
-	user, err := uc.repo.FindById(id)
+func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+	user, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())
 	}
 	return utils.UserDtoFormat(user), nil
 }
 
-func (uc *UserUsecaseImpl) GetAllUsers() (*[]dto.UserResponseDTO, error) {
-	users, err := uc.repo.FindAll()
+func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error) {
+	users, err := uc.repo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -61,7 +63,7 @@ func (uc *UserUsecaseImpl) GetAllUsers() (*[]dto.UserResponseDTO, error) {
 	return &usersDto, nil
 }
 
-func (uc *UserUsecaseImpl) UpdateUser(id int64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uint64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
@@ -69,35 +71,39 @@ func (uc *UserUsecaseImpl) UpdateUser(id int64, req *dto.UserUpdateDTO) (*dto.Us
 	user.Name = req.Name
 	user.Email = req.Email
 	user.Password = req.Password
-	err := uc.repo.Update(id, &user)
+	err := uc.repo.Update(ctx, id, &user)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	updatedUser, err := uc.repo.FindById(id)
+	updatedUser, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())
 	}
 	return utils.UserDtoFormat(updatedUser), nil
 }
 
-func (uc *UserUsecaseImpl) DeleteUser(id int64) error {
-	err := uc.repo.Delete(id)
+func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uint64) error {
+	_, err := uc.repo.FindByID(ctx, id)
+	if err != nil {
+		return utils.NewNotFoundError(err.Error())
+	}
+	err = uc.repo.Delete(ctx, id)
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
 	return nil
 }
 
-func (uc *UserUsecaseImpl) RestoreUser(id int64) (*dto.UserResponseDTO, error) {
-	_, err := uc.repo.FindDeletedById(id)
+func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+	_, err := uc.repo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())
 	}
-	err = uc.repo.Restore(id)
+	err = uc.repo.Restore(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	restoredUser, err := uc.repo.FindById(id)
+	restoredUser, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

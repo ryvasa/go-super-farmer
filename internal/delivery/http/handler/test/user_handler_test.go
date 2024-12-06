@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,32 +19,32 @@ type MockUserUsecase struct {
 	mock.Mock
 }
 
-func (m *MockUserUsecase) Register(req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
 	args := m.Called(req)
 	return args.Get(0).(*dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) GetUserByID(id int64) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) GetUserByID(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
 	args := m.Called(id)
 	return args.Get(0).(*dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) GetAllUsers() (*[]dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error) {
 	args := m.Called()
 	return args.Get(0).(*[]dto.UserResponseDTO), args.Error(1)
 }
 
-func (m *MockUserUsecase) UpdateUser(id int64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) UpdateUser(ctx context.Context, id uint64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	args := m.Called(req)
 	return args.Get(0).(*dto.UserResponseDTO), args.Error(0)
 }
 
-func (m *MockUserUsecase) DeleteUser(id int64) error {
+func (m *MockUserUsecase) DeleteUser(ctx context.Context, id uint64) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockUserUsecase) RestoreUser(id int64) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) RestoreUser(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
 	args := m.Called(id)
 	return args.Get(0).(*dto.UserResponseDTO), args.Error(0)
 }

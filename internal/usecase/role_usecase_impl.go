@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"context"
+
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
@@ -15,25 +17,25 @@ func NewRoleUsecase(repo repository.RoleRepository) RoleUsecase {
 	return &RoleUsecaseImpl{repo: repo}
 }
 
-func (u *RoleUsecaseImpl) CreateRole(req *dto.RoleCreateDTO) (*domain.Role, error) {
+func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO) (*domain.Role, error) {
 	role := domain.Role{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return &role, utils.NewValidationError(err)
 	}
-	roles, err := u.repo.FindAll()
+	roles, err := u.repo.FindAll(ctx)
 	if err != nil {
 		return &role, utils.NewInternalError(err.Error())
 	}
 
-	role.ID = int64(len(*roles) + 1)
+	role.ID = uint64(len(*roles) + 1)
 	role.Name = req.Name
 
-	err = u.repo.Create(&role)
+	err = u.repo.Create(ctx, &role)
 	if err != nil {
 		return &role, utils.NewInternalError(err.Error())
 	}
 
-	createdRole, err := u.repo.FindByID(role.ID)
+	createdRole, err := u.repo.FindByID(ctx, role.ID)
 	if err != nil {
 		return &role, utils.NewInternalError(err.Error())
 	}
@@ -41,8 +43,8 @@ func (u *RoleUsecaseImpl) CreateRole(req *dto.RoleCreateDTO) (*domain.Role, erro
 	return createdRole, nil
 }
 
-func (u *RoleUsecaseImpl) GetAllRoles() (*[]domain.Role, error) {
-	roles, err := u.repo.FindAll()
+func (u *RoleUsecaseImpl) GetAllRoles(ctx context.Context) (*[]domain.Role, error) {
+	roles, err := u.repo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

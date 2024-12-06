@@ -1,6 +1,7 @@
 package usecase_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -14,37 +15,37 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) Create(user *domain.User) error {
+func (m *MockUserRepository) Create(ctx context.Context, user *domain.User) error {
 	args := m.Called(user)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) FindById(id int64) (*domain.User, error) {
+func (m *MockUserRepository) FindByID(ctx context.Context, id uint64) (*domain.User, error) {
 	args := m.Called(id)
 	return args.Get(0).(*domain.User), args.Error(1)
 }
 
-func (m *MockUserRepository) FindAll() (*[]domain.User, error) {
+func (m *MockUserRepository) FindAll(ctx context.Context) (*[]domain.User, error) {
 	args := m.Called()
 	return args.Get(0).(*[]domain.User), args.Error(1)
 }
 
-func (m *MockUserRepository) Update(id int64, user *domain.User) error {
+func (m *MockUserRepository) Update(ctx context.Context, id uint64, user *domain.User) error {
 	args := m.Called(user)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) Delete(id int64) error {
+func (m *MockUserRepository) Delete(ctx context.Context, id uint64) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) Restore(id int64) error {
+func (m *MockUserRepository) Restore(ctx context.Context, id uint64) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) FindDeletedById(id int64) (*domain.User, error) {
+func (m *MockUserRepository) FindDeletedByID(ctx context.Context, id uint64) (*domain.User, error) {
 	args := m.Called(id)
 	return args.Get(0).(*domain.User), args.Error(1)
 }
@@ -56,7 +57,9 @@ func TestRegisterUser(t *testing.T) {
 	mockUser := &dto.UserCreateDTO{Name: "John Doe", Email: "test@example.com"}
 	mockRepo.On("Create", mockUser).Return(nil)
 
-	createdUser, err := uc.Register(mockUser)
+	var ctx context.Context
+
+	createdUser, err := uc.Register(ctx, mockUser)
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockUser, createdUser)
@@ -67,11 +70,13 @@ func TestGetUserByID(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	uc := usecase.NewUserUsecase(mockRepo)
 
-	userID := int64(1)
+	userID := uint64(1)
 	mockUser := &domain.User{ID: userID, Email: "test@example.com"}
-	mockRepo.On("FindById", userID).Return(mockUser, nil)
+	mockRepo.On("FindByID", userID).Return(mockUser, nil)
 
-	user, err := uc.GetUserByID(userID)
+	var ctx context.Context
+
+	user, err := uc.GetUserByID(ctx, userID)
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockUser, user)
