@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"log"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
@@ -19,7 +18,6 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) error {
 	err := r.db.WithContext(ctx).Create(user).Error
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	return err
@@ -79,6 +77,5 @@ func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uint64) (*d
 	if err != nil {
 		return nil, err
 	}
-	log.Println(user)
 	return &user, nil
 }

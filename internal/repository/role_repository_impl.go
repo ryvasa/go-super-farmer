@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"log"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
@@ -19,7 +18,6 @@ func NewRoleRepository(db *gorm.DB) RoleRepository {
 func (r *RoleRepositoryImpl) Create(ctx context.Context, role *domain.Role) error {
 	err := r.db.WithContext(ctx).Create(role).Error
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	return nil

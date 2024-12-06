@@ -20,24 +20,24 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
-		return &dto.UserResponseDTO{}, utils.NewValidationError(err)
+		return nil, utils.NewValidationError(err)
 	}
 	user.Name = req.Name
 	user.Email = req.Email
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return &dto.UserResponseDTO{}, utils.NewInternalError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
 
 	user.Password = hashedPassword
 	err = uc.repo.Create(ctx, &user)
 	if err != nil {
-		return &dto.UserResponseDTO{}, err
+		return nil, err
 	}
 	createdUser, err := uc.repo.FindByID(ctx, user.ID)
 	if err != nil {
-		return &dto.UserResponseDTO{}, err
+		return nil, err
 	}
 
 	return utils.UserDtoFormat(createdUser), nil
@@ -68,10 +68,24 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uint64, req *dto.U
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
+	_, err := uc.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewNotFoundError(err.Error())
+	}
+
 	user.Name = req.Name
 	user.Email = req.Email
-	user.Password = req.Password
-	err := uc.repo.Update(ctx, id, &user)
+	user.Phone = &req.Phone
+
+	if req.Password != "" {
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			return nil, utils.NewInternalError(err.Error())
+		}
+		user.Password = hashedPassword
+	}
+
+	err = uc.repo.Update(ctx, id, &user)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

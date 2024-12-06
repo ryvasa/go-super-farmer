@@ -20,11 +20,11 @@ func NewRoleUsecase(repo repository.RoleRepository) RoleUsecase {
 func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO) (*domain.Role, error) {
 	role := domain.Role{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
-		return &role, utils.NewValidationError(err)
+		return nil, utils.NewValidationError(err)
 	}
 	roles, err := u.repo.FindAll(ctx)
 	if err != nil {
-		return &role, utils.NewInternalError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
 
 	role.ID = uint64(len(*roles) + 1)
@@ -32,12 +32,12 @@ func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO
 
 	err = u.repo.Create(ctx, &role)
 	if err != nil {
-		return &role, utils.NewInternalError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
 
 	createdRole, err := u.repo.FindByID(ctx, role.ID)
 	if err != nil {
-		return &role, utils.NewInternalError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
 
 	return createdRole, nil
