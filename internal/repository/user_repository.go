@@ -1,15 +1,17 @@
 package repository
 
 import (
+	"context"
+
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 )
 
 type UserRepository interface {
-	Create(user *domain.User) error
-	FindById(id int64) (*domain.User, error)
-	FindAll() (*[]domain.User, error)
-	Delete(id int64) error
-	Restore(id int64) error
-	Update(id int64, user *domain.User) error
-	FindDeletedById(id int64) (*domain.User, error)
+	Create(ctx context.Context, user *domain.User) error
+	FindByID(ctx context.Context, id uint64) (*domain.User, error)
+	FindAll(ctx context.Context) (*[]domain.User, error)
+	Delete(ctx context.Context, id uint64) error
+	Restore(ctx context.Context, id uint64) error
+	Update(ctx context.Context, id uint64, user *domain.User) error
+	FindDeletedByID(ctx context.Context, id uint64) (*domain.User, error)
 }

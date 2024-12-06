@@ -1,15 +1,16 @@
 package usecase
 
 import (
-	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"context"
+
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 )
 
 type UserUsecase interface {
-	Register(req *dto.UserCreateDTO) (*domain.User, error)
-	GetUserByID(id int64) (*domain.User, error)
-	GetAllUsers() (*[]domain.User, error)
-	UpdateUser(id int64, req *dto.UserUpdateDTO) (*domain.User, error)
-	DeleteUser(id int64) error
-	RestoreUser(id int64) (*domain.User, error)
+	Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error)
+	GetUserByID(ctx context.Context, id uint64) (*dto.UserResponseDTO, error)
+	GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error)
+	UpdateUser(ctx context.Context, id uint64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error)
+	DeleteUser(ctx context.Context, id uint64) error
+	RestoreUser(ctx context.Context, id uint64) (*dto.UserResponseDTO, error)
 }

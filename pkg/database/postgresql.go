@@ -9,6 +9,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func ProvideDSN(cfg *env.Env) (string, error) {
@@ -27,7 +28,9 @@ func ProvideDSN(cfg *env.Env) (string, error) {
 }
 
 func ConnectDB(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		return nil, err
 	}

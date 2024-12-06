@@ -23,7 +23,7 @@ func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	role, err := h.uc.CreateRole(&req)
+	role, err := h.uc.CreateRole(c, &req)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -32,7 +32,7 @@ func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 }
 
 func (h *RoleHandlerImpl) GetAllRoles(c *gin.Context) {
-	roles, err := h.uc.GetAllRoles()
+	roles, err := h.uc.GetAllRoles(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

@@ -24,7 +24,7 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	createdUser, err := h.uc.Register(&req)
+	createdUser, err := h.uc.Register(c, &req)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -33,12 +33,12 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	user, err := h.uc.GetUserByID(id)
+	user, err := h.uc.GetUserByID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -47,7 +47,7 @@ func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
-	users, err := h.uc.GetAllUsers()
+	users, err := h.uc.GetAllUsers(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -56,7 +56,7 @@ func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -66,7 +66,7 @@ func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	updatedUser, err := h.uc.UpdateUser(id, &req)
+	updatedUser, err := h.uc.UpdateUser(c, id, &req)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -75,12 +75,12 @@ func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	if err := h.uc.DeleteUser(id); err != nil {
+	if err := h.uc.DeleteUser(c, id); err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
@@ -88,12 +88,12 @@ func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	restoredUser, err := h.uc.RestoreUser(id)
+	restoredUser, err := h.uc.RestoreUser(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

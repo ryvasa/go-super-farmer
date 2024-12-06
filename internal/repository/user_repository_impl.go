@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"context"
+	"log"
+
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
 )
@@ -13,39 +16,69 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &UserRepositoryImpl{db: db}
 }
 
-func (r *UserRepositoryImpl) Create(user *domain.User) error {
-	return r.db.Create(user).Error
+func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) error {
+	err := r.db.WithContext(ctx).Create(user).Error
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return err
 }
-func (r *UserRepositoryImpl) FindById(id int64) (*domain.User, error) {
+func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.User, error) {
 	var user domain.User
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
 	}).
 		First(&user, id).Error
-	return &user, err
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
-func (r *UserRepositoryImpl) FindAll() (*[]domain.User, error) {
+func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error) {
 	var users []domain.User
-	err := r.db.Find(&users).Error
-	return &users, err
+	err := r.db.WithContext(ctx).Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "name")
+	}).Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &users, nil
 }
 
-func (r *UserRepositoryImpl) Delete(id int64) error {
-	return r.db.Delete(&domain.User{}, id).Error
+func (r *UserRepositoryImpl) Delete(ctx context.Context, id uint64) error {
+	err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.User{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *UserRepositoryImpl) Restore(id int64) error {
-	return r.db.Model(&domain.User{}).Where("deleted_at IS NOT NULL").Update("deleted_at", nil).Error
+func (r *UserRepositoryImpl) Restore(ctx context.Context, id uint64) error {
+	err := r.db.WithContext(ctx).Unscoped().Model(&domain.User{}).Where("id = ?", id).Update("deleted_at", nil).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *UserRepositoryImpl) Update(id int64, user *domain.User) error {
-	return r.db.Model(&domain.User{}).Where("id = ?", id).Updates(user).Error
+func (r *UserRepositoryImpl) Update(ctx context.Context, id uint64, user *domain.User) error {
+	err := r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(user).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *UserRepositoryImpl) FindDeletedById(id int64) (*domain.User, error) {
+func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uint64) (*domain.User, error) {
 	var user domain.User
-	err := r.db.Model(&user).Where("id = ?", id).Where("deleted_at IS NOT NULL").First(&user).Error
-	return &user, err
+	err := r.db.WithContext(ctx).Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	log.Println(user)
+	return &user, nil
 }
