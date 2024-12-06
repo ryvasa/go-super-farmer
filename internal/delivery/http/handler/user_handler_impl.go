@@ -21,7 +21,7 @@ func NewUserHandler(uc usecase.UserUsecase) UserHandler {
 func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 	var req dto.UserCreateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	createdUser, err := h.uc.Register(c, &req)
@@ -35,7 +35,7 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	user, err := h.uc.GetUserByID(c, id)
@@ -58,12 +58,12 @@ func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
 func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	var req dto.UserUpdateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	updatedUser, err := h.uc.UpdateUser(c, id, &req)
@@ -77,7 +77,7 @@ func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	if err := h.uc.DeleteUser(c, id); err != nil {
@@ -90,12 +90,12 @@ func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
 func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	restoredUser, err := h.uc.RestoreUser(c, id)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewInternalError(err.Error()))
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, restoredUser)

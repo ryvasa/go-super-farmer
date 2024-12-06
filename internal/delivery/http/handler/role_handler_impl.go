@@ -20,7 +20,7 @@ func NewRoleHandler(uc usecase.RoleUsecase) RoleHandler {
 func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 	var req dto.RoleCreateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 	role, err := h.uc.CreateRole(c, &req)
