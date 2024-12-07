@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
@@ -24,6 +25,7 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 	}
 	user.Name = req.Name
 	user.Email = req.Email
+	user.ID = uuid.New()
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
@@ -33,17 +35,18 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 	user.Password = hashedPassword
 	err = uc.repo.Create(ctx, &user)
 	if err != nil {
-		return nil, err
+		return nil, utils.NewInternalError(err.Error())
 	}
+	// TODO: user.ID janggal
 	createdUser, err := uc.repo.FindByID(ctx, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, utils.NewInternalError(err.Error())
 	}
 
 	return utils.UserDtoFormat(createdUser), nil
 }
 
-func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	user, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())
@@ -63,7 +66,7 @@ func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context) (*[]dto.UserResponse
 	return &usersDto, nil
 }
 
-func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uint64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
@@ -96,7 +99,7 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uint64, req *dto.U
 	return utils.UserDtoFormat(updatedUser), nil
 }
 
-func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uint64) error {
+func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return utils.NewNotFoundError(err.Error())
@@ -108,7 +111,7 @@ func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uint64) error {
 	return nil
 }
 
-func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	_, err := uc.repo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())

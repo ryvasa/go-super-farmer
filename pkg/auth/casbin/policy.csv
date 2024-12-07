@@ -1,0 +1,3 @@
+p, Admin, /api/roles*, *
+p, Admin, /api/users*, *
+p, Admin, /api/lands*, *

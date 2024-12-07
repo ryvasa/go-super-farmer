@@ -15,6 +15,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 // Injectors from wire.go:
@@ -38,7 +39,13 @@ func InitializeRouter() (*gin.Engine, error) {
 	userRepository := repository.NewUserRepository(db)
 	userUsecase := usecase.NewUserUsecase(userRepository)
 	userHandler := handler.NewUserHandler(userUsecase)
-	handlers := handler.NewHandlers(roleHandler, userHandler)
+	landRepository := repository.NewLandRepository(db)
+	landUsecase := usecase.NewLandUsecase(landRepository, userRepository)
+	landHandler := handler.NewLandHandler(landUsecase)
+	tokenUtil := utils.NewTokenUtil(envEnv)
+	authUsecase := usecase.NewAuthUsecase(userRepository, tokenUtil)
+	authHandler := handler.NewAuthHandler(authUsecase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
 }
@@ -48,3 +55,9 @@ func InitializeRouter() (*gin.Engine, error) {
 var roleSet = wire.NewSet(repository.NewRoleRepository, usecase.NewRoleUsecase, handler.NewRoleHandler)
 
 var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)
+
+var landSet = wire.NewSet(repository.NewLandRepository, usecase.NewLandUsecase, handler.NewLandHandler)
+
+var authSet = wire.NewSet(usecase.NewAuthUsecase, handler.NewAuthHandler)
+
+var utilSet = wire.NewSet(utils.NewTokenUtil)

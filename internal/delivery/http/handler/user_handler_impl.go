@@ -2,9 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -33,7 +33,7 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
@@ -56,7 +56,7 @@ func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
@@ -75,7 +75,7 @@ func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
@@ -88,7 +88,7 @@ func (h *UserHandlerImpl) DeleteUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return

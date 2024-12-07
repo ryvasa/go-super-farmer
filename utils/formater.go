@@ -16,3 +16,10 @@ func UserDtoFormat(data *domain.User) *dto.UserResponseDTO {
 		UpdatedAt: data.UpdatedAt,
 	}
 }
+
+func AuthDtoFormat(user *domain.User, token string) *dto.AuthResponseDTO {
+	return &dto.AuthResponseDTO{
+		User:  UserDtoFormat(user),
+		Token: token,
+	}
+}

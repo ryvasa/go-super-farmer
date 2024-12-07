@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
@@ -15,13 +16,14 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	t.Run("Test Register successfully", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-		repo := mock.NewMockUserRepository(ctrl)
-		uc := usecase.NewUserUsecase(repo)
-		ctx := context.TODO()
+	repo := mock.NewMockUserRepository(ctrl)
+	uc := usecase.NewUserUsecase(repo)
+	ctx := context.TODO()
+	t.Run("Test Register successfully", func(t *testing.T) {
+		userID := uuid.New()
 
 		req := &dto.UserCreateDTO{Name: "Test User", Email: "test@example.com", Password: "password"}
 		mockUser := &domain.User{
@@ -36,10 +38,10 @@ func TestRegister(t *testing.T) {
 		defer func() { utils.MockHashPassword = nil }() // Reset mock setelah test selesai
 
 		repo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, user *domain.User) error {
-			user.ID = 1
+			user.ID = userID
 			return nil
 		}).Times(1)
-		repo.EXPECT().FindByID(ctx, uint64(1)).Return(mockUser, nil).Times(1)
+		repo.EXPECT().FindByID(ctx, userID).Return(mockUser, nil).Times(1)
 
 		resp, err := uc.Register(ctx, req)
 
@@ -98,7 +100,9 @@ func TestGetUserByID(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Test GetUserByID successfully", func(t *testing.T) {
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
+		userID := uuid.New()
+
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
 
 		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 
@@ -110,9 +114,11 @@ func TestGetUserByID(t *testing.T) {
 	})
 
 	t.Run("Test GetUserByID not found", func(t *testing.T) {
-		repo.EXPECT().FindByID(ctx, uint64(1)).Return(nil, errors.New("user not found")).Times(1)
+		userID := uuid.New()
 
-		resp, err := uc.GetUserByID(ctx, 1)
+		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
+
+		resp, err := uc.GetUserByID(ctx, userID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -128,9 +134,12 @@ func TestGetAllUsers(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Test GetAllUsers successfully", func(t *testing.T) {
+		userID1 := uuid.New()
+		userID2 := uuid.New()
+
 		mockUsers := &[]domain.User{
-			{ID: 1, Name: "Test User 1", Email: "test1@example.com"},
-			{ID: 2, Name: "Test User 2", Email: "test2@example.com"},
+			{ID: userID1, Name: "Test User 1", Email: "test1@example.com"},
+			{ID: userID2, Name: "Test User 2", Email: "test2@example.com"},
 		}
 
 		repo.EXPECT().FindAll(ctx).Return(mockUsers, nil).Times(1)
@@ -159,9 +168,21 @@ func TestUpdateUser(t *testing.T) {
 	uc := usecase.NewUserUsecase(repo)
 	ctx := context.Background()
 
+	t.Run("Test UpdateUser validation error", func(t *testing.T) {
+		userID := uuid.New()
+		updateReq := &dto.UserUpdateDTO{Name: "k", Email: "test@example.com", Password: "password"}
+
+		resp, err := uc.UpdateUser(ctx, userID, updateReq)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+
 	t.Run("Test UpdateUser witout password, successfully", func(t *testing.T) {
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
-		mockUserUpdated := &domain.User{ID: 1, Name: "Test User Updated", Email: "test@example.com"}
+		userID := uuid.New()
+
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
+		mockUserUpdated := &domain.User{ID: userID, Name: "Test User Updated", Email: "test@example.com"}
 
 		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 		repo.EXPECT().Update(ctx, mockUser.ID, gomock.Any()).Return(nil).Times(1)
@@ -176,8 +197,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Test UpdateUser with password, successfully", func(t *testing.T) {
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
-		mockUserUpdated := &domain.User{ID: 1, Name: "Test User Updated", Email: "test@example.com"}
+		userID := uuid.New()
+
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
+		mockUserUpdated := &domain.User{ID: userID, Name: "Test User Updated", Email: "test@example.com"}
 
 		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 		repo.EXPECT().Update(ctx, mockUser.ID, gomock.Any()).Return(nil).Times(1)
@@ -199,8 +222,9 @@ func TestUpdateUser(t *testing.T) {
 
 	// TODO: fix this
 	t.Run("Test UpdateUser with password, hashing error", func(t *testing.T) {
+		userID := uuid.New()
 
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
 
 		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 
@@ -218,10 +242,12 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Test UpdateUser not found", func(t *testing.T) {
-		repo.EXPECT().FindByID(ctx, uint64(1)).Return(nil, errors.New("user not found")).Times(1)
+		userID := uuid.New()
+
+		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
 
 		req := &dto.UserUpdateDTO{Name: "Test User Updated", Email: "test@example.com", Password: "password"}
-		resp, err := uc.UpdateUser(ctx, 1, req)
+		resp, err := uc.UpdateUser(ctx, userID, req)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -237,7 +263,9 @@ func TestDeleteUser(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Test DeleteUser successfully", func(t *testing.T) {
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
+		userID := uuid.New()
+
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
 
 		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 		repo.EXPECT().Delete(ctx, mockUser.ID).Return(nil).Times(1)
@@ -248,9 +276,11 @@ func TestDeleteUser(t *testing.T) {
 	})
 
 	t.Run("Test DeleteUser not found", func(t *testing.T) {
-		repo.EXPECT().FindByID(ctx, uint64(1)).Return(nil, errors.New("user not found")).Times(1)
+		userID := uuid.New()
 
-		err := uc.DeleteUser(ctx, 1)
+		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
+
+		err := uc.DeleteUser(ctx, userID)
 
 		assert.Error(t, err)
 	})
@@ -265,7 +295,9 @@ func TestRestoreUser(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Test RestoreUser successfully", func(t *testing.T) {
-		mockUser := &domain.User{ID: 1, Name: "Test User", Email: "test@example.com"}
+		userID := uuid.New()
+
+		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
 
 		repo.EXPECT().FindDeletedByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
 		repo.EXPECT().Restore(ctx, mockUser.ID).Return(nil).Times(1)
@@ -279,9 +311,11 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("Test RestoreUser not found", func(t *testing.T) {
-		repo.EXPECT().FindDeletedByID(ctx, uint64(1)).Return(nil, errors.New("user not found")).Times(1)
+		userID := uuid.New()
 
-		resp, err := uc.RestoreUser(ctx, 1)
+		repo.EXPECT().FindDeletedByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
+
+		resp, err := uc.RestoreUser(ctx, userID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)

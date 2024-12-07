@@ -4,11 +4,14 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ryvasa/go-super-farmer/pkg/di"
 )
 
 func main() {
+
 	router, err := di.InitializeRouter()
+	router.Use(gin.Recovery())
 	if err != nil {
 		log.Fatalf("failed to initialize router: %v", err)
 	}

@@ -10,11 +10,11 @@ import (
 )
 
 type RoleHandlerImpl struct {
-	uc usecase.RoleUsecase
+	usecase usecase.RoleUsecase
 }
 
 func NewRoleHandler(uc usecase.RoleUsecase) RoleHandler {
-	return &RoleHandlerImpl{uc: uc}
+	return &RoleHandlerImpl{usecase: uc}
 }
 
 func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
@@ -23,7 +23,7 @@ func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	role, err := h.uc.CreateRole(c, &req)
+	role, err := h.usecase.CreateRole(c, &req)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -32,7 +32,7 @@ func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 }
 
 func (h *RoleHandlerImpl) GetAllRoles(c *gin.Context) {
-	roles, err := h.uc.GetAllRoles(c)
+	roles, err := h.usecase.GetAllRoles(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
