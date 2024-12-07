@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
 )
@@ -22,7 +23,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) erro
 	}
 	return err
 }
-func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.User, error) {
+func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).
 		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
@@ -47,7 +48,7 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error
 	return &users, nil
 }
 
-func (r *UserRepositoryImpl) Delete(ctx context.Context, id uint64) error {
+func (r *UserRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.User{}).Error
 	if err != nil {
 		return err
@@ -55,7 +56,7 @@ func (r *UserRepositoryImpl) Delete(ctx context.Context, id uint64) error {
 	return nil
 }
 
-func (r *UserRepositoryImpl) Restore(ctx context.Context, id uint64) error {
+func (r *UserRepositoryImpl) Restore(ctx context.Context, id uuid.UUID) error {
 	err := r.db.WithContext(ctx).Unscoped().Model(&domain.User{}).Where("id = ?", id).Update("deleted_at", nil).Error
 	if err != nil {
 		return err
@@ -63,7 +64,7 @@ func (r *UserRepositoryImpl) Restore(ctx context.Context, id uint64) error {
 	return nil
 }
 
-func (r *UserRepositoryImpl) Update(ctx context.Context, id uint64, user *domain.User) error {
+func (r *UserRepositoryImpl) Update(ctx context.Context, id uuid.UUID, user *domain.User) error {
 	err := r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(user).Error
 	if err != nil {
 		return err
@@ -71,9 +72,21 @@ func (r *UserRepositoryImpl) Update(ctx context.Context, id uint64, user *domain
 	return nil
 }
 
-func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uint64) (*domain.User, error) {
+func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Preload("Role", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "name")
+	}).
+		Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

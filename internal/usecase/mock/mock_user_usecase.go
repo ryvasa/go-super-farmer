@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/google/uuid"
 	dto "github.com/ryvasa/go-super-farmer/internal/model/dto"
 )
 
@@ -36,7 +37,7 @@ func (m *MockUserUsecase) EXPECT() *MockUserUsecaseMockRecorder {
 }
 
 // DeleteUser mocks base method.
-func (m *MockUserUsecase) DeleteUser(ctx context.Context, id uint64) error {
+func (m *MockUserUsecase) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUser", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -65,7 +66,7 @@ func (mr *MockUserUsecaseMockRecorder) GetAllUsers(ctx interface{}) *gomock.Call
 }
 
 // GetUserByID mocks base method.
-func (m *MockUserUsecase) GetUserByID(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(*dto.UserResponseDTO)
@@ -95,7 +96,7 @@ func (mr *MockUserUsecaseMockRecorder) Register(ctx, req interface{}) *gomock.Ca
 }
 
 // RestoreUser mocks base method.
-func (m *MockUserUsecase) RestoreUser(ctx context.Context, id uint64) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) RestoreUser(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RestoreUser", ctx, id)
 	ret0, _ := ret[0].(*dto.UserResponseDTO)
@@ -110,7 +111,7 @@ func (mr *MockUserUsecaseMockRecorder) RestoreUser(ctx, id interface{}) *gomock.
 }
 
 // UpdateUser mocks base method.
-func (m *MockUserUsecase) UpdateUser(ctx context.Context, id uint64, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) UpdateUser(ctx context.Context, id uuid.UUID, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, id, req)
 	ret0, _ := ret[0].(*dto.UserResponseDTO)

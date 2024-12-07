@@ -5,11 +5,11 @@ import (
 	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 )
 
-func UserRouter(r *gin.Engine, userHandler handler.UserHandler) {
-	r.POST("/users", userHandler.RegisterUser)
-	r.GET("/users", userHandler.GetAllUsers)
-	r.GET("/users/:id", userHandler.GetOneUser)
-	r.PATCH("/users/:id", userHandler.UpdateUser)
-	r.DELETE("/users/:id", userHandler.DeleteUser)
-	r.PATCH("/users/:id/restore", userHandler.RestoreUser)
+func UserRoutes(public, protected *gin.RouterGroup, userHandler handler.UserHandler) {
+	public.POST("/users", userHandler.RegisterUser)
+	protected.GET("/users", userHandler.GetAllUsers)
+	protected.GET("/users/:id", userHandler.GetOneUser)
+	protected.PATCH("/users/:id", userHandler.UpdateUser)
+	protected.DELETE("/users/:id", userHandler.DeleteUser)
+	protected.PATCH("/users/:id/restore", userHandler.RestoreUser)
 }

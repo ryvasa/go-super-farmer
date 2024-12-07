@@ -10,6 +10,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 )
@@ -26,6 +27,29 @@ var userSet = wire.NewSet(
 	handler.NewUserHandler,
 )
 
+var landSet = wire.NewSet(
+	repository.NewLandRepository,
+	usecase.NewLandUsecase,
+	handler.NewLandHandler,
+)
+
+var authSet = wire.NewSet(
+	usecase.NewAuthUsecase,
+	handler.NewAuthHandler,
+)
+
+var utilSet = wire.NewSet(
+	utils.NewTokenUtil
+)
+
+// var tokenSet = wire.NewSet(
+// 	token.NewToken,
+// )
+
+// var authUtilSet = wire.NewSet(
+// 	utils.NewAuthUtil, // gunakan konstruktor yang sesuai
+// )
+
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -35,6 +59,10 @@ func InitializeRouter() (*gin.Engine, error) {
 		route.NewRouter,
 		roleSet,
 		userSet,
+		landSet,
+		authSet,
+		tokenSet,
+		// authUtilSet,
 	)
 	return nil, nil
 }

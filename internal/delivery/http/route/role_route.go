@@ -5,7 +5,7 @@ import (
 	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 )
 
-func RoleRouter(r *gin.Engine, roleHandler handler.RoleHandler) {
-	r.POST("/roles", roleHandler.CreateRole)
-	r.GET("/roles", roleHandler.GetAllRoles)
+func RoleRoutes(public *gin.RouterGroup, roleHandler handler.RoleHandler) {
+	public.POST("/roles", roleHandler.CreateRole)
+	public.GET("/roles", roleHandler.GetAllRoles)
 }

@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/google/uuid"
 	domain "github.com/ryvasa/go-super-farmer/internal/model/domain"
 )
 
@@ -50,7 +51,7 @@ func (mr *MockUserRepositoryMockRecorder) Create(ctx, user interface{}) *gomock.
 }
 
 // Delete mocks base method.
-func (m *MockUserRepository) Delete(ctx context.Context, id uint64) error {
+func (m *MockUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -78,8 +79,23 @@ func (mr *MockUserRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockUserRepository)(nil).FindAll), ctx)
 }
 
+// FindByEmail mocks base method.
+func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByEmail", ctx, email)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByEmail indicates an expected call of FindByEmail.
+func (mr *MockUserRepositoryMockRecorder) FindByEmail(ctx, email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByEmail", reflect.TypeOf((*MockUserRepository)(nil).FindByEmail), ctx, email)
+}
+
 // FindByID mocks base method.
-func (m *MockUserRepository) FindByID(ctx context.Context, id uint64) (*domain.User, error) {
+func (m *MockUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByID", ctx, id)
 	ret0, _ := ret[0].(*domain.User)
@@ -94,7 +110,7 @@ func (mr *MockUserRepositoryMockRecorder) FindByID(ctx, id interface{}) *gomock.
 }
 
 // FindDeletedByID mocks base method.
-func (m *MockUserRepository) FindDeletedByID(ctx context.Context, id uint64) (*domain.User, error) {
+func (m *MockUserRepository) FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindDeletedByID", ctx, id)
 	ret0, _ := ret[0].(*domain.User)
@@ -109,7 +125,7 @@ func (mr *MockUserRepositoryMockRecorder) FindDeletedByID(ctx, id interface{}) *
 }
 
 // Restore mocks base method.
-func (m *MockUserRepository) Restore(ctx context.Context, id uint64) error {
+func (m *MockUserRepository) Restore(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Restore", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -123,7 +139,7 @@ func (mr *MockUserRepositoryMockRecorder) Restore(ctx, id interface{}) *gomock.C
 }
 
 // Update mocks base method.
-func (m *MockUserRepository) Update(ctx context.Context, id uint64, user *domain.User) error {
+func (m *MockUserRepository) Update(ctx context.Context, id uuid.UUID, user *domain.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, id, user)
 	ret0, _ := ret[0].(error)

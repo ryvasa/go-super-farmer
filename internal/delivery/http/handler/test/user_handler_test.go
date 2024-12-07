@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
@@ -75,9 +76,11 @@ func TestGetOneUser(t *testing.T) {
 	r.GET("/users/:id", h.GetOneUser)
 
 	t.Run("Test GetOneUser, successfully", func(t *testing.T) {
-		mockUser := &dto.UserResponseDTO{ID: 1, Email: "test@example.com"}
-		usecase.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(mockUser, nil).Times(1)
-		req, _ := http.NewRequest(http.MethodGet, "/users/1", nil)
+		userID := uuid.New()
+
+		mockUser := &dto.UserResponseDTO{ID: userID, Email: "test@example.com"}
+		usecase.EXPECT().GetUserByID(gomock.Any(), userID).Return(mockUser, nil).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/users/"+userID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -89,8 +92,10 @@ func TestGetOneUser(t *testing.T) {
 	})
 
 	t.Run("Test GetOneUser, database error", func(t *testing.T) {
-		usecase.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(nil, errors.New("internal error")).Times(1)
-		req, _ := http.NewRequest(http.MethodGet, "/users/1", nil)
+		userID := uuid.New()
+
+		usecase.EXPECT().GetUserByID(gomock.Any(), userID).Return(nil, errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/users/"+userID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -116,10 +121,12 @@ func TestGetAllUsers(t *testing.T) {
 
 	t.Run("Test GetAllUsers, successfully", func(t *testing.T) {
 		parsedTime, _ := time.Parse("2006-01-02 15:04:05", "2024-12-05 10:00:00")
+		userID1 := uuid.New()
+		userID2 := uuid.New()
 
 		mockUsers := []dto.UserResponseDTO{
-			{ID: 1, Email: "test@example.com", Name: "Test", CreatedAt: parsedTime, UpdatedAt: parsedTime},
-			{ID: 2, Email: "test2@example.com", Name: "Test2", CreatedAt: parsedTime, UpdatedAt: parsedTime},
+			{ID: userID1, Email: "test@example.com", Name: "Test", CreatedAt: parsedTime, UpdatedAt: parsedTime},
+			{ID: userID2, Email: "test2@example.com", Name: "Test2", CreatedAt: parsedTime, UpdatedAt: parsedTime},
 		}
 
 		usecase.EXPECT().GetAllUsers(gomock.Any()).Return(&mockUsers, nil).Times(1)
@@ -156,12 +163,14 @@ func TestUpdateUser(t *testing.T) {
 	r.PATCH("/users/:id", h.UpdateUser)
 
 	t.Run("Test UpdateUser, successfully", func(t *testing.T) {
-		mockUser := &dto.UserResponseDTO{ID: 1, Email: "test@example.com"}
+		userID := uuid.New()
 
-		usecase.EXPECT().UpdateUser(gomock.Any(), uint64(1), gomock.Any()).Return(mockUser, nil).Times(1)
+		mockUser := &dto.UserResponseDTO{ID: userID, Email: "test@example.com"}
+
+		usecase.EXPECT().UpdateUser(gomock.Any(), userID, gomock.Any()).Return(mockUser, nil).Times(1)
 
 		reqBody := `{"name":"updated"}`
-		req, _ := http.NewRequest(http.MethodPatch, "/users/1", bytes.NewReader([]byte(reqBody)))
+		req, _ := http.NewRequest(http.MethodPatch, "/users/"+userID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -176,11 +185,13 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Test UpdateUser, database error", func(t *testing.T) {
-		usecase.EXPECT().UpdateUser(gomock.Any(), uint64(1), gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
+		userID := uuid.New()
+
+		usecase.EXPECT().UpdateUser(gomock.Any(), userID, gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
 
 		// Gunakan payload valid
 		reqBody := `{"name":"updated"}`
-		req, _ := http.NewRequest(http.MethodPatch, "/users/1", bytes.NewReader([]byte(reqBody)))
+		req, _ := http.NewRequest(http.MethodPatch, "/users/"+userID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -190,8 +201,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Test UpdateUser, bind error", func(t *testing.T) {
-		usecase.EXPECT().UpdateUser(gomock.Any(), uint64(1), gomock.Any()).Times(0)
-		req, _ := http.NewRequest(http.MethodPatch, "/users/1", bytes.NewReader([]byte(`invalid-json`)))
+		userID := uuid.New()
+
+		usecase.EXPECT().UpdateUser(gomock.Any(), userID, gomock.Any()).Times(0)
+		req, _ := http.NewRequest(http.MethodPatch, "/users/"+userID.String(), bytes.NewReader([]byte(`invalid-json`)))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -217,8 +230,10 @@ func TestDeleteUser(t *testing.T) {
 	r.DELETE("/users/:id", h.DeleteUser)
 
 	t.Run("Test DeleteUser, successfully", func(t *testing.T) {
-		usecase.EXPECT().DeleteUser(gomock.Any(), uint64(1)).Times(1)
-		req, _ := http.NewRequest(http.MethodDelete, "/users/1", nil)
+		userID := uuid.New()
+
+		usecase.EXPECT().DeleteUser(gomock.Any(), userID).Times(1)
+		req, _ := http.NewRequest(http.MethodDelete, "/users/"+userID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -230,8 +245,10 @@ func TestDeleteUser(t *testing.T) {
 	})
 
 	t.Run("Test DeleteUser, database error", func(t *testing.T) {
-		usecase.EXPECT().DeleteUser(gomock.Any(), uint64(1)).Return(errors.New("internal error")).Times(1)
-		req, _ := http.NewRequest(http.MethodDelete, "/users/1", nil)
+		userID := uuid.New()
+
+		usecase.EXPECT().DeleteUser(gomock.Any(), userID).Return(errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodDelete, "/users/"+userID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -256,8 +273,10 @@ func TestRestoreUser(t *testing.T) {
 	r.POST("/users/:id/restore", h.RestoreUser)
 
 	t.Run("Test RestoreUser, successfully", func(t *testing.T) {
-		usecase.EXPECT().RestoreUser(gomock.Any(), uint64(1)).Return(&dto.UserResponseDTO{ID: 1, Email: "test@example.com"}, nil).Times(1)
-		req, _ := http.NewRequest(http.MethodPost, "/users/1/restore", nil)
+		userID := uuid.New()
+
+		usecase.EXPECT().RestoreUser(gomock.Any(), userID).Return(&dto.UserResponseDTO{ID: userID, Email: "test@example.com"}, nil).Times(1)
+		req, _ := http.NewRequest(http.MethodPost, "/users/"+userID.String()+"/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -269,8 +288,10 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("Test RestoreUser, database error", func(t *testing.T) {
-		usecase.EXPECT().RestoreUser(gomock.Any(), uint64(1)).Return(nil, errors.New("internal error")).Times(1)
-		req, _ := http.NewRequest(http.MethodPost, "/users/1/restore", nil)
+		userID := uuid.New()
+
+		usecase.EXPECT().RestoreUser(gomock.Any(), userID).Return(nil, errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodPost, "/users/"+userID.String()+"/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
