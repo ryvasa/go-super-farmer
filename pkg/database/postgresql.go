@@ -34,7 +34,7 @@ func ConnectDB(dsn string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&domain.User{}, &domain.Role{}, &domain.Land{})
+	db.AutoMigrate(&domain.User{}, &domain.Role{}, &domain.Land{}, &domain.Commodity{}, &domain.LandCommoditiesEntity{})
 
 	seeders.Seeders(db)
 

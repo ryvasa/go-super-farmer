@@ -44,7 +44,13 @@ var tokenSet = wire.NewSet(
 )
 
 var authUtilSet = wire.NewSet(
-	utils.NewAuthUtil, // gunakan konstruktor yang sesuai
+	utils.NewAuthUtil,
+)
+
+var commoditySet = wire.NewSet(
+	repository.NewCommodityRepository,
+	usecase.NewCommodityUsecase,
+	handler.NewCommodityHandler,
 )
 
 func InitializeRouter() (*gin.Engine, error) {
@@ -60,6 +66,7 @@ func InitializeRouter() (*gin.Engine, error) {
 		authSet,
 		tokenSet,
 		authUtilSet,
+		commoditySet,
 	)
 	return nil, nil
 }
