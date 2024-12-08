@@ -5,16 +5,17 @@ import (
 
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type AuthUsecaseImpl struct {
-	userRepo  repository.UserRepository
-	tokenUtil utils.TokenUtil
+	userRepo repository.UserRepository
+	token    token.Token
 }
 
-func NewAuthUsecase(userRepo repository.UserRepository, tokenUtil utils.TokenUtil) AuthUsecase {
-	return &AuthUsecaseImpl{userRepo, tokenUtil}
+func NewAuthUsecase(userRepo repository.UserRepository, token token.Token) AuthUsecase {
+	return &AuthUsecaseImpl{userRepo, token}
 }
 
 func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error) {
@@ -34,7 +35,7 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.Aut
 		return nil, utils.NewBadRequestError("invalid password or email")
 	}
 
-	token, err := u.tokenUtil.GenerateToken(user.ID, user.Role.Name)
+	token, err := u.token.GenerateToken(user.ID, user.Role.Name)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

@@ -11,16 +11,16 @@ import (
 )
 
 type LandHandlerImpl struct {
-	usecase usecase.LandUsecase
-	// authUtil utils.AuthUtil
+	usecase  usecase.LandUsecase
+	authUtil utils.AuthUtil
 }
 
-func NewLandHandler(usecase usecase.LandUsecase) LandHandler {
-	return &LandHandlerImpl{usecase}
+func NewLandHandler(usecase usecase.LandUsecase, authUtil utils.AuthUtil) LandHandler {
+	return &LandHandlerImpl{usecase, authUtil}
 }
 
 func (h *LandHandlerImpl) CreateLand(c *gin.Context) {
-	userId, err := utils.GetAuthUserID(c)
+	userId, err := h.authUtil.GetAuthUserID(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -81,7 +81,7 @@ func (h *LandHandlerImpl) GetAllLands(c *gin.Context) {
 }
 
 func (h *LandHandlerImpl) UpdateLand(c *gin.Context) {
-	userId, err := utils.GetAuthUserID(c)
+	userId, err := h.authUtil.GetAuthUserID(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

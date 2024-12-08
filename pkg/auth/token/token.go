@@ -20,7 +20,7 @@ type TokenImpl struct {
 	env *env.Env
 }
 
-func NewToken(cfg *env.Env) *TokenImpl {
+func NewToken(cfg *env.Env) Token {
 	return &TokenImpl{
 		env: cfg,
 	}
@@ -28,7 +28,7 @@ func NewToken(cfg *env.Env) *TokenImpl {
 
 func (t *TokenImpl) GenerateToken(id uuid.UUID, role string) (string, error) {
 	claims := jwt.MapClaims{
-		"iss":  "go-restaurant-api",
+		"iss":  "go-super-farmer",
 		"sub":  id,
 		"iat":  time.Now().Unix(),
 		"exp":  time.Now().Add(24 * time.Hour).Unix(),

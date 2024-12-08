@@ -13,6 +13,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 var roleSet = wire.NewSet(
@@ -38,17 +39,13 @@ var authSet = wire.NewSet(
 	handler.NewAuthHandler,
 )
 
-var utilSet = wire.NewSet(
-	utils.NewTokenUtil
+var tokenSet = wire.NewSet(
+	token.NewToken,
 )
 
-// var tokenSet = wire.NewSet(
-// 	token.NewToken,
-// )
-
-// var authUtilSet = wire.NewSet(
-// 	utils.NewAuthUtil, // gunakan konstruktor yang sesuai
-// )
+var authUtilSet = wire.NewSet(
+	utils.NewAuthUtil, // gunakan konstruktor yang sesuai
+)
 
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
@@ -62,7 +59,7 @@ func InitializeRouter() (*gin.Engine, error) {
 		landSet,
 		authSet,
 		tokenSet,
-		// authUtilSet,
+		authUtilSet,
 	)
 	return nil, nil
 }

@@ -6,17 +6,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// type AuthUtil interface {
-// 	GetAuthUserID(c *gin.Context) (uuid.UUID, error)
-// }
+type AuthUtil interface {
+	GetAuthUserID(c *gin.Context) (uuid.UUID, error)
+}
 
-// type AuthUtilImpl struct{}
+type AuthUtilImpl struct{}
 
-// func NewAuthUtil() AuthUtil { // Mengembalikan interface, bukan pointer langsung
-// 	return &AuthUtilImpl{}
-// }
+func NewAuthUtil() AuthUtil { // Mengembalikan interface, bukan pointer langsung
+	return &AuthUtilImpl{}
+}
 
-func GetAuthUserID(c *gin.Context) (uuid.UUID, error) {
+func (a *AuthUtilImpl) GetAuthUserID(c *gin.Context) (uuid.UUID, error) {
 	value, exists := c.Get("user")
 	if !exists {
 		return uuid.UUID{}, NewUnauthorizedError("unauthorized")
