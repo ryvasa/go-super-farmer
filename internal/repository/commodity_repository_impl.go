@@ -67,7 +67,7 @@ func (r *CommodityRepositoryImpl) Restore(ctx context.Context, id uuid.UUID) err
 
 func (r *CommodityRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Commodity, error) {
 	var commodity domain.Commodity
-	if err := r.db.WithContext(ctx).Unscoped().Where("id = ?", id).First(&commodity).Error; err != nil {
+	if err := r.db.WithContext(ctx).Unscoped().Where("id = ? AND deleted_at IS NOT NULL", id).First(&commodity).Error; err != nil {
 		return nil, err
 	}
 	return &commodity, nil

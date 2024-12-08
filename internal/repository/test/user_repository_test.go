@@ -11,12 +11,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 func TestUserRepository_Create(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -54,7 +55,7 @@ func TestUserRepository_Create(t *testing.T) {
 }
 
 func TestUserRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -92,7 +93,7 @@ func TestUserRepository_FindAll(t *testing.T) {
 }
 
 func TestUserRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -140,7 +141,7 @@ func TestUserRepository_FindByID(t *testing.T) {
 }
 
 func TestUserRepository_Update(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -190,7 +191,7 @@ func TestUserRepository_Update(t *testing.T) {
 }
 
 func TestUserRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -239,7 +240,7 @@ func TestUserRepository_Delete(t *testing.T) {
 }
 
 func TestUserRepository_Restore(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -288,7 +289,7 @@ func TestUserRepository_Restore(t *testing.T) {
 }
 
 func TestUserRepository_FindDeletedByID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)
@@ -339,7 +340,7 @@ func TestUserRepository_FindDeletedByID(t *testing.T) {
 }
 
 func TestUserRepository_FindByEmail(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewUserRepository(db)

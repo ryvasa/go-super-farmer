@@ -16,7 +16,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 )
 
-type ResponseRoleHandler struct {
+type responseRoleHandler struct {
 	Status  int         `json:"status"`
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
@@ -50,7 +50,7 @@ func TestCreateRole(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		// Decode response
-		var response ResponseRoleHandler
+		var response responseRoleHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 

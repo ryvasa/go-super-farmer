@@ -11,12 +11,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 func TestLandRepository_Create(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -67,7 +68,7 @@ func TestLandRepository_Create(t *testing.T) {
 }
 
 func TestLandRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -125,7 +126,7 @@ func TestLandRepository_FindByID(t *testing.T) {
 }
 
 func TestLandRepository_FindByUserID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -163,7 +164,7 @@ func TestLandRepository_FindByUserID(t *testing.T) {
 }
 
 func TestLandRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -193,7 +194,7 @@ func TestLandRepository_FindAll(t *testing.T) {
 }
 
 func TestLandRepository_Update(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -242,7 +243,7 @@ func TestLandRepository_Update(t *testing.T) {
 }
 
 func TestLandRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -291,7 +292,7 @@ func TestLandRepository_Delete(t *testing.T) {
 }
 
 func TestLandRepository_Restore(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)
@@ -340,7 +341,7 @@ func TestLandRepository_Restore(t *testing.T) {
 }
 
 func TestLandRepository_FindDeletedByID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewLandRepository(db)

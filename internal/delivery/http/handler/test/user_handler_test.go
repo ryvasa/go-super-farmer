@@ -13,29 +13,18 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-type ResponseUserHandler struct {
+type responseUserHandler struct {
 	Status  int                 `json:"status"`
 	Success bool                `json:"success"`
 	Message string              `json:"message"`
 	Data    dto.UserResponseDTO `json:"data"`
 	Errors  interface{}         `json:"errors"`
-}
-
-type Message struct {
-	Message string `json:"message"`
-}
-
-type ResponseUserHandlerMessage struct {
-	Status  int         `json:"status"`
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    Message     `json:"data"`
-	Errors  interface{} `json:"errors"`
 }
 
 func TestRegisterUser(t *testing.T) {
@@ -85,7 +74,7 @@ func TestGetOneUser(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response ResponseUserHandler
+		var response responseUserHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, mockUser.Email, response.Data.Email)
@@ -178,7 +167,7 @@ func TestUpdateUser(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response ResponseUserHandler
+		var response responseUserHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, mockUser.Name, response.Data.Name)
@@ -238,7 +227,7 @@ func TestDeleteUser(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response ResponseUserHandlerMessage
+		var response response.ResponseMessage
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, "User deleted successfully", response.Data.Message)
@@ -281,7 +270,7 @@ func TestRestoreUser(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response ResponseUserHandler
+		var response responseUserHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, response.Data.Email, "test@example.com")
