@@ -2,6 +2,8 @@ package handler_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -17,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type ResponseLandhHandler struct {
+type responseLandHandler struct {
 	Status  int         `json:"status"`
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
@@ -168,19 +171,79 @@ func TestUpdateLand(t *testing.T) {
 	r.PATCH("/lands/:id", h.UpdateLand)
 
 	t.Run("Test UpdateLand, successfully", func(t *testing.T) {
+		userID := uuid.New()
+		landID := uuid.New()
+		mockLand := &domain.Land{ID: landID, UserID: userID, LandArea: 10, Certificate: "test"}
 
+		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(userID, nil).Times(1)
+		usecase.EXPECT().UpdateLand(gomock.Any(), userID, landID, gomock.Any()).Return(mockLand, nil).Times(1)
+
+		reqBody := `{"land_area":10,"certificate":"test"}`
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String(), bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response responseLandHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, mockLand.LandArea, response.Data.LandArea)
+		assert.Equal(t, mockLand.Certificate, response.Data.Certificate)
 	})
 
 	t.Run("Test UpdateLand, database error", func(t *testing.T) {
+		userID := uuid.New()
+		landID := uuid.New()
 
+		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(userID, nil).Times(1)
+		usecase.EXPECT().UpdateLand(gomock.Any(), userID, landID, gomock.Any()).Return(nil, utils.NewInternalError("internal server error")).Times(1)
+
+		reqBody := `{"land_area":10,"certificate":"test"}`
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String(), bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
 	t.Run("Test UpdateLand, invalid id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/abc", bytes.NewReader([]byte(`invalid-json`)))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
 
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("Test UpdateLand, bind error", func(t *testing.T) {
+		userID := uuid.New()
+		landID := uuid.New()
+		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(userID, nil).Times(1)
+		usecase.EXPECT().UpdateLand(gomock.Any(), userID, landID, gomock.Any()).Times(0)
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String(), bytes.NewReader([]byte(`invalid-json`)))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 
+	t.Run("Test UpdateLand, not found", func(t *testing.T) {
+		userID := uuid.New()
+		landID := uuid.New()
+
+		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(userID, nil).Times(1)
+		usecase.EXPECT().UpdateLand(gomock.Any(), userID, landID, gomock.Any()).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
+
+		reqBody := `{"land_area":10,"certificate":"test"}`
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String(), bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
@@ -194,15 +257,51 @@ func TestDeleteLand(t *testing.T) {
 	r.DELETE("/lands/:id", h.DeleteLand)
 
 	t.Run("Test DeleteLand, successfully", func(t *testing.T) {
+		landID := uuid.New()
 
+		usecase.EXPECT().DeleteLand(gomock.Any(), landID).Return(nil).Times(1)
+
+		req, _ := http.NewRequest(http.MethodDelete, "/lands/"+landID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response response.ResponseMessage
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "Land deleted successfully", response.Data.Message)
 	})
 
 	t.Run("Test DeleteLand, database error", func(t *testing.T) {
+		landID := uuid.New()
 
+		usecase.EXPECT().DeleteLand(gomock.Any(), landID).Return(errors.New("internal error")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodDelete, "/lands/"+landID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
 	t.Run("Test DeleteLand, invalid id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodDelete, "/lands/abc", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
 
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Test DeleteLand, not found", func(t *testing.T) {
+		landID := uuid.New()
+
+		usecase.EXPECT().DeleteLand(gomock.Any(), landID).Return(utils.NewNotFoundError("land not found")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodDelete, "/lands/"+landID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
@@ -216,14 +315,54 @@ func TestRestoreLand(t *testing.T) {
 	r.PATCH("/lands/:id/restore", h.RestoreLand)
 
 	t.Run("Test RestoreLand, successfully", func(t *testing.T) {
+		landID := uuid.New()
+		userID := uuid.New()
+		mockLand := &domain.Land{ID: landID, UserID: userID, LandArea: 10, Certificate: "test"}
 
+		usecase.EXPECT().RestoreLand(gomock.Any(), landID).Return(mockLand, nil).Times(1)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String()+"/restore", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response responseLandHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, mockLand.LandArea, response.Data.LandArea)
+		assert.Equal(t, mockLand.Certificate, response.Data.Certificate)
+		assert.Equal(t, mockLand.UserID, response.Data.UserID)
 	})
 
 	t.Run("Test RestoreLand, database error", func(t *testing.T) {
+		landID := uuid.New()
 
+		usecase.EXPECT().RestoreLand(gomock.Any(), landID).Return(nil, errors.New("internal error")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String()+"/restore", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
 	t.Run("Test RestoreLand, invalid id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/abc/restore", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
 
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Test RestoreLand, not found", func(t *testing.T) {
+		landID := uuid.New()
+
+		usecase.EXPECT().RestoreLand(gomock.Any(), landID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+landID.String()+"/restore", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }

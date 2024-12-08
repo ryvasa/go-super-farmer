@@ -81,6 +81,12 @@ func (h *LandHandlerImpl) GetAllLands(c *gin.Context) {
 }
 
 func (h *LandHandlerImpl) UpdateLand(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+
 	userId, err := h.authUtil.GetAuthUserID(c)
 	if err != nil {
 		utils.ErrorResponse(c, err)
@@ -89,11 +95,6 @@ func (h *LandHandlerImpl) UpdateLand(c *gin.Context) {
 
 	var req dto.LandUpdateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-		return
-	}
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}

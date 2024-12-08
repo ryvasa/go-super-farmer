@@ -220,7 +220,6 @@ func TestUpdateUser(t *testing.T) {
 		assert.Equal(t, req.Email, resp.Email)
 	})
 
-	// TODO: fix this
 	t.Run("Test UpdateUser with password, hashing error", func(t *testing.T) {
 		userID := uuid.New()
 

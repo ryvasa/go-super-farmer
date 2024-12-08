@@ -41,6 +41,7 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 	UserRoutes(public, protected, handler.UserHandler)
 	LandRoutes(public, protected, handler.LandHandler)
 	AuthRoutes(public, handler.AuthHandler)
+	CommodityRoutes(public, protected, handler.CommodityHandler)
 	return r
 
 }

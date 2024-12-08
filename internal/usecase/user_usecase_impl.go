@@ -37,7 +37,6 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	// TODO: user.ID janggal
 	createdUser, err := uc.repo.FindByID(ctx, user.ID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

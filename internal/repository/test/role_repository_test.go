@@ -9,12 +9,13 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 func TestRoleRepository_Create(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewRoleRepository(db)
@@ -50,7 +51,7 @@ func TestRoleRepository_Create(t *testing.T) {
 }
 
 func TestRoleRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewRoleRepository(db)
@@ -87,7 +88,7 @@ func TestRoleRepository_FindAll(t *testing.T) {
 }
 
 func TestRoleRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := DbMock(t)
+	sqlDB, db, mock := database.DbMock(t)
 	defer sqlDB.Close()
 
 	repoImpl := repository.NewRoleRepository(db)
