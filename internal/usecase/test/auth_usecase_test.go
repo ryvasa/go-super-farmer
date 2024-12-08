@@ -11,8 +11,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	mockToken "github.com/ryvasa/go-super-farmer/pkg/auth/token/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
-	mockTokenUtil "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func TestLogin(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	utilToken := mockTokenUtil.NewMockTokenUtil(ctrl)
+	utilToken := mockToken.NewMockToken(ctrl)
 	repo := mock.NewMockUserRepository(ctrl)
 	uc := usecase.NewAuthUsecase(repo, utilToken)
 	ctx := context.Background()
