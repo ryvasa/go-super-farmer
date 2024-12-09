@@ -1,0 +1,164 @@
+package usecase
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/utils"
+)
+
+type LandCommodityUsecaseImpl struct {
+	landCommodityRepo repository.LandCommodityRepository
+	landRepo          repository.LandRepository
+	commodityRepo     repository.CommodityRepository
+}
+
+func NewLandCommodityUsecase(landCommodityRepo repository.LandCommodityRepository, landRepo repository.LandRepository, commodityRepo repository.CommodityRepository) LandCommodityUsecase {
+	return &LandCommodityUsecaseImpl{landCommodityRepo, landRepo, commodityRepo}
+}
+
+func (u *LandCommodityUsecaseImpl) CreateLandCommodity(ctx context.Context, req *dto.LandCommodityCreateDTO) (*domain.LandCommodity, error) {
+	landcommondity := domain.LandCommodity{}
+	if err := utils.ValidateStruct(req); len(err) > 0 {
+		return nil, utils.NewValidationError(err)
+	}
+
+	commodity, err := u.commodityRepo.FindByID(ctx, req.CommodityID)
+	if err != nil {
+		return nil, utils.NewNotFoundError("commodity not found")
+	}
+
+	land, err := u.landRepo.FindByID(ctx, req.LandID)
+	if err != nil {
+		return nil, utils.NewNotFoundError("land not found")
+	}
+
+	landArea, err := u.landCommodityRepo.SumLandAreaByLandID(ctx, land.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	if landArea+req.LandArea > land.LandArea {
+		return nil, utils.NewValidationError(fmt.Sprintf("land area %.2f is greater than max area", landArea+req.LandArea-land.LandArea))
+	}
+
+	landcommondity.LandID = land.ID
+	landcommondity.CommodityID = commodity.ID
+	landcommondity.LandArea = req.LandArea
+	landcommondity.ID = uuid.New()
+
+	err = u.landCommodityRepo.Create(ctx, &landcommondity)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	createdLandCommodity, err := u.landCommodityRepo.FindByID(ctx, landcommondity.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	return createdLandCommodity, nil
+}
+
+func (u *LandCommodityUsecaseImpl) GetLandCommodityByID(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error) {
+	landCommodity, err := u.landCommodityRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewNotFoundError("land commodity not found")
+	}
+	return landCommodity, nil
+}
+
+func (u *LandCommodityUsecaseImpl) GetLandCommodityByLandID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+	landsCommodities, err := u.landCommodityRepo.FindByLandID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	return landsCommodities, nil
+}
+
+func (u *LandCommodityUsecaseImpl) GetAllLandCommodity(ctx context.Context) (*[]domain.LandCommodity, error) {
+	landCommodity, err := u.landCommodityRepo.FindAll(ctx)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	return landCommodity, nil
+}
+
+func (u *LandCommodityUsecaseImpl) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+	landCommodities, err := u.landCommodityRepo.FindByCommodityID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	return landCommodities, nil
+}
+
+func (u *LandCommodityUsecaseImpl) UpdateLandCommodity(ctx context.Context, id uuid.UUID, req *dto.LandCommodityUpdateDTO) (*domain.LandCommodity, error) {
+	if err := utils.ValidateStruct(req); len(err) > 0 {
+		return nil, utils.NewValidationError(err)
+	}
+
+	landCommodity, err := u.landCommodityRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewNotFoundError("land commodity not found")
+	}
+
+	_, err = u.commodityRepo.FindByID(ctx, req.CommodityID)
+	if err != nil {
+		return nil, utils.NewNotFoundError("commodity not found")
+	}
+
+	_, err = u.landRepo.FindByID(ctx, req.LandID)
+	if err != nil {
+		return nil, utils.NewNotFoundError("land not found")
+	}
+
+	landCommodity.LandArea = req.LandArea
+	landCommodity.CommodityID = req.CommodityID
+	landCommodity.LandID = req.LandID
+
+	err = u.landCommodityRepo.Update(ctx, id, landCommodity)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	updatedLandCommodity, err := u.landCommodityRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	return updatedLandCommodity, nil
+}
+
+func (u *LandCommodityUsecaseImpl) DeleteLandCommodity(ctx context.Context, id uuid.UUID) error {
+	_, err := u.landCommodityRepo.FindByID(ctx, id)
+	if err != nil {
+		return utils.NewNotFoundError("land commodity not found")
+	}
+	err = u.landCommodityRepo.Delete(ctx, id)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+	return nil
+}
+
+func (u *LandCommodityUsecaseImpl) RestoreLandCommodity(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error) {
+	_, err := u.landCommodityRepo.FindDeletedByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewNotFoundError("deleted land commodity not found")
+	}
+
+	err = u.landCommodityRepo.Restore(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	restoredLandCommodity, err := u.landCommodityRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	return restoredLandCommodity, nil
+}

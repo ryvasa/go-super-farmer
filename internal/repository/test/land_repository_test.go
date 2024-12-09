@@ -30,7 +30,7 @@ func TestLandRepository_Create(t *testing.T) {
 	t.Run("Test Create, successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(landID, userID, 100, "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(landID, userID, float64(100), "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
 		mock.ExpectCommit()
@@ -38,7 +38,7 @@ func TestLandRepository_Create(t *testing.T) {
 		err := repoImpl.Create(context.TODO(), &domain.Land{
 			ID:          landID,
 			UserID:      userID,
-			LandArea:    100,
+			LandArea:    float64(100),
 			Certificate: "certificate",
 		})
 
@@ -49,7 +49,7 @@ func TestLandRepository_Create(t *testing.T) {
 	t.Run("Test Create, error database", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(landID, userID, 100, "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(landID, userID, float64(100), "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnError(errors.New("database error"))
 
 		mock.ExpectRollback()
@@ -57,7 +57,7 @@ func TestLandRepository_Create(t *testing.T) {
 		err := repoImpl.Create(context.TODO(), &domain.Land{
 			ID:          landID,
 			UserID:      userID,
-			LandArea:    100,
+			LandArea:    float64(100),
 			Certificate: "certificate",
 		})
 
@@ -79,7 +79,7 @@ func TestLandRepository_FindByID(t *testing.T) {
 	userID := uuid.New()
 
 	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		land := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).AddRow(landID, userID, int64(100), "certificate", time.Now(), time.Now())
+		land := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now())
 
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
 			WithArgs(landID, 1).
@@ -91,7 +91,7 @@ func TestLandRepository_FindByID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, landID, result.ID)
 		assert.Equal(t, userID, result.UserID)
-		assert.Equal(t, int64(100), result.LandArea)
+		assert.Equal(t, float64(100), result.LandArea)
 		assert.Equal(t, "certificate", result.Certificate)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
@@ -148,7 +148,7 @@ func TestLandRepository_FindByUserID(t *testing.T) {
 
 	t.Run("Test FindByUserID, successfully", func(t *testing.T) {
 		land := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).
-			AddRow(uuid.New(), userID, int64(100), "certificate", time.Now(), time.Now())
+			AddRow(uuid.New(), userID, float64(100), "certificate", time.Now(), time.Now())
 
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID).WillReturnRows(land)
 
@@ -156,7 +156,7 @@ func TestLandRepository_FindByUserID(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, userID, (*result)[0].UserID)
-		assert.Equal(t, int64(100), (*result)[0].LandArea)
+		assert.Equal(t, float64(100), (*result)[0].LandArea)
 		assert.Equal(t, "certificate", (*result)[0].Certificate)
 
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -175,7 +175,7 @@ func TestLandRepository_FindAll(t *testing.T) {
 	userID := uuid.New()
 
 	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		lands := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).AddRow(landID, userID, int64(100), "certificate", time.Now(), time.Now())
+		lands := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now())
 
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
 			WillReturnRows(lands)
@@ -187,7 +187,7 @@ func TestLandRepository_FindAll(t *testing.T) {
 		assert.Equal(t, 1, len(*result))
 		assert.Equal(t, landID, (*result)[0].ID)
 		assert.Equal(t, userID, (*result)[0].UserID)
-		assert.Equal(t, int64(100), (*result)[0].LandArea)
+		assert.Equal(t, float64(100), (*result)[0].LandArea)
 		assert.Equal(t, "certificate", (*result)[0].Certificate)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
@@ -206,7 +206,7 @@ func TestLandRepository_Update(t *testing.T) {
 	t.Run("Test Update, successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(int64(100), "certificate", sqlmock.AnyArg(), landID).
+			WithArgs(float64(100), "certificate", sqlmock.AnyArg(), landID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -218,7 +218,7 @@ func TestLandRepository_Update(t *testing.T) {
 	t.Run("Test Update, error database", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(int64(100), "certificate", sqlmock.AnyArg(), landID).
+			WithArgs(float64(100), "certificate", sqlmock.AnyArg(), landID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
@@ -231,7 +231,7 @@ func TestLandRepository_Update(t *testing.T) {
 	t.Run("Test Update, not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(int64(100), "certificate", sqlmock.AnyArg(), landID).
+			WithArgs(float64(100), "certificate", sqlmock.AnyArg(), landID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
 
@@ -376,7 +376,7 @@ func TestLandRepository_FindDeletedByID(t *testing.T) {
 
 	t.Run("Test FindDeletedByID, successfully", func(t *testing.T) {
 		land := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).
-			AddRow(landID, userID, int64(100), "certificate", time.Now(), time.Now())
+			AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now())
 
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(landID, 1).WillReturnRows(land)
 
@@ -385,7 +385,7 @@ func TestLandRepository_FindDeletedByID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, landID, result.ID)
 		assert.Equal(t, userID, result.UserID)
-		assert.Equal(t, int64(100), result.LandArea)
+		assert.Equal(t, float64(100), result.LandArea)
 		assert.Equal(t, "certificate", result.Certificate)
 
 		assert.Nil(t, mock.ExpectationsWereMet())

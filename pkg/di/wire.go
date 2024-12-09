@@ -53,6 +53,12 @@ var commoditySet = wire.NewSet(
 	handler.NewCommodityHandler,
 )
 
+var landCommoditySet = wire.NewSet(
+	repository.NewLandCommodityRepository,
+	usecase.NewLandCommodityUsecase,
+	handler.NewLandCommodityHandler,
+)
+
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -67,6 +73,7 @@ func InitializeRouter() (*gin.Engine, error) {
 		tokenSet,
 		authUtilSet,
 		commoditySet,
+		landCommoditySet,
 	)
 	return nil, nil
 }

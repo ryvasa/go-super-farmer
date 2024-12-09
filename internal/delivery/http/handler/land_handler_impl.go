@@ -50,10 +50,6 @@ func (h *LandHandlerImpl) GetLandByID(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	if land == nil {
-		utils.ErrorResponse(c, utils.NewNotFoundError("land not found"))
-		return
-	}
 	utils.SuccessResponse(c, http.StatusOK, land)
 }
 
