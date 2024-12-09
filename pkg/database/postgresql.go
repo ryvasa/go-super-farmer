@@ -5,11 +5,9 @@ import (
 	"os"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/pkg/database/seeders"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func ProvideDSN(cfg *env.Env) (string, error) {
@@ -29,14 +27,14 @@ func ProvideDSN(cfg *env.Env) (string, error) {
 
 func ConnectDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		// Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&domain.User{}, &domain.Role{}, &domain.Land{}, &domain.Commodity{}, &domain.LandCommodity{})
+	db.AutoMigrate(&domain.User{}, &domain.Role{}, &domain.Land{}, &domain.Commodity{}, &domain.LandCommodity{}, &domain.Region{}, &domain.Price{}, &domain.PriceHistory{})
 
-	seeders.Seeders(db)
+	// seeders.Seeders(db)
 
 	return db, nil
 }
