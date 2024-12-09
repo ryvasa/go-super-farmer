@@ -5,13 +5,13 @@ import (
 	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 )
 
-func LandRoutes(public, protected *gin.RouterGroup, userHandler handler.LandHandler) {
+func LandRoutes(public, protected *gin.RouterGroup, landHandler handler.LandHandler) {
 
-	protected.GET("/lands", userHandler.GetAllLands)
-	protected.POST("/lands", userHandler.CreateLand)
-	protected.GET("/lands/:id", userHandler.GetLandByID)
-	protected.PATCH("/lands/:id", userHandler.UpdateLand)
-	protected.DELETE("/lands/:id", userHandler.DeleteLand)
-	protected.PATCH("/lands/:id/restore", userHandler.RestoreLand)
-	protected.GET("/lands/user/:id", userHandler.GetLandByUserID)
+	protected.GET("/lands", landHandler.GetAllLands)
+	protected.POST("/lands", landHandler.CreateLand)
+	protected.GET("/lands/:id", landHandler.GetLandByID)
+	protected.PATCH("/lands/:id", landHandler.UpdateLand)
+	protected.DELETE("/lands/:id", landHandler.DeleteLand)
+	protected.PATCH("/lands/:id/restore", landHandler.RestoreLand)
+	protected.GET("/lands/user/:id", landHandler.GetLandByUserID)
 }

@@ -106,18 +106,33 @@ func TestGetOneLand(t *testing.T) {
 	usecase := mock.NewMockLandUsecase(ctrl)
 	h := handler.NewLandHandler(usecase, authUtil)
 	r := gin.Default()
-	r.GET("/lands:id", h.GetLandByID)
+	r.GET("/lands/:id", h.GetLandByID)
 
+	landID := uuid.New()
+	userID := uuid.New()
 	t.Run("Test GetLandByID, successfully", func(t *testing.T) {
+		mockLand := &domain.Land{ID: landID, UserID: userID, LandArea: 10, Certificate: "test"}
 
+		usecase.EXPECT().GetLandByID(gomock.Any(), landID).Return(mockLand, nil).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands/"+landID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("Test GetLandByID, database error", func(t *testing.T) {
-
+		usecase.EXPECT().GetLandByID(gomock.Any(), landID).Return(nil, errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands/"+landID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
 	t.Run("Test GetLandByID, invalid id", func(t *testing.T) {
-
+		req, _ := http.NewRequest(http.MethodGet, "/lands/abc", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
 
@@ -130,16 +145,32 @@ func TestGetOneLandByUserID(t *testing.T) {
 	r := gin.Default()
 	r.GET("/lands/user/:id", h.GetLandByUserID)
 
-	t.Run("Test GetLandByUserID, successfully", func(t *testing.T) {
+	userID := uuid.New()
 
+	t.Run("Test GetLandByUserID, successfully", func(t *testing.T) {
+		mockLand1 := &domain.Land{ID: uuid.New(), UserID: uuid.New(), LandArea: 10, Certificate: "test"}
+		mockLand2 := &domain.Land{ID: uuid.New(), UserID: uuid.New(), LandArea: 20, Certificate: "test2"}
+
+		usecase.EXPECT().GetLandByUserID(gomock.Any(), userID).Return(&[]domain.Land{*mockLand1, *mockLand2}, nil).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands/user/"+userID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("Test GetLandByUserID, database error", func(t *testing.T) {
-
+		usecase.EXPECT().GetLandByUserID(gomock.Any(), userID).Return(nil, errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands/user/"+userID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
 	t.Run("Test GetLandByUserID, invalid id", func(t *testing.T) {
-
+		req, _ := http.NewRequest(http.MethodGet, "/lands/user/abc", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
 
@@ -153,11 +184,22 @@ func TestGetAllLands(t *testing.T) {
 	r.GET("/lands", h.GetAllLands)
 
 	t.Run("Test GetAllLands, successfully", func(t *testing.T) {
+		mockLand1 := &domain.Land{ID: uuid.New(), UserID: uuid.New(), LandArea: 10, Certificate: "test"}
+		mockLand2 := &domain.Land{ID: uuid.New(), UserID: uuid.New(), LandArea: 20, Certificate: "test2"}
 
+		usecase.EXPECT().GetAllLands(gomock.Any()).Return(&[]domain.Land{*mockLand1, *mockLand2}, nil).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("Test GetAllLands, database error", func(t *testing.T) {
-
+		usecase.EXPECT().GetAllLands(gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, "/lands", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
 
