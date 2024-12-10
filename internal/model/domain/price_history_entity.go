@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -12,7 +14,7 @@ type PriceHistory struct {
 	Commodity   Commodity      `gorm:"foreignKey:CommodityID;references:ID"`
 	Region      Region         `gorm:"foreignKey:RegionID;references:ID"`
 	Price       float64        `gorm:"not null"`
-	CreatedAt   string         `gorm:"autoCreateTime"`
-	UpdatedAt   string         `gorm:"autoUpdateTime"`
+	CreatedAt   time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }

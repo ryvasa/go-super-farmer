@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/pkg/database/seeders"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,6 +14,7 @@ import (
 func ProvideDSN(cfg *env.Env) (string, error) {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
+	// name := os.Getenv("DB_TEST")
 	name := os.Getenv("DB_NAME")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
@@ -34,7 +36,7 @@ func ConnectDB(dsn string) (*gorm.DB, error) {
 	}
 	db.AutoMigrate(&domain.User{}, &domain.Role{}, &domain.Land{}, &domain.Commodity{}, &domain.LandCommodity{}, &domain.Region{}, &domain.Price{}, &domain.PriceHistory{})
 
-	// seeders.Seeders(db)
+	seeders.Seeders(db)
 
 	return db, nil
 }

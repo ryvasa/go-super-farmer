@@ -16,8 +16,6 @@ func NewLandCommodityRepository(db *gorm.DB) LandCommodityRepository {
 	return &LandCommodityRepositoryImpl{db}
 }
 
-// TODO: Implement
-
 func (r *LandCommodityRepositoryImpl) Create(ctx context.Context, landCommodity *domain.LandCommodity) error {
 	err := r.db.WithContext(ctx).Create(landCommodity).Error
 	if err != nil {

@@ -43,6 +43,7 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 	AuthRoutes(public, handler.AuthHandler)
 	CommodityRoutes(public, protected, handler.CommodityHandler)
 	LandCommodityRoutes(public, protected, handler.LandCommodityHandler)
+	PriceRoutes(public, protected, handler.PriceHandler)
 	return r
 
 }

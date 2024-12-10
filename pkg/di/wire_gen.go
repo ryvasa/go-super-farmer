@@ -53,7 +53,10 @@ func InitializeRouter() (*gin.Engine, error) {
 	landCommodityRepository := repository.NewLandCommodityRepository(db)
 	landCommodityUsecase := usecase.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
 	landCommodityHandler := handler.NewLandCommodityHandler(landCommodityUsecase)
-	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler)
+	priceRepository := repository.NewPriceRepository(db)
+	priceUsecase := usecase.NewPriceUsecase(priceRepository)
+	priceHandler := handler.NewPriceHandler(priceUsecase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
 }
@@ -75,3 +78,5 @@ var authUtilSet = wire.NewSet(utils.NewAuthUtil)
 var commoditySet = wire.NewSet(repository.NewCommodityRepository, usecase.NewCommodityUsecase, handler.NewCommodityHandler)
 
 var landCommoditySet = wire.NewSet(repository.NewLandCommodityRepository, usecase.NewLandCommodityUsecase, handler.NewLandCommodityHandler)
+
+var priceSet = wire.NewSet(repository.NewPriceRepository, usecase.NewPriceUsecase, handler.NewPriceHandler)
