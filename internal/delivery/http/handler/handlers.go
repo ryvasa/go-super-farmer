@@ -7,9 +7,10 @@ type Handlers struct {
 	AuthHandler          AuthHandler
 	CommodityHandler     CommodityHandler
 	LandCommodityHandler LandCommodityHandler
+	PriceHandler         PriceHandler
 }
 
-func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler LandHandler, authHandler AuthHandler, commodityHandler CommodityHandler, landCommodityHandler LandCommodityHandler) *Handlers {
+func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler LandHandler, authHandler AuthHandler, commodityHandler CommodityHandler, landCommodityHandler LandCommodityHandler, priceHandler PriceHandler) *Handlers {
 	return &Handlers{
 		RoleHandler:          roleHandler,
 		UserHandler:          userHandler,
@@ -17,5 +18,6 @@ func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler L
 		AuthHandler:          authHandler,
 		CommodityHandler:     commodityHandler,
 		LandCommodityHandler: landCommodityHandler,
+		PriceHandler:         priceHandler,
 	}
 }

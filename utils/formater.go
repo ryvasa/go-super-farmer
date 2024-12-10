@@ -17,6 +17,15 @@ func UserDtoFormat(data *domain.User) *dto.UserResponseDTO {
 	}
 }
 
+// func PriceDtoFormat(data *domain.Price) *dto.PriceResponseDTO {
+// 	return &dto.PriceResponseDTO{
+// 		ID:        data.ID,
+// 		Price:     data.Price,
+// 		CreatedAt: data.CreatedAt,
+// 		UpdatedAt: data.UpdatedAt,
+// 	}
+// }
+
 func AuthDtoFormat(user *domain.User, token string) *dto.AuthResponseDTO {
 	return &dto.AuthResponseDTO{
 		User:  UserDtoFormat(user),
