@@ -7,10 +7,12 @@ import (
 type PriceHandler interface {
 	CreatePrice(c *gin.Context)
 	GetAllPrices(c *gin.Context)
-	GetPriceById(c *gin.Context)
+	GetPriceByID(c *gin.Context)
 	GetPricesByCommodityID(c *gin.Context)
 	GetPricesByRegionID(c *gin.Context)
 	UpdatePrice(c *gin.Context)
 	DeletePrice(c *gin.Context)
 	RestorePrice(c *gin.Context)
+	GetPriceByCommodityIDAndRegionID(c *gin.Context)
+	GetPricesHistoryByCommodityIDAndRegionID(c *gin.Context)
 }

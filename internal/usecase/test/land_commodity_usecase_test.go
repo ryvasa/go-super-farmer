@@ -280,12 +280,12 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 
 	t.Run("Test UpdateLandCommodity successfully", func(t *testing.T) {
 		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
+		mockLand := &domain.Land{ID: landID, LandArea: float64(1000)}
 
 		landCommodityRepo.EXPECT().FindByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
-
 		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(&domain.Commodity{ID: commodityID}, nil).Times(1)
-
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID}, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
 
 		landCommodityRepo.EXPECT().Update(ctx, landCommodityID, mockLandCommodity).Return(nil).Times(1)
 
@@ -347,16 +347,38 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 		assert.EqualError(t, err, "land not found")
 	})
 
-	t.Run("Test UpdateLandCommodity internal error", func(t *testing.T) {
-		landCommodityRepo.EXPECT().FindByID(ctx, landCommodityID).Return(&domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}, nil).Times(1)
+	t.Run("Test UpdateLandCommodity land area not enough", func(t *testing.T) {
+		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
+		mockLand := &domain.Land{ID: landID, LandArea: float64(100)}
 
+		landCommodityRepo.EXPECT().FindByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
 		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(&domain.Commodity{ID: commodityID}, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID}, nil).Times(1)
+		resp, err := uc.UpdateLandCommodity(ctx,
+			landCommodityID, &dto.LandCommodityUpdateDTO{LandArea: float64(200), CommodityID: commodityID, LandID: landID})
 
-		landCommodityRepo.EXPECT().Update(ctx, landCommodityID, gomock.Any()).Return(errors.New("internal error")).Times(1)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "land area not enough")
+	})
 
-		resp, err := uc.UpdateLandCommodity(ctx, landCommodityID, &dto.LandCommodityUpdateDTO{LandArea: float64(200), CommodityID: commodityID, LandID: landID})
+	t.Run("Test UpdateLandCommodity internal error", func(t *testing.T) {
+		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
+		mockLand := &domain.Land{ID: landID, LandArea: float64(1000)}
+
+		landCommodityRepo.EXPECT().FindByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
+		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(&domain.Commodity{ID: commodityID}, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
+
+		landCommodityRepo.EXPECT().Update(ctx, landCommodityID, mockLandCommodity).Return(errors.New("internal error")).Times(1)
+
+		// landCommodityRepo.EXPECT().FindByID(ctx, landCommodityID).Return(&domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(200)}, nil).Times(1)
+
+		resp, err := uc.UpdateLandCommodity(ctx,
+			landCommodityID, &dto.LandCommodityUpdateDTO{LandArea: float64(200), CommodityID: commodityID, LandID: landID})
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -428,6 +450,8 @@ func TestLandCommodityUsecase_RestoreLandCommodity(t *testing.T) {
 		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
 
 		landCommodityRepo.EXPECT().FindDeletedByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: float64(1000)}, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
 
 		landCommodityRepo.EXPECT().Restore(ctx, landCommodityID).Return(nil).Times(1)
 
@@ -452,7 +476,8 @@ func TestLandCommodityUsecase_RestoreLandCommodity(t *testing.T) {
 
 	t.Run("Test RestoreLandCommodity internal error", func(t *testing.T) {
 		landCommodityRepo.EXPECT().FindDeletedByID(ctx, landCommodityID).Return(&domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}, nil).Times(1)
-
+		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: float64(1000)}, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
 		landCommodityRepo.EXPECT().Restore(ctx, landCommodityID).Return(errors.New("database error")).Times(1)
 
 		resp, err := uc.RestoreLandCommodity(ctx, landCommodityID)
@@ -460,5 +485,30 @@ func TestLandCommodityUsecase_RestoreLandCommodity(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "database error")
+	})
+
+	t.Run("Test RestoreLandCommodity land area not enough", func(t *testing.T) {
+		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
+
+		landCommodityRepo.EXPECT().FindDeletedByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: float64(100)}, nil).Times(1)
+		landCommodityRepo.EXPECT().SumLandAreaByLandID(ctx, landID).Return(float64(100), nil).Times(1)
+		resp, err := uc.RestoreLandCommodity(ctx, landCommodityID)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "land area not enough")
+	})
+
+	t.Run("Test RestoreLandCommodity land not found", func(t *testing.T) {
+		mockLandCommodity := &domain.LandCommodity{ID: landCommodityID, CommodityID: commodityID, LandID: landID, LandArea: float64(100)}
+
+		landCommodityRepo.EXPECT().FindDeletedByID(ctx, landCommodityID).Return(mockLandCommodity, nil).Times(1)
+		landRepo.EXPECT().FindByID(ctx, landID).Return(nil, errors.New("land not found")).Times(1)
+		resp, err := uc.RestoreLandCommodity(ctx, landCommodityID)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "land not found")
 	})
 }

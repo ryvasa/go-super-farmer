@@ -95,7 +95,7 @@ func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
 	}
 	restoredUser, err := h.uc.RestoreUser(c, id)
 	if err != nil {
-		utils.ErrorResponse(c, utils.NewInternalError(err.Error()))
+		utils.ErrorResponse(c, err)
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, restoredUser)

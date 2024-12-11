@@ -55,7 +55,7 @@ func TestCreateRole(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Validate response
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusCreated, w.Code)
 		assert.Equal(t, mockRole.Name, response.Data.Name) // Cocokkan dengan data di dalam field "Data"
 	})
 

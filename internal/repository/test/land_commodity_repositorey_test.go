@@ -76,25 +76,43 @@ func TestLandCommodityRepository_FindByID(t *testing.T) {
 
 	expectedSQL := `SELECT * FROM "land_commodities" WHERE "land_commodities"."id" = $1 AND "land_commodities"."deleted_at" IS NULL ORDER BY "land_commodities"."id" LIMIT $2`
 
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
+
+	expectedSQL3 := `SELECT "lands"."id","lands"."user_id","lands"."land_area","lands"."certificate" FROM "lands" WHERE "lands"."id" = $1 AND "lands"."deleted_at" IS NULL`
+
 	landCommodityID := uuid.New()
 	landID := uuid.New()
 	commodityID := uuid.New()
+	userID := uuid.New()
 
 	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		commodity := sqlmock.NewRows([]string{"id", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).AddRow(landCommodityID, float64(100), commodityID, landID, time.Now(), time.Now())
+		mock.MatchExpectationsInOrder(true)
+		landCommoditie := sqlmock.NewRows([]string{"id", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).
+			AddRow(landCommodityID, float64(100), commodityID, landID, time.Now(), time.Now())
+
+		commodityMock := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).AddRow(commodityID, "commodity", "commodity description", time.Now(), time.Now())
+
+		landMock := sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now())
 
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
 			WithArgs(landCommodityID, 1).
-			WillReturnRows(commodity)
+			WillReturnRows(landCommoditie)
+
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL2)).WithArgs(commodityID).WillReturnRows(commodityMock)
+
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL3)).WithArgs(landID).WillReturnRows(landMock)
 
 		result, err := repoImpl.FindByID(context.TODO(), landCommodityID)
 
+		// Assertions
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, landCommodityID, result.ID)
 		assert.Equal(t, float64(100), result.LandArea)
 		assert.Equal(t, commodityID, result.CommodityID)
 		assert.Equal(t, landID, result.LandID)
+
+		// Verify mock expectations
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
@@ -462,7 +480,7 @@ func TestLandCommodityRepository_SumLandAreaByLandID(t *testing.T) {
 
 	landID := uuid.New()
 
-	expectedSQL := `SELECT SUM(land_area) FROM "land_commodities" WHERE land_id = $1`
+	expectedSQL := `SELECT COALESCE(SUM(land_area), 0) FROM "land_commodities" WHERE land_id = $1 AND "land_commodities"."deleted_at" IS NULL`
 	t.Run("Test SumLandAreaByLandID, error database", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(landID).WillReturnError(errors.New("database error"))
 

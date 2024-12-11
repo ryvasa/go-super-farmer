@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -17,6 +18,7 @@ func NewLandCommodityRepository(db *gorm.DB) LandCommodityRepository {
 }
 
 func (r *LandCommodityRepositoryImpl) Create(ctx context.Context, landCommodity *domain.LandCommodity) error {
+	log.Println(landCommodity)
 	err := r.db.WithContext(ctx).Create(landCommodity).Error
 	if err != nil {
 		return err
@@ -26,7 +28,14 @@ func (r *LandCommodityRepositoryImpl) Create(ctx context.Context, landCommodity 
 
 func (r *LandCommodityRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error) {
 	var landCommodity domain.LandCommodity
-	err := r.db.WithContext(ctx).First(&landCommodity, id).Error
+	err := r.db.WithContext(ctx).
+		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
+		}).
+		Preload("Land", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
+		}).
+		First(&landCommodity, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +100,12 @@ func (r *LandCommodityRepositoryImpl) FindDeletedByID(ctx context.Context, id uu
 
 func (r *LandCommodityRepositoryImpl) SumLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error) {
 	var landArea float64
-	err := r.db.WithContext(ctx).Model(&domain.LandCommodity{}).Where("land_id = ?", id).Select("SUM(land_area)").Scan(&landArea).Error
+	err := r.db.WithContext(ctx).
+		Model(&domain.LandCommodity{}).
+		Where("land_id = ?", id).
+		Select("COALESCE(SUM(land_area), 0)").
+		Scan(&landArea).
+		Error
 	if err != nil {
 		return 0, err
 	}

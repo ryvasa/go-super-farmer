@@ -37,13 +37,16 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 	protected.Use(authMiddleware.Handle())
 	protected.Use(autzMiddleware.Handle())
 
-	RoleRoutes(public, handler.RoleHandler)
+	RoleRoutes(public, protected, handler.RoleHandler)
 	UserRoutes(public, protected, handler.UserHandler)
 	LandRoutes(public, protected, handler.LandHandler)
 	AuthRoutes(public, handler.AuthHandler)
 	CommodityRoutes(public, protected, handler.CommodityHandler)
 	LandCommodityRoutes(public, protected, handler.LandCommodityHandler)
 	PriceRoutes(public, protected, handler.PriceHandler)
+	ProvinceRoute(public, protected, handler.ProvinceHandler)
+	CityRoute(public, protected, handler.CityHandler)
+	RegionRoute(public, protected, handler.RegionHandler)
 	return r
 
 }

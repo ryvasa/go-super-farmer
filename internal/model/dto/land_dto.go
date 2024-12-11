@@ -12,8 +12,8 @@ type LandCreateDTO struct {
 }
 
 type LandUpdateDTO struct {
-	LandArea    float64 `json:"land_area" validate:"required,min=1,max=10000"`
-	Certificate string  `json:"certificate" validate:"required,min=1,max=255"`
+	LandArea    float64 `json:"land_area,omitempty" validate:"omitempty,min=1,max=10000"`
+	Certificate string  `json:"certificate,omitempty" validate:"omitempty,min=1,max=255"`
 }
 
 type LandResponseDTO struct {

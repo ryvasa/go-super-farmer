@@ -28,7 +28,7 @@ func (h *RoleHandlerImpl) CreateRole(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, role)
+	utils.SuccessResponse(c, http.StatusCreated, role)
 }
 
 func (h *RoleHandlerImpl) GetAllRoles(c *gin.Context) {

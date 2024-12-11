@@ -227,7 +227,7 @@ func TestPriceRepository_Update(t *testing.T) {
 			RegionID:    regionID,
 			Price:       price,
 		}
-		err := repoImpl.Update(context.TODO(), &req)
+		err := repoImpl.Update(context.TODO(), priceID, &req)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
@@ -243,7 +243,7 @@ func TestPriceRepository_Update(t *testing.T) {
 			RegionID:    regionID,
 			Price:       price,
 		}
-		err := repoImpl.Update(context.TODO(), &req)
+		err := repoImpl.Update(context.TODO(), priceID, &req)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -260,7 +260,7 @@ func TestPriceRepository_Update(t *testing.T) {
 			RegionID:    regionID,
 			Price:       price,
 		}
-		err := repoImpl.Update(context.TODO(), &req)
+		err := repoImpl.Update(context.TODO(), priceID, &req)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -352,7 +352,7 @@ func TestPriceRepository_FindDeletedByID(t *testing.T) {
 	defer sqlDB.Close()
 	repoImpl := repository.NewPriceRepository(db)
 	priceID := uuid.New()
-	expectedSQL := `SELECT * FROM "prices" WHERE (prices.id = $1 AND prices.deleted_at IS NOT NULL) AND "prices"."deleted_at" IS NULL ORDER BY "prices"."id" LIMIT $2`
+	expectedSQL := `SELECT * FROM "prices" WHERE prices.id = $1 AND prices.deleted_at IS NOT NULL ORDER BY "prices"."id" LIMIT $2`
 
 	t.Run("Test FindDeletedByID, successfully", func(t *testing.T) {
 		price := sqlmock.NewRows([]string{"id", "price", "created_at", "updated_at"}).
@@ -380,6 +380,49 @@ func TestPriceRepository_FindDeletedByID(t *testing.T) {
 		result, err := repoImpl.FindDeletedByID(context.TODO(), priceID)
 		assert.Nil(t, result)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestPriceRepositoryImpl_FindByCommodityIDAndRegionID(t *testing.T) {
+	sqlDB, db, mock := database.DbMock(t)
+	defer sqlDB.Close()
+	repoImpl := repository.NewPriceRepository(db)
+	priceID := uuid.New()
+	regionID := uuid.New()
+	commodityID := uuid.New()
+
+	expectedSQL := `SELECT * FROM "prices" WHERE (prices.commodity_id = $1 AND prices.region_id = $2) AND "prices"."deleted_at" IS NULL ORDER BY "prices"."id" LIMIT $3`
+	t.Run("Test FindByCommodityIDAndRegionID, successfully", func(t *testing.T) {
+		price := sqlmock.NewRows([]string{"id", "price",
+			"region_id", "commodity_id", "created_at", "updated_at"}).
+			AddRow(priceID, float64(100), regionID, commodityID, time.Now(), time.Now())
+
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(commodityID, regionID, 1).WillReturnRows(price)
+		result, err := repoImpl.FindByCommodityIDAndRegionID(context.TODO(), commodityID, regionID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, priceID, result.ID)
+		assert.Equal(t, commodityID, result.CommodityID)
+		assert.Equal(t, regionID, result.RegionID)
+		assert.Equal(t, float64(100), result.Price)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("Test FindByCommodityIDAndRegionID, data base error", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(commodityID, regionID, 1).WillReturnError(errors.New("error"))
+		result, err := repoImpl.FindByCommodityIDAndRegionID(context.TODO(), commodityID, regionID)
+		assert.NotNil(t, err)
+		assert.Nil(t, result)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("Test FindByCommodityIDAndRegionID, not found", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(commodityID, regionID, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "price",
+			"region_id", "commodity_id", "created_at", "updated_at"}))
+		result, err := repoImpl.FindByCommodityIDAndRegionID(context.TODO(), commodityID, regionID)
+		assert.NotNil(t, err)
+		assert.Nil(t, result)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }

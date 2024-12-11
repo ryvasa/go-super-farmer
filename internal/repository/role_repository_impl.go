@@ -16,11 +16,7 @@ func NewRoleRepository(db *gorm.DB) RoleRepository {
 }
 
 func (r *RoleRepositoryImpl) Create(ctx context.Context, role *domain.Role) error {
-	err := r.db.WithContext(ctx).Create(role).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Create(role).Error
 }
 
 func (r *RoleRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Role, error) {

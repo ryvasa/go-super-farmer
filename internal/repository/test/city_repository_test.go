@@ -20,10 +20,10 @@ func TestCityRepository_Create(t *testing.T) {
 
 	repoImpl := repository.NewCityRepository(db)
 
-	expectedSQL := `INSERT INTO "cities" ("province_id","name") VALUES ($1,$2) RETURNING "id"`
+	expectedSQL := `INSERT INTO "cities" ("name","province_id") VALUES ($1,$2) RETURNING "id"`
 	t.Run("Test Create, successfully", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, "Tasikmalaya").WillReturnRows(sqlmock.NewRows([]string{"id"}))
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 		mock.ExpectCommit()
 
 		err := repoImpl.Create(context.TODO(), &domain.City{ProvinceID: 1, Name: "Tasikmalaya"})
@@ -34,7 +34,7 @@ func TestCityRepository_Create(t *testing.T) {
 
 	t.Run("Test Create, error database", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, "Tasikmalaya").WillReturnError(errors.New("database error"))
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
 		err := repoImpl.Create(context.TODO(), &domain.City{ProvinceID: 1, Name: "Tasikmalaya"})
