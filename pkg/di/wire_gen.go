@@ -54,9 +54,19 @@ func InitializeRouter() (*gin.Engine, error) {
 	landCommodityUsecase := usecase.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
 	landCommodityHandler := handler.NewLandCommodityHandler(landCommodityUsecase)
 	priceRepository := repository.NewPriceRepository(db)
-	priceUsecase := usecase.NewPriceUsecase(priceRepository)
+	priceHistoryRepository := repository.NewPriceHistoryRepository(db)
+	regionRepository := repository.NewRegionRepository(db)
+	priceUsecase := usecase.NewPriceUsecase(priceRepository, priceHistoryRepository, regionRepository, commodityRepository)
 	priceHandler := handler.NewPriceHandler(priceUsecase)
-	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler)
+	provinceRepository := repository.NewProvinceRepository(db)
+	provinceUsecase := usecase.NewProvinceUsecase(provinceRepository)
+	provinceHandler := handler.NewProvinceHandler(provinceUsecase)
+	cityRepository := repository.NewCityRepository(db)
+	cityUsecase := usecase.NewCityUsecase(cityRepository)
+	cityHandler := handler.NewCityHandler(cityUsecase)
+	regionUseCase := usecase.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
+	regionHandler := handler.NewRegionHandler(regionUseCase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
 }
@@ -80,3 +90,11 @@ var commoditySet = wire.NewSet(repository.NewCommodityRepository, usecase.NewCom
 var landCommoditySet = wire.NewSet(repository.NewLandCommodityRepository, usecase.NewLandCommodityUsecase, handler.NewLandCommodityHandler)
 
 var priceSet = wire.NewSet(repository.NewPriceRepository, usecase.NewPriceUsecase, handler.NewPriceHandler)
+
+var provinceSet = wire.NewSet(repository.NewProvinceRepository, usecase.NewProvinceUsecase, handler.NewProvinceHandler)
+
+var citySet = wire.NewSet(repository.NewCityRepository, usecase.NewCityUsecase, handler.NewCityHandler)
+
+var regionSet = wire.NewSet(repository.NewRegionRepository, usecase.NewRegionUsecase, handler.NewRegionHandler)
+
+var priceHistorySet = wire.NewSet(repository.NewPriceHistoryRepository)

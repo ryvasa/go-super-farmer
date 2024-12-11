@@ -65,6 +65,28 @@ var priceSet = wire.NewSet(
 	handler.NewPriceHandler,
 )
 
+var provinceSet = wire.NewSet(
+	repository.NewProvinceRepository,
+	usecase.NewProvinceUsecase,
+	handler.NewProvinceHandler,
+)
+
+var citySet = wire.NewSet(
+	repository.NewCityRepository,
+	usecase.NewCityUsecase,
+	handler.NewCityHandler,
+)
+
+var regionSet = wire.NewSet(
+	repository.NewRegionRepository,
+	usecase.NewRegionUsecase,
+	handler.NewRegionHandler,
+)
+
+var priceHistorySet = wire.NewSet(
+	repository.NewPriceHistoryRepository,
+)
+
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -81,6 +103,10 @@ func InitializeRouter() (*gin.Engine, error) {
 		commoditySet,
 		landCommoditySet,
 		priceSet,
+		provinceSet,
+		citySet,
+		regionSet,
+		priceHistorySet,
 	)
 	return nil, nil
 }

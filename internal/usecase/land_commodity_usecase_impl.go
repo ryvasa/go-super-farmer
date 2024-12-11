@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -43,7 +42,7 @@ func (u *LandCommodityUsecaseImpl) CreateLandCommodity(ctx context.Context, req 
 	}
 
 	if landArea+req.LandArea > land.LandArea {
-		return nil, utils.NewValidationError(fmt.Sprintf("land area %.2f is greater than max area", landArea+req.LandArea-land.LandArea))
+		return nil, utils.NewBadRequestError("land area not enough")
 	}
 
 	landcommondity.LandID = land.ID
@@ -110,9 +109,18 @@ func (u *LandCommodityUsecaseImpl) UpdateLandCommodity(ctx context.Context, id u
 		return nil, utils.NewNotFoundError("commodity not found")
 	}
 
-	_, err = u.landRepo.FindByID(ctx, req.LandID)
+	land, err := u.landRepo.FindByID(ctx, req.LandID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("land not found")
+	}
+
+	landArea, err := u.landCommodityRepo.SumLandAreaByLandID(ctx, land.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	if landArea+req.LandArea > land.LandArea {
+		return nil, utils.NewBadRequestError("land area not enough")
 	}
 
 	landCommodity.LandArea = req.LandArea
@@ -145,9 +153,23 @@ func (u *LandCommodityUsecaseImpl) DeleteLandCommodity(ctx context.Context, id u
 }
 
 func (u *LandCommodityUsecaseImpl) RestoreLandCommodity(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error) {
-	_, err := u.landCommodityRepo.FindDeletedByID(ctx, id)
+	deletedLandCommodity, err := u.landCommodityRepo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("deleted land commodity not found")
+	}
+
+	land, err := u.landRepo.FindByID(ctx, deletedLandCommodity.LandID)
+	if err != nil {
+		return nil, utils.NewNotFoundError("land not found")
+	}
+
+	landArea, err := u.landCommodityRepo.SumLandAreaByLandID(ctx, land.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	if landArea+deletedLandCommodity.LandArea > land.LandArea {
+		return nil, utils.NewBadRequestError("land area not enough")
 	}
 
 	err = u.landCommodityRepo.Restore(ctx, id)

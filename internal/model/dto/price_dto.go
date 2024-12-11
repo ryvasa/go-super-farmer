@@ -11,9 +11,7 @@ type PriceCreateDTO struct {
 }
 
 type PriceUpdateDTO struct {
-	CommodityID uuid.UUID `json:"commodity_id" validate:"required"`
-	RegionID    uuid.UUID `json:"region_id" validate:"required"`
-	Price       float64   `json:"price" validate:"required,min=1"`
+	Price float64 `json:"price" validate:"required,min=1"`
 }
 
 type PriceResponseDTO struct {

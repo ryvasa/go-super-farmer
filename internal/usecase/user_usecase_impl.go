@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -113,6 +114,7 @@ func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	_, err := uc.repo.FindDeletedByID(ctx, id)
 	if err != nil {
+		log.Println("hhihihihih")
 		return nil, utils.NewNotFoundError(err.Error())
 	}
 	err = uc.repo.Restore(ctx, id)

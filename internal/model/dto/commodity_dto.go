@@ -6,6 +6,6 @@ type CommodityCreateDTO struct {
 }
 
 type CommodityUpdateDTO struct {
-	Name        string `json:"name" validate:"required,min=3,max=255"`
-	Description string `json:"description" validate:"required,min=3,max=255"`
+	Name        string `json:"name" validate:"min=3,max=255"`
+	Description string `json:"description" validate:"min=3,max=255"`
 }
