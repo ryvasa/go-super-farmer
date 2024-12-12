@@ -12,311 +12,362 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/utils"
+	mockUtils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRegister(t *testing.T) {
+type UserRepoMock struct {
+	User *mock.MockUserRepository
+	Hash *mockUtils.MockHasher
+}
+
+type UserIDs struct {
+	UserID uuid.UUID
+}
+
+type UserMocks struct {
+	Users       *[]domain.User
+	User        *domain.User
+	UpdatedUser *domain.User
+}
+
+type MockUserDTOs struct {
+	Create             *dto.UserCreateDTO
+	Update             *dto.UserUpdateDTO
+	UpdateWithPassword *dto.UserUpdateDTO
+}
+
+func UserUsecaseUtils(t *testing.T) (*UserIDs, *UserMocks, *MockUserDTOs, *UserRepoMock, usecase.UserUsecase, context.Context) {
+	userID := uuid.New()
+
+	ids := &UserIDs{
+		UserID: userID,
+	}
+
+	mocks := &UserMocks{
+		Users: &[]domain.User{
+			{
+				ID:    userID,
+				Name:  "test",
+				Email: "test@example.com",
+			},
+		},
+		User: &domain.User{
+			ID:    userID,
+			Name:  "test",
+			Email: "test@example.com",
+		},
+		UpdatedUser: &domain.User{
+			ID:   userID,
+			Name: "updated",
+		},
+	}
+
+	dto := &MockUserDTOs{
+		Create: &dto.UserCreateDTO{
+			Name:     "test",
+			Email:    "test@example.com",
+			Password: "password",
+			Phone:    "1111111",
+		},
+		Update: &dto.UserUpdateDTO{
+			Name: "updated",
+		},
+
+		UpdateWithPassword: &dto.UserUpdateDTO{
+			Name:     "updated",
+			Password: "password",
+		},
+	}
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
+	userRepo := mock.NewMockUserRepository(ctrl)
+	hash := mockUtils.NewMockHasher(ctrl)
+	uc := usecase.NewUserUsecase(userRepo, hash)
 	ctx := context.TODO()
-	t.Run("Test Register successfully", func(t *testing.T) {
-		userID := uuid.New()
 
-		req := &dto.UserCreateDTO{Name: "Test User", Email: "test@example.com", Password: "password"}
-		mockUser := &domain.User{
-			Name:  "Test User",
-			Email: "test@example.com",
-		}
+	repo := &UserRepoMock{User: userRepo, Hash: hash}
 
-		// Mock HashPassword untuk mengembalikan password yang di-hash
-		utils.MockHashPassword = func(password string) (string, error) {
-			return "hashed_password", nil
-		}
-		defer func() { utils.MockHashPassword = nil }() // Reset mock setelah test selesai
+	return ids, mocks, dto, repo, uc, ctx
+}
 
-		repo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, user *domain.User) error {
-			user.ID = userID
+func TestRegister(t *testing.T) {
+	ids, mocks, dtos, repo, uc, ctx := UserUsecaseUtils(t)
+
+	t.Run("should register successfully", func(t *testing.T) {
+
+		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
+
+		repo.User.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, user *domain.User) error {
+			user.ID = ids.UserID
 			return nil
 		}).Times(1)
-		repo.EXPECT().FindByID(ctx, userID).Return(mockUser, nil).Times(1)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		resp, err := uc.Register(ctx, req)
+		resp, err := uc.Register(ctx, dtos.Create)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
-		assert.Equal(t, req.Email, resp.Email)
+		assert.Equal(t, dtos.Create.Name, resp.Name)
+		assert.Equal(t, dtos.Create.Email, resp.Email)
 	})
 
-	t.Run("Test Register validation error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		repo := mock.NewMockUserRepository(ctrl)
-		uc := usecase.NewUserUsecase(repo)
-		ctx := context.TODO()
-
-		req := &dto.UserCreateDTO{Email: "", Password: ""}
-
-		resp, err := uc.Register(ctx, req)
+	t.Run("should return error when validation error", func(t *testing.T) {
+		resp, err := uc.Register(ctx, &dto.UserCreateDTO{Name: "", Email: "", Password: ""})
 
 		assert.Error(t, err)
-		assert.Empty(t, resp)
+		assert.Nil(t, resp)
+		assert.Equal(t, err.Error(), "Validation failed")
 	})
 
 	t.Run("Test Register hashing error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("", utils.NewInternalError("hashing error")).Times(1)
 
-		repo := mock.NewMockUserRepository(ctrl)
-		uc := usecase.NewUserUsecase(repo)
-		ctx := context.TODO()
-
-		req := &dto.UserCreateDTO{Name: "Test User", Email: "test@example.com", Password: "password"}
-
-		// Mock HashPassword untuk mengembalikan password yang di-hash
-		utils.MockHashPassword = func(password string) (string, error) {
-			return "", errors.New("hashing error")
-		}
-		defer func() { utils.MockHashPassword = nil }() // Reset mock setelah test selesai
-
-		repo.EXPECT().Create(ctx, gomock.Any()).Times(0)
-
-		res, err := uc.Register(ctx, req)
+		resp, err := uc.Register(ctx, dtos.Create)
 
 		assert.Error(t, err)
-		assert.Empty(t, res)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "hashing error")
+	})
+
+	t.Run("should return error when create user", func(t *testing.T) {
+		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
+
+		repo.User.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("create user error")).Times(1)
+
+		resp, err := uc.Register(ctx, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "create user error")
+	})
+
+	t.Run("should return error when find created user by id", func(t *testing.T) {
+		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
+
+		repo.User.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, user *domain.User) error {
+			user.ID = ids.UserID
+			return nil
+		}).Times(1)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, errors.New("find user by id error")).Times(1)
+
+		resp, err := uc.Register(ctx, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "find user by id error")
 	})
 }
 
 func TestGetUserByID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := UserUsecaseUtils(t)
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
-	ctx := context.Background()
+	t.Run("Test GetUserByID sUCcessfully", func(t *testing.T) {
 
-	t.Run("Test GetUserByID successfully", func(t *testing.T) {
-		userID := uuid.New()
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
-
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-
-		resp, err := uc.GetUserByID(ctx, mockUser.ID)
+		resp, err := uc.GetUserByID(ctx, ids.UserID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockUser.Name, resp.Name)
-		assert.Equal(t, mockUser.Email, resp.Email)
+		assert.Equal(t, mocks.User.ID, resp.ID)
+		assert.Equal(t, mocks.User.Name, resp.Name)
+		assert.Equal(t, mocks.User.Email, resp.Email)
 	})
 
 	t.Run("Test GetUserByID not found", func(t *testing.T) {
-		userID := uuid.New()
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
 
-		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
-
-		resp, err := uc.GetUserByID(ctx, userID)
+		resp, err := uc.GetUserByID(ctx, ids.UserID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "user not found")
 	})
 }
 
 func TestGetAllUsers(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	_, mocks, _, repo, uc, ctx := UserUsecaseUtils(t)
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
-	ctx := context.Background()
-
-	t.Run("Test GetAllUsers successfully", func(t *testing.T) {
-		userID1 := uuid.New()
-		userID2 := uuid.New()
-
-		mockUsers := &[]domain.User{
-			{ID: userID1, Name: "Test User 1", Email: "test1@example.com"},
-			{ID: userID2, Name: "Test User 2", Email: "test2@example.com"},
-		}
-
-		repo.EXPECT().FindAll(ctx).Return(mockUsers, nil).Times(1)
+	t.Run("should return all users", func(t *testing.T) {
+		repo.User.EXPECT().FindAll(ctx).Return(mocks.Users, nil).Times(1)
 
 		resp, err := uc.GetAllUsers(ctx)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, len(*mockUsers))
+		assert.Len(t, *resp, len(*mocks.Users))
+		assert.Equal(t, (*mocks.Users)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, (*mocks.Users)[0].Name, (*resp)[0].Name)
+		assert.Equal(t, (*mocks.Users)[0].Email, (*resp)[0].Email)
 	})
 
-	t.Run("Test GetAllUsers internal error", func(t *testing.T) {
-		repo.EXPECT().FindAll(ctx).Return(nil, errors.New("internal error")).Times(1)
+	t.Run("should return error internal error", func(t *testing.T) {
+		repo.User.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		resp, err := uc.GetAllUsers(ctx)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestUpdateUser(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, dtos, repo, uc, ctx := UserUsecaseUtils(t)
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
-	ctx := context.Background()
+	t.Run("should update user without password", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-	t.Run("Test UpdateUser validation error", func(t *testing.T) {
-		userID := uuid.New()
-		updateReq := &dto.UserUpdateDTO{Name: "k", Email: "test@example.com", Password: "password"}
+		repo.User.EXPECT().Update(ctx, ids.UserID, gomock.Any()).Return(nil).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, userID, updateReq)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.UpdatedUser, nil).Times(1)
 
-		assert.Error(t, err)
-		assert.Nil(t, resp)
-	})
-
-	t.Run("Test UpdateUser witout password, successfully", func(t *testing.T) {
-		userID := uuid.New()
-
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
-		mockUserUpdated := &domain.User{ID: userID, Name: "Test User Updated", Email: "test@example.com"}
-
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-		repo.EXPECT().Update(ctx, mockUser.ID, gomock.Any()).Return(nil).Times(1)
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUserUpdated, nil).Times(1)
-
-		req := &dto.UserUpdateDTO{Name: "Test User Updated", Email: "test@example.com"}
-		resp, err := uc.UpdateUser(ctx, mockUser.ID, req)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.Update)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
-		assert.Equal(t, req.Email, resp.Email)
+		assert.NotNil(t, resp)
+		assert.Equal(t, mocks.UpdatedUser.ID, resp.ID)
+		assert.Equal(t, dtos.Update.Name, resp.Name)
 	})
 
-	t.Run("Test UpdateUser with password, successfully", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should update user with password", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
-		mockUserUpdated := &domain.User{ID: userID, Name: "Test User Updated", Email: "test@example.com"}
+		repo.User.EXPECT().Update(ctx, ids.UserID, gomock.Any()).Return(nil).Times(1)
 
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-		repo.EXPECT().Update(ctx, mockUser.ID, gomock.Any()).Return(nil).Times(1)
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUserUpdated, nil).Times(1)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.UpdatedUser, nil).Times(1)
 
-		// Mock HashPassword untuk mengembalikan password yang di-hash
-		utils.MockHashPassword = func(password string) (string, error) {
-			return "hashed_password", nil
-		}
-		defer func() { utils.MockHashPassword = nil }() // Reset mock setelah test selesai
+		repo.Hash.EXPECT().HashPassword(dtos.UpdateWithPassword.Password).Return("hashed_password", nil).Times(1)
 
-		req := &dto.UserUpdateDTO{Name: "Test User Updated", Email: "test@example.com", Password: "password"}
-		resp, err := uc.UpdateUser(ctx, mockUser.ID, req)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
-		assert.Equal(t, req.Email, resp.Email)
+		assert.NotNil(t, resp)
+		assert.Equal(t, mocks.UpdatedUser.ID, resp.ID)
+		assert.Equal(t, dtos.UpdateWithPassword.Name, resp.Name)
 	})
 
-	t.Run("Test UpdateUser with password, hashing error", func(t *testing.T) {
-		userID := uuid.New()
-
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
-
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-
-		// Mock HashPassword untuk mengembalikan password yang di-hash
-		utils.MockHashPassword = func(password string) (string, error) {
-			return "", errors.New("hashing error")
-		}
-		defer func() { utils.MockHashPassword = nil }() // Reset mock setelah test selesai
-
-		req := &dto.UserUpdateDTO{Name: "Test User Updated", Email: "test@example.com", Password: "password"}
-		resp, err := uc.UpdateUser(ctx, mockUser.ID, req)
+	t.Run("should return error validation error", func(t *testing.T) {
+		resp, err := uc.UpdateUser(ctx, ids.UserID, &dto.UserUpdateDTO{Name: "1", Email: "", Password: ""})
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.Equal(t, err.Error(), "Validation failed")
 	})
 
-	t.Run("Test UpdateUser not found", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should return error hashing error", func(t *testing.T) {
 
-		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		req := &dto.UserUpdateDTO{Name: "Test User Updated", Email: "test@example.com", Password: "password"}
-		resp, err := uc.UpdateUser(ctx, userID, req)
+		repo.Hash.EXPECT().HashPassword(dtos.UpdateWithPassword.Password).Return("", errors.New("hashing error")).Times(1)
+
+		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "hashing error")
+	})
+
+	t.Run("should return error not found", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
+
+		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "user not found")
+	})
+
+	t.Run("should return error not found when find updated user", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
+
+		repo.Hash.EXPECT().HashPassword(dtos.UpdateWithPassword.Password).Return("hashed_password", nil).Times(1)
+
+		repo.User.EXPECT().Update(ctx, ids.UserID, gomock.Any()).Return(nil).Times(1)
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewInternalError("user not found")).Times(1)
+
+		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "user not found")
 	})
 }
 
 func TestDeleteUser(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := UserUsecaseUtils(t)
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
-	ctx := context.Background()
+	t.Run("should delete user sUCcessfully", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-	t.Run("Test DeleteUser successfully", func(t *testing.T) {
-		userID := uuid.New()
+		repo.User.EXPECT().Delete(ctx, ids.UserID).Return(nil).Times(1)
 
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
-
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-		repo.EXPECT().Delete(ctx, mockUser.ID).Return(nil).Times(1)
-
-		err := uc.DeleteUser(ctx, mockUser.ID)
+		err := uc.DeleteUser(ctx, ids.UserID)
 
 		assert.NoError(t, err)
 	})
 
-	t.Run("Test DeleteUser not found", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should return error not found", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
 
-		repo.EXPECT().FindByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
-
-		err := uc.DeleteUser(ctx, userID)
+		err := uc.DeleteUser(ctx, ids.UserID)
 
 		assert.Error(t, err)
+		assert.EqualError(t, err, "user not found")
 	})
 }
 
 func TestRestoreUser(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := UserUsecaseUtils(t)
 
-	repo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewUserUsecase(repo)
-	ctx := context.Background()
+	t.Run("should restore user sUCcessfully", func(t *testing.T) {
+		repo.User.EXPECT().FindDeletedByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-	t.Run("Test RestoreUser successfully", func(t *testing.T) {
-		userID := uuid.New()
+		repo.User.EXPECT().Restore(ctx, ids.UserID).Return(nil).Times(1)
 
-		mockUser := &domain.User{ID: userID, Name: "Test User", Email: "test@example.com"}
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		repo.EXPECT().FindDeletedByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-		repo.EXPECT().Restore(ctx, mockUser.ID).Return(nil).Times(1)
-		repo.EXPECT().FindByID(ctx, mockUser.ID).Return(mockUser, nil).Times(1)
-
-		resp, err := uc.RestoreUser(ctx, mockUser.ID)
+		resp, err := uc.RestoreUser(ctx, ids.UserID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockUser.Name, resp.Name)
-		assert.Equal(t, mockUser.Email, resp.Email)
+		assert.Equal(t, mocks.User.ID, resp.ID)
+		assert.Equal(t, mocks.User.Name, resp.Name)
+		assert.Equal(t, mocks.User.Email, resp.Email)
 	})
 
-	t.Run("Test RestoreUser not found", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should return error not found when find deleted user", func(t *testing.T) {
+		repo.User.EXPECT().FindDeletedByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
 
-		repo.EXPECT().FindDeletedByID(ctx, userID).Return(nil, errors.New("user not found")).Times(1)
-
-		resp, err := uc.RestoreUser(ctx, userID)
+		resp, err := uc.RestoreUser(ctx, ids.UserID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "user not found")
+	})
+
+	t.Run("should return error internal error when restore user", func(t *testing.T) {
+		repo.User.EXPECT().FindDeletedByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
+
+		repo.User.EXPECT().Restore(ctx, ids.UserID).Return(utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.RestoreUser(ctx, ids.UserID)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should return error internal error when find restored user", func(t *testing.T) {
+		repo.User.EXPECT().FindDeletedByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
+
+		repo.User.EXPECT().Restore(ctx, ids.UserID).Return(nil).Times(1)
+
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.RestoreUser(ctx, ids.UserID)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }

@@ -15,35 +15,107 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateLand(t *testing.T) {
+type LandRepoMock struct {
+	Land *mock.MockLandRepository
+	User *mock.MockUserRepository
+}
+
+type LandIDs struct {
+	LandID uuid.UUID
+	UserID uuid.UUID
+}
+
+type LandMocks struct {
+	Land        *domain.Land
+	Lands       *[]domain.Land
+	UpdatedLand *domain.Land
+	User        *domain.User
+}
+
+type LandDTOMock struct {
+	Create *dto.LandCreateDTO
+	Update *dto.LandUpdateDTO
+}
+
+func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRepoMock, usecase.LandUsecase, context.Context) {
+	landID := uuid.New()
+	userID := uuid.New()
+
+	ids := &LandIDs{
+		LandID: landID,
+		UserID: userID,
+	}
+
+	mocks := &LandMocks{
+		Land: &domain.Land{
+			ID:          landID,
+			LandArea:    100,
+			Certificate: "cert",
+			UserID:      userID,
+		},
+		Lands: &[]domain.Land{
+			{
+				ID:          landID,
+				LandArea:    100,
+				Certificate: "cert",
+				UserID:      userID,
+			},
+		},
+		UpdatedLand: &domain.Land{
+			ID:          landID,
+			LandArea:    99,
+			Certificate: "updated cert",
+			UserID:      userID,
+		},
+		User: &domain.User{
+			ID: userID,
+		},
+	}
+
+	dto := &LandDTOMock{
+		Create: &dto.LandCreateDTO{
+			LandArea:    100,
+			Certificate: "cert",
+		},
+		Update: &dto.LandUpdateDTO{
+			LandArea:    99,
+			Certificate: "updated cert",
+		},
+	}
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	userRepo := mock.NewMockUserRepository(ctrl)
 	landRepo := mock.NewMockLandRepository(ctrl)
+	userRepo := mock.NewMockUserRepository(ctrl)
 	uc := usecase.NewLandUsecase(landRepo, userRepo)
-	ctx := context.Background()
+	ctx := context.TODO()
 
-	t.Run("Test CreateLand, successfully", func(t *testing.T) {
-		landID := uuid.New()
-		userID := uuid.New()
-		mockLand := &domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}
+	repo := &LandRepoMock{Land: landRepo, User: userRepo}
 
-		landRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, l *domain.Land) error {
-			l.ID = landID
+	return ids, mocks, dto, repo, uc, ctx
+}
+
+func TestCreateLand(t *testing.T) {
+
+	ids, mocks, dtos, repo, uc, ctx := LandUsecaseUtils(t)
+
+	t.Run("should create land successfully", func(t *testing.T) {
+
+		repo.Land.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, l *domain.Land) error {
+			l.ID = ids.LandID
 			return nil
 		}).Times(1)
-		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		req := &dto.LandCreateDTO{LandArea: 100, Certificate: "cert"}
-		resp, err := uc.CreateLand(ctx, userID, req)
+		resp, err := uc.CreateLand(ctx, ids.UserID, dtos.Create)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.LandArea, resp.LandArea)
-		assert.Equal(t, req.Certificate, resp.Certificate)
+		assert.Equal(t, dtos.Create.LandArea, resp.LandArea)
+		assert.Equal(t, dtos.Create.Certificate, resp.Certificate)
 	})
 
-	t.Run("Test CreateLand, validation error", func(t *testing.T) {
+	t.Run("should return error validation error", func(t *testing.T) {
 		userID := uuid.New()
 
 		req := &dto.LandCreateDTO{LandArea: 0, Certificate: ""}
@@ -51,296 +123,254 @@ func TestCreateLand(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "Validation failed")
+	})
+
+	t.Run("should return error internal error", func(t *testing.T) {
+		userID := uuid.New()
+		repo.Land.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.CreateLand(ctx, userID, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should return error when find created land ", func(t *testing.T) {
+		repo.Land.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, l *domain.Land) error {
+			l.ID = ids.LandID
+			return nil
+		}).Times(1)
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.CreateLand(ctx, ids.UserID, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestGetLandByID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, nil)
-	ctx := context.Background()
+	t.Run("should return land successfully", func(t *testing.T) {
 
-	t.Run("Test GetLandByID successfully", func(t *testing.T) {
-		landID := uuid.New()
-		userID := uuid.New()
-		mockLand := &domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
-
-		resp, err := uc.GetLandByID(ctx, landID)
+		resp, err := uc.GetLandByID(ctx, ids.LandID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockLand.LandArea, resp.LandArea)
-		assert.Equal(t, mockLand.Certificate, resp.Certificate)
+		assert.Equal(t, mocks.Land.LandArea, resp.LandArea)
+		assert.Equal(t, mocks.Land.Certificate, resp.Certificate)
 	})
 
-	t.Run("Test GetLandByID not found", func(t *testing.T) {
-		landID := uuid.New()
+	t.Run("should return error when land not found", func(t *testing.T) {
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(nil, errors.New("land not found")).Times(1)
-
-		resp, err := uc.GetLandByID(ctx, landID)
+		resp, err := uc.GetLandByID(ctx, ids.LandID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "land not found")
 	})
 }
 
 func TestGetLandByUserID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	userRepo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, userRepo)
-	ctx := context.Background()
+	t.Run("should return lands successfully", func(t *testing.T) {
 
-	t.Run("Test GetLandByUserID successfully", func(t *testing.T) {
-		userID := uuid.New()
-		landID1 := uuid.New()
-		landID2 := uuid.New()
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
 
-		mockLand1 := &domain.Land{ID: landID1, LandArea: 100, Certificate: "cert", UserID: userID}
-		mockLand2 := &domain.Land{ID: landID2, LandArea: 200, Certificate: "cert2", UserID: userID}
+		repo.Land.EXPECT().FindByUserID(ctx, ids.UserID).Return(mocks.Lands, nil).Times(1)
 
-		userRepo.EXPECT().FindByID(ctx, userID).Return(&domain.User{ID: userID}, nil).Times(1)
-		landRepo.EXPECT().FindByUserID(ctx, userID).Return(&[]domain.Land{*mockLand1, *mockLand2}, nil).Times(1)
-
-		resp, err := uc.GetLandByUserID(ctx, userID)
+		resp, err := uc.GetLandByUserID(ctx, ids.UserID)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, mockLand1.LandArea, (*resp)[0].LandArea)
-		assert.Equal(t, mockLand1.Certificate, (*resp)[0].Certificate)
-		assert.Equal(t, mockLand2.LandArea, (*resp)[1].LandArea)
-		assert.Equal(t, mockLand2.Certificate, (*resp)[1].Certificate)
+		assert.Len(t, *resp, 1)
+		assert.Equal(t, (*mocks.Lands)[0].LandArea, (*resp)[0].LandArea)
+		assert.Equal(t, (*mocks.Lands)[0].Certificate, (*resp)[0].Certificate)
 	})
 
-	t.Run("Test GetLandByUserID user not found", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should return error user not found", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
 
-		userRepo.EXPECT().FindByID(ctx, userID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
-
-		resp, err := uc.GetLandByUserID(ctx, userID)
+		resp, err := uc.GetLandByUserID(ctx, ids.UserID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "user not found")
 	})
 
-	t.Run("Test GetLandByUserID internal error on FindByUserID", func(t *testing.T) {
-		userID := uuid.New()
+	t.Run("should return error internal error when find lands", func(t *testing.T) {
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
+		repo.Land.EXPECT().FindByUserID(ctx, ids.UserID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		userRepo.EXPECT().FindByID(ctx, userID).Return(&domain.User{ID: userID}, nil).Times(1)
-		landRepo.EXPECT().FindByUserID(ctx, userID).Return(nil, errors.New("database error")).Times(1)
-
-		resp, err := uc.GetLandByUserID(ctx, userID)
+		resp, err := uc.GetLandByUserID(ctx, ids.UserID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestGetAllLands(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	_, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, nil)
-	ctx := context.Background()
-
-	t.Run("Test GetAllLands successfully", func(t *testing.T) {
-		landID1 := uuid.New()
-		landID2 := uuid.New()
-
-		mockLand1 := &domain.Land{ID: landID1, LandArea: 100, Certificate: "cert"}
-		mockLand2 := &domain.Land{ID: landID2, LandArea: 100, Certificate: "cert"}
-
-		landRepo.EXPECT().FindAll(ctx).Return(&[]domain.Land{*mockLand1, *mockLand2}, nil).Times(1)
-
+	t.Run("should return lands successfully", func(t *testing.T) {
+		repo.Land.EXPECT().FindAll(ctx).Return(mocks.Lands, nil).Times(1)
 		resp, err := uc.GetAllLands(ctx)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, mockLand1.LandArea, (*resp)[0].LandArea)
-		assert.Equal(t, mockLand1.Certificate, (*resp)[0].Certificate)
-		assert.Equal(t, mockLand2.LandArea, (*resp)[1].LandArea)
-		assert.Equal(t, mockLand2.Certificate, (*resp)[1].Certificate)
+		assert.Equal(t, mocks.Lands, resp)
+		assert.Len(t, (*mocks.Lands), 1)
+		assert.Equal(t, (*mocks.Lands)[0].LandArea, (*resp)[0].LandArea)
+		assert.Equal(t, (*mocks.Lands)[0].Certificate, (*resp)[0].Certificate)
 	})
 
-	t.Run("Test GetAllLands internal error", func(t *testing.T) {
-		landRepo.EXPECT().FindAll(ctx).Return(nil, errors.New("internal error")).Times(1)
+	t.Run("should return error internal error", func(t *testing.T) {
+		repo.Land.EXPECT().FindAll(ctx).Return(nil, errors.New("internal error")).Times(1)
 
 		resp, err := uc.GetAllLands(ctx)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestUpdateLand(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, dtos, repo, uc, ctx := LandUsecaseUtils(t)
+	t.Run("should update land successfully", func(t *testing.T) {
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, nil)
-	ctx := context.Background()
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-	t.Run("Test UpdateLand successfully", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
-		mockLand := &domain.Land{ID: landID, LandArea: 100, Certificate: "old_cert", UserID: userID}
-		updateReq := &dto.LandUpdateDTO{LandArea: 200, Certificate: "new_cert"}
+		repo.Land.EXPECT().Update(ctx, ids.LandID, mocks.UpdatedLand).DoAndReturn(func(ctx context.Context, id uuid.UUID, l *domain.Land) error {
+			l.ID = ids.LandID
+			return nil
+		}).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
-		landRepo.EXPECT().Update(ctx, landID, mockLand).Return(nil).Times(1)
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 200, Certificate: "new_cert", UserID: userID}, nil).Times(1)
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.UpdatedLand, nil).Times(1)
 
-		resp, err := uc.UpdateLand(ctx, userID, landID, updateReq)
+		resp, err := uc.UpdateLand(ctx, ids.UserID, ids.LandID, dtos.Update)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
-		assert.Equal(t, updateReq.LandArea, resp.LandArea)
-		assert.Equal(t, updateReq.Certificate, resp.Certificate)
+		assert.Equal(t, dtos.Update.LandArea, resp.LandArea)
+		assert.Equal(t, dtos.Update.Certificate, resp.Certificate)
 	})
 
-	t.Run("Test UpdateLand not found", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
-		updateReq := &dto.LandUpdateDTO{LandArea: 200, Certificate: "new_cert"}
+	t.Run("should return error when land not found", func(t *testing.T) {
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
-
-		resp, err := uc.UpdateLand(ctx, userID, landID, updateReq)
+		resp, err := uc.UpdateLand(ctx, ids.UserID, ids.LandID, dtos.Update)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "land not found")
 	})
 
-	t.Run("Test UpdateLand validation error", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
+	t.Run("should return error validation error", func(t *testing.T) {
 		updateReq := &dto.LandUpdateDTO{LandArea: -1, Certificate: ""}
 
-		resp, err := uc.UpdateLand(ctx, userID, landID, updateReq)
+		resp, err := uc.UpdateLand(ctx, ids.UserID, ids.LandID, updateReq)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "Validation failed")
 	})
 
-	t.Run("Test UpdateLand internal error on update", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
-		mockLand := &domain.Land{ID: landID, LandArea: 100, Certificate: "old_cert", UserID: userID}
-		updateReq := &dto.LandUpdateDTO{LandArea: 200, Certificate: "new_cert"}
+	t.Run("should return error internal error on update", func(t *testing.T) {
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
-		landRepo.EXPECT().Update(ctx, landID, mockLand).Return(errors.New("database error")).Times(1)
+		repo.Land.EXPECT().Update(ctx, ids.LandID, mocks.Land).Return(utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.UpdateLand(ctx, userID, landID, updateReq)
+		resp, err := uc.UpdateLand(ctx, ids.UserID, ids.LandID, dtos.Update)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "internal error")
 	})
 
-	t.Run("Test UpdateLand internal error on FindByID after update", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
-		mockLand := &domain.Land{ID: landID, LandArea: 100, Certificate: "old_cert", UserID: userID}
-		updateReq := &dto.LandUpdateDTO{LandArea: 200, Certificate: "new_cert"}
+	t.Run("should return error internal error when find updated land", func(t *testing.T) {
+		// Setup ekspektasi
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(mockLand, nil).Times(1)
-		landRepo.EXPECT().Update(ctx, landID, mockLand).Return(nil).Times(1)
-		landRepo.EXPECT().FindByID(ctx, landID).Return(nil, errors.New("database error")).Times(1)
+		repo.Land.EXPECT().Update(ctx, ids.LandID, mocks.Land).DoAndReturn(func(ctx context.Context, id uuid.UUID, l *domain.Land) error {
+			l.ID = ids.LandID
+			return nil
+		}).Times(1)
 
-		resp, err := uc.UpdateLand(ctx, userID, landID, updateReq)
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
+		// Eksekusi fungsi
+		resp, err := uc.UpdateLand(ctx, ids.UserID, ids.LandID, dtos.Update)
+
+		// Validasi hasil
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "internal error")
 	})
+
 }
 
 func TestDeleteLand(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, nil)
-	ctx := context.Background()
+	t.Run("should delete land successfully", func(t *testing.T) {
 
-	t.Run("Test DeleteLand successfully", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
+		repo.Land.EXPECT().Delete(ctx, ids.LandID).Return(nil).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}, nil).Times(1)
-		landRepo.EXPECT().Delete(ctx, landID).Return(nil).Times(1)
-
-		err := uc.DeleteLand(ctx, landID)
+		err := uc.DeleteLand(ctx, ids.LandID)
 
 		assert.NoError(t, err)
 	})
 
-	t.Run("Test DeleteLand not found", func(t *testing.T) {
-		landID := uuid.New()
-
-		landRepo.EXPECT().FindByID(ctx, landID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
-
-		err := uc.DeleteLand(ctx, landID)
+	t.Run("should return error when land not found", func(t *testing.T) {
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
+		err := uc.DeleteLand(ctx, ids.LandID)
 
 		assert.Error(t, err)
 		assert.EqualError(t, err, "land not found")
 	})
 
-	t.Run("Test DeleteLand internal error", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
+	t.Run("should return error internal error", func(t *testing.T) {
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
+		repo.Land.EXPECT().Delete(ctx, ids.LandID).Return(utils.NewInternalError("internal error")).Times(1)
 
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}, nil).Times(1)
-		landRepo.EXPECT().Delete(ctx, landID).Return(errors.New("database error")).Times(1)
-
-		err := uc.DeleteLand(ctx, landID)
+		err := uc.DeleteLand(ctx, ids.LandID)
 
 		assert.Error(t, err)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestRestoreLand(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, nil)
-	ctx := context.Background()
+	t.Run("should restore land successfully", func(t *testing.T) {
 
-	t.Run("Test RestoreLand successfully", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
+		repo.Land.EXPECT().FindDeletedByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		landRepo.EXPECT().FindDeletedByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}, nil).Times(1)
-		landRepo.EXPECT().Restore(ctx, landID).Return(nil).Times(1)
-		landRepo.EXPECT().FindByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}, nil).Times(1)
+		repo.Land.EXPECT().Restore(ctx, ids.LandID).Return(nil).Times(1)
 
-		resp, err := uc.RestoreLand(ctx, landID)
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
+
+		resp, err := uc.RestoreLand(ctx, ids.LandID)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
-		assert.Equal(t, landID, resp.ID)
+		assert.Equal(t, ids.LandID, resp.ID)
 	})
 
-	t.Run("Test RestoreLand not found", func(t *testing.T) {
-		landID := uuid.New()
+	t.Run("should return error when land not found", func(t *testing.T) {
+		repo.Land.EXPECT().FindDeletedByID(ctx, ids.LandID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
 
-		landRepo.EXPECT().FindDeletedByID(ctx, landID).Return(nil, utils.NewNotFoundError("land not found")).Times(1)
-
-		resp, err := uc.RestoreLand(ctx, landID)
+		resp, err := uc.RestoreLand(ctx, ids.LandID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -348,16 +378,15 @@ func TestRestoreLand(t *testing.T) {
 	})
 
 	t.Run("Test RestoreLand internal error", func(t *testing.T) {
-		userID := uuid.New()
-		landID := uuid.New()
 
-		landRepo.EXPECT().FindDeletedByID(ctx, landID).Return(&domain.Land{ID: landID, LandArea: 100, Certificate: "cert", UserID: userID}, nil).Times(1)
-		landRepo.EXPECT().Restore(ctx, landID).Return(errors.New("database error")).Times(1)
+		repo.Land.EXPECT().FindDeletedByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		resp, err := uc.RestoreLand(ctx, landID)
+		repo.Land.EXPECT().Restore(ctx, ids.LandID).Return(errors.New("internal error")).Times(1)
+
+		resp, err := uc.RestoreLand(ctx, ids.LandID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "internal error")
 	})
 }

@@ -12,10 +12,11 @@ import (
 type AuthUsecaseImpl struct {
 	userRepo repository.UserRepository
 	token    token.Token
+	hash     utils.Hasher
 }
 
-func NewAuthUsecase(userRepo repository.UserRepository, token token.Token) AuthUsecase {
-	return &AuthUsecaseImpl{userRepo, token}
+func NewAuthUsecase(userRepo repository.UserRepository, token token.Token, hash utils.Hasher) AuthUsecase {
+	return &AuthUsecaseImpl{userRepo, token, hash}
 }
 
 func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error) {
@@ -25,12 +26,10 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.Aut
 
 	user, err := u.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-	if user == nil {
 		return nil, utils.NewBadRequestError("invalid password or email")
 	}
-	res := utils.CheckPasswordHash(req.Password, user.Password)
+
+	res := u.hash.ValidatePassword(req.Password, user.Password)
 	if res == false {
 		return nil, utils.NewBadRequestError("invalid password or email")
 	}

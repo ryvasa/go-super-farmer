@@ -14,10 +14,10 @@ type UserCreateDTO struct {
 }
 
 type UserUpdateDTO struct {
-	Name     string `json:"name,omitempty" validate:"omitempty,min=3,max=255"`
-	Email    string `json:"email,omitempty" validate:"omitempty,email"`
-	Password string `json:"password,omitempty" validate:"omitempty,min=6,max=255"`
-	Phone    string `json:"phone,omitempty" validate:"omitempty,min=3,max=20"`
+	Name     string `json:"name" validate:"omitempty,min=3,max=255"`
+	Email    string `json:"email" validate:"omitempty,email"`
+	Password string `json:"password" validate:"omitempty,min=6,max=255"`
+	Phone    string `json:"phone" validate:"omitempty,min=3,max=20"`
 }
 
 type UserResponseDTO struct {

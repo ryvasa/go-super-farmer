@@ -38,14 +38,15 @@ func InitializeRouter() (*gin.Engine, error) {
 	roleUsecase := usecase.NewRoleUsecase(roleRepository)
 	roleHandler := handler.NewRoleHandler(roleUsecase)
 	userRepository := repository.NewUserRepository(db)
-	userUsecase := usecase.NewUserUsecase(userRepository)
+	hasher := utils.NewHasher()
+	userUsecase := usecase.NewUserUsecase(userRepository, hasher)
 	userHandler := handler.NewUserHandler(userUsecase)
 	landRepository := repository.NewLandRepository(db)
 	landUsecase := usecase.NewLandUsecase(landRepository, userRepository)
 	authUtil := utils.NewAuthUtil()
 	landHandler := handler.NewLandHandler(landUsecase, authUtil)
 	tokenToken := token.NewToken(envEnv)
-	authUsecase := usecase.NewAuthUsecase(userRepository, tokenToken)
+	authUsecase := usecase.NewAuthUsecase(userRepository, tokenToken, hasher)
 	authHandler := handler.NewAuthHandler(authUsecase)
 	commodityRepository := repository.NewCommodityRepository(db)
 	commodityUsecase := usecase.NewCommodityUsecase(commodityRepository)
@@ -84,6 +85,8 @@ var authSet = wire.NewSet(usecase.NewAuthUsecase, handler.NewAuthHandler)
 var tokenSet = wire.NewSet(token.NewToken)
 
 var authUtilSet = wire.NewSet(utils.NewAuthUtil)
+
+var hashSet = wire.NewSet(utils.NewHasher)
 
 var commoditySet = wire.NewSet(repository.NewCommodityRepository, usecase.NewCommodityUsecase, handler.NewCommodityHandler)
 
