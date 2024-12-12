@@ -27,7 +27,7 @@ func (r *RoleRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Role, error
 	return &roles, nil
 }
 
-func (r *RoleRepositoryImpl) FindByID(ctx context.Context, id uint64) (*domain.Role, error) {
+func (r *RoleRepositoryImpl) FindByID(ctx context.Context, id int64) (*domain.Role, error) {
 	var role domain.Role
 	if err := r.db.WithContext(ctx).Unscoped().First(&role, id).Error; err != nil {
 		return nil, err

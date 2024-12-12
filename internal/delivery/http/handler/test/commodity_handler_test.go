@@ -3,7 +3,6 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,22 +23,53 @@ type responseCommodityHandler struct {
 	Success bool             `json:"success"`
 	Message string           `json:"message"`
 	Data    domain.Commodity `json:"data"`
-	Errors  interface{}      `json:"errors"`
+	Errors  response.Error   `json:"errors"`
 }
 
-func TestCreateCommodity(t *testing.T) {
+type CommodityHandlerMocks struct {
+	Commodity   *domain.Commodity
+	Commodities *[]domain.Commodity
+}
+type CommodityHandlerIDs struct {
+	CommodityID uuid.UUID
+}
+
+func CommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler.CommodityHandler, *mock.MockCommodityUsecase, CommodityHandlerIDs, CommodityHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
+	uc := mock.NewMockCommodityUsecase(ctrl)
+	h := handler.NewCommodityHandler(uc)
 	r := gin.Default()
+
+	mocks := CommodityHandlerMocks{
+		Commodity: &domain.Commodity{
+			ID:          uuid.New(),
+			Name:        "commodity",
+			Description: "commodity description",
+		},
+		Commodities: &[]domain.Commodity{
+			{
+				ID:          uuid.New(),
+				Name:        "commodity",
+				Description: "commodity description",
+			},
+		},
+	}
+	ids := CommodityHandlerIDs{
+		CommodityID: uuid.New(),
+	}
+
+	return r, h, uc, ids, mocks
+}
+
+func TestCommodityHandler_CreateCommodity(t *testing.T) {
+	r, h, uc, _, mocks := CommodityHandlerSetUp(t)
 
 	r.POST("/commodities", h.CreateCommodity)
 
-	t.Run("Test CreateCommodity, successfully", func(t *testing.T) {
-		mockResCommodity := &domain.Commodity{Name: "commodity", Description: "commodity description"}
+	t.Run("should create commodity successfully", func(t *testing.T) {
 
-		usecase.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Return(mockResCommodity, nil).Times(1)
+		uc.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Return(mocks.Commodity, nil).Times(1)
 
 		reqBody := `{"name":"commodity","description":"commodity description"}`
 		req, _ := http.NewRequest(http.MethodPost, "/commodities", bytes.NewReader([]byte(reqBody)))
@@ -48,11 +78,16 @@ func TestCreateCommodity(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, w.Code)
+		assert.Equal(t, response.Data.Name, "commodity")
+		assert.Equal(t, response.Data.Description, "commodity description")
 	})
 
-	t.Run("Test CreateCommodity, bind error", func(t *testing.T) {
-		usecase.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Times(0)
+	t.Run("should return error when bind error", func(t *testing.T) {
+		uc.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Times(0)
 
 		req, _ := http.NewRequest(http.MethodPost, "/commodities", bytes.NewReader([]byte("invalid-json")))
 		req.Header.Set("Content-Type", "application/json")
@@ -60,11 +95,16 @@ func TestCreateCommodity(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 	})
 
-	t.Run("Test CreateCommodity, internal error", func(t *testing.T) {
-		usecase.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
+	t.Run("should return error when internal error", func(t *testing.T) {
+		uc.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
 
 		reqBody := `{"name":"commodity","description":"commodity description"}`
 		req, _ := http.NewRequest(http.MethodPost, "/commodities", bytes.NewReader([]byte(reqBody)))
@@ -73,23 +113,23 @@ func TestCreateCommodity(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
 
-func TestGetAllCommodities(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
-	r := gin.Default()
+func TestCommodityHandler_GetAllCommodities(t *testing.T) {
+	r, h, uc, _, mocks := CommodityHandlerSetUp(t)
 
 	r.GET("/commodities", h.GetAllCommodities)
 
-	t.Run("Test GetAllCommodities, successfully", func(t *testing.T) {
-		mockCommodities := []domain.Commodity{{Name: "commodity", Description: "commodity description"}}
+	t.Run("should return all commodities successfully", func(t *testing.T) {
 
-		usecase.EXPECT().GetAllCommodities(gomock.Any()).Return(&mockCommodities, nil).Times(1)
+		uc.EXPECT().GetAllCommodities(gomock.Any()).Return(mocks.Commodities, nil).Times(1)
 
 		req, _ := http.NewRequest(http.MethodGet, "/commodities", nil)
 		w := httptest.NewRecorder()
@@ -101,84 +141,88 @@ func TestGetAllCommodities(t *testing.T) {
 		}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Len(t, response.Data, len(mockCommodities))
+		assert.NotNil(t, response)
+		assert.Len(t, response.Data, len(*mocks.Commodities))
 	})
 
-	t.Run("Test GetAllCommodities, internal error", func(t *testing.T) {
-		usecase.EXPECT().GetAllCommodities(gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
+	t.Run("should return error when internal error", func(t *testing.T) {
+		uc.EXPECT().GetAllCommodities(gomock.Any()).Return(nil, utils.NewInternalError("Internal error")).Times(1)
 
 		req, _ := http.NewRequest(http.MethodGet, "/commodities", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }
 
-func TestGetCommodityById(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
-	r := gin.Default()
+func TestCommodityHandler_GetCommodityById(t *testing.T) {
+	r, h, uc, ids, mocks := CommodityHandlerSetUp(t)
 
 	r.GET("/commodities/:id", h.GetCommodityById)
 
-	t.Run("Test GetCommodityById, successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	t.Run("should return commodity by id successfully", func(t *testing.T) {
 
-		usecase.EXPECT().GetCommodityById(gomock.Any(), commodityID).Return(mockCommodity, nil).Times(1)
+		uc.EXPECT().GetCommodityById(gomock.Any(), ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		req, _ := http.NewRequest(http.MethodGet, "/commodities/"+commodityID.String(), nil)
+		req, _ := http.NewRequest(http.MethodGet, "/commodities/"+ids.CommodityID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+
+		assert.NoError(t, err)
+		assert.Equal(t, mocks.Commodity.Name, response.Data.Name)
+		assert.Equal(t, mocks.Commodity.Description, response.Data.Description)
 		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("should return error when internal error", func(t *testing.T) {
+
+		uc.EXPECT().GetCommodityById(gomock.Any(), ids.CommodityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodGet, "/commodities/"+ids.CommodityID.String(), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
 		var response responseCommodityHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, mockCommodity.Name, response.Data.Name)
-		assert.Equal(t, mockCommodity.Description, response.Data.Description)
-	})
-
-	t.Run("Test GetCommodityById, database error", func(t *testing.T) {
-		commodityID := uuid.New()
-
-		usecase.EXPECT().GetCommodityById(gomock.Any(), commodityID).Return(nil, errors.New("internal error")).Times(1)
-
-		req, _ := http.NewRequest(http.MethodGet, "/commodities/"+commodityID.String(), nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("Test GetCommodityById, invalid id", func(t *testing.T) {
+	t.Run("should return error when invalid id", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/commodities/abc", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
 
-func TestUpdateCommodity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
-	r := gin.Default()
+func TestCommodityHandler_UpdateCommodity(t *testing.T) {
+	r, h, uc, ids, mocks := CommodityHandlerSetUp(t)
 
 	r.PATCH("/commodities/:id", h.UpdateCommodity)
-	t.Run("Test UpdateCommodity, successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	t.Run("should update commodity successfully", func(t *testing.T) {
 
-		usecase.EXPECT().UpdateCommodity(gomock.Any(), commodityID, gomock.Any()).Return(mockCommodity, nil).Times(1)
+		uc.EXPECT().UpdateCommodity(gomock.Any(), ids.CommodityID, gomock.Any()).Return(mocks.Commodity, nil).Times(1)
 
 		reqBody := `{"name":"updated"}`
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String(), bytes.NewReader([]byte(reqBody)))
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
@@ -188,78 +232,90 @@ func TestUpdateCommodity(t *testing.T) {
 		var response responseCommodityHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, mockCommodity.Name, response.Data.Name)
-		assert.Equal(t, mockCommodity.Description, response.Data.Description)
+		assert.Equal(t, mocks.Commodity.Name, response.Data.Name)
+		assert.Equal(t, mocks.Commodity.Description, response.Data.Description)
 	})
 
-	t.Run("Test UpdateCommodity, database error", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when internal error", func(t *testing.T) {
 
-		usecase.EXPECT().UpdateCommodity(gomock.Any(), commodityID, gomock.Any()).Return(nil, errors.New("internal error")).Times(1)
+		uc.EXPECT().UpdateCommodity(gomock.Any(), ids.CommodityID, gomock.Any()).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		reqBody := `{"name":"updated"}`
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String(), bytes.NewReader([]byte(reqBody)))
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("Test UpdateCommodity, bind error", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when bind error", func(t *testing.T) {
 
-		usecase.EXPECT().UpdateCommodity(gomock.Any(), commodityID, gomock.Any()).Times(0)
+		uc.EXPECT().UpdateCommodity(gomock.Any(), ids.CommodityID, gomock.Any()).Times(0)
 
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String(), bytes.NewReader([]byte(`invalid-json`)))
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String(), bytes.NewReader([]byte(`invalid-json`)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("Test UpdateCommodity, invalid id", func(t *testing.T) {
+	t.Run("should return error when invalid id", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPatch, "/commodities/abc", bytes.NewReader([]byte(`invalid-json`)))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("Test UpdateCommodity, not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when not found", func(t *testing.T) {
 
-		usecase.EXPECT().UpdateCommodity(gomock.Any(), commodityID, gomock.Any()).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
+		uc.EXPECT().UpdateCommodity(gomock.Any(), ids.CommodityID, gomock.Any()).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
 
 		reqBody := `{"name":"updated"}`
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String(), bytes.NewReader([]byte(reqBody)))
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
-func TestDeleteCommodity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
-	r := gin.Default()
+func TestCommodityHandler_DeleteCommodity(t *testing.T) {
+	r, h, uc, ids, _ := CommodityHandlerSetUp(t)
 
 	r.DELETE("/commodities/:id", h.DeleteCommodity)
 
-	t.Run("Test DeleteCommodity, successfully", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should delete commodity successfully", func(t *testing.T) {
 
-		usecase.EXPECT().DeleteCommodity(gomock.Any(), commodityID).Times(1)
+		uc.EXPECT().DeleteCommodity(gomock.Any(), ids.CommodityID).Times(1)
 
-		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+commodityID.String(), nil)
+		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+ids.CommodityID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -270,55 +326,62 @@ func TestDeleteCommodity(t *testing.T) {
 		assert.Equal(t, "Commodity deleted successfully", response.Data.Message)
 	})
 
-	t.Run("Test DeleteCommodity, database error", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when internal error", func(t *testing.T) {
 
-		usecase.EXPECT().DeleteCommodity(gomock.Any(), commodityID).Return(errors.New("internal error")).Times(1)
+		uc.EXPECT().DeleteCommodity(gomock.Any(), ids.CommodityID).Return(utils.NewInternalError("internal error")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+commodityID.String(), nil)
+		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+ids.CommodityID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response response.ResponseMessage
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("Test DeleteCommodity, invalid id", func(t *testing.T) {
+	t.Run("should return error when invalid id", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodDelete, "/commodities/abc", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response response.ResponseMessage
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("Test DeleteCommodity, not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when not found", func(t *testing.T) {
 
-		usecase.EXPECT().DeleteCommodity(gomock.Any(), commodityID).Return(utils.NewNotFoundError("commodity not found")).Times(1)
+		uc.EXPECT().DeleteCommodity(gomock.Any(), ids.CommodityID).Return(utils.NewNotFoundError("commodity not found")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+commodityID.String(), nil)
+		req, _ := http.NewRequest(http.MethodDelete, "/commodities/"+ids.CommodityID.String(), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response response.ResponseMessage
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
 
-func TestRestoreCommodity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	usecase := mock.NewMockCommodityUsecase(ctrl)
-	h := handler.NewCommodityHandler(usecase)
-	r := gin.Default()
+func TestCommodityHandler_RestoreCommodity(t *testing.T) {
+	r, h, uc, ids, mocks := CommodityHandlerSetUp(t)
 
 	r.PATCH("/commodities/:id/restore", h.RestoreCommodity)
 
-	t.Run("Test RestoreCommodity, successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	t.Run("should restore commodity successfully", func(t *testing.T) {
 
-		usecase.EXPECT().RestoreCommodity(gomock.Any(), commodityID).Return(mockCommodity, nil).Times(1)
+		uc.EXPECT().RestoreCommodity(gomock.Any(), ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String()+"/restore", nil)
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String()+"/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -326,39 +389,52 @@ func TestRestoreCommodity(t *testing.T) {
 		var response responseCommodityHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, mockCommodity.Name, response.Data.Name)
-		assert.Equal(t, mockCommodity.Description, response.Data.Description)
+		assert.Equal(t, mocks.Commodity.Name, response.Data.Name)
+		assert.Equal(t, mocks.Commodity.Description, response.Data.Description)
 	})
 
-	t.Run("Test RestoreCommodity, database error", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when internal error", func(t *testing.T) {
 
-		usecase.EXPECT().RestoreCommodity(gomock.Any(), commodityID).Return(nil, errors.New("internal error")).Times(1)
+		uc.EXPECT().RestoreCommodity(gomock.Any(), ids.CommodityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String()+"/restore", nil)
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String()+"/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("Test RestoreCommodity, invalid id", func(t *testing.T) {
+	t.Run("should return error when invalid id", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPatch, "/commodities/abc/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("Test RestoreCommodity, not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when not found", func(t *testing.T) {
 
-		usecase.EXPECT().RestoreCommodity(gomock.Any(), commodityID).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
+		uc.EXPECT().RestoreCommodity(gomock.Any(), ids.CommodityID).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+commodityID.String()+"/restore", nil)
+		req, _ := http.NewRequest(http.MethodPatch, "/commodities/"+ids.CommodityID.String()+"/restore", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 }

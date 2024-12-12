@@ -46,7 +46,7 @@ func (uc *CityUsecaseImpl) GetAllCities(ctx context.Context) (*[]domain.City, er
 	}
 	return cities, nil
 }
-func (uc *CityUsecaseImpl) GetCityById(ctx context.Context, id int64) (*domain.City, error) {
+func (uc *CityUsecaseImpl) GetCityByID(ctx context.Context, id int64) (*domain.City, error) {
 	city, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("city not found")

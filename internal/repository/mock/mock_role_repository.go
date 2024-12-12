@@ -65,7 +65,7 @@ func (mr *MockRoleRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Call 
 }
 
 // FindByID mocks base method.
-func (m *MockRoleRepository) FindByID(ctx context.Context, id uint64) (*domain.Role, error) {
+func (m *MockRoleRepository) FindByID(ctx context.Context, id int64) (*domain.Role, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByID", ctx, id)
 	ret0, _ := ret[0].(*domain.Role)

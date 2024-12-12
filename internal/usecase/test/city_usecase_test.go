@@ -163,7 +163,7 @@ func TestGetCityById(t *testing.T) {
 	t.Run("shpuld return city successfully", func(t *testing.T) {
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-		resp, err := uc.GetCityById(ctx, ids.CityID)
+		resp, err := uc.GetCityByID(ctx, ids.CityID)
 
 		assert.NotNil(t, resp)
 		assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestGetCityById(t *testing.T) {
 	t.Run("should return error when find city by id", func(t *testing.T) {
 		repo.City.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
-		resp, err := uc.GetCityById(ctx, int64(2))
+		resp, err := uc.GetCityByID(ctx, int64(2))
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)

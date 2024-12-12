@@ -54,6 +54,7 @@ func (h *PriceHandlerImpl) GetPriceByID(c *gin.Context) {
 	}
 	utils.SuccessResponse(c, http.StatusOK, user)
 }
+
 func (h *PriceHandlerImpl) GetPricesByCommodityID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -67,7 +68,6 @@ func (h *PriceHandlerImpl) GetPricesByCommodityID(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, prices)
-
 }
 
 func (h *PriceHandlerImpl) GetPricesByRegionID(c *gin.Context) {

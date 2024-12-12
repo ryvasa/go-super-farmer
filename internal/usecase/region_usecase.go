@@ -8,7 +8,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 )
 
-type RegionUseCase interface {
+type RegionUsecase interface {
 	CreateRegion(ctx context.Context, req *dto.RegionCreateDto) (*domain.Region, error)
 	GetAllRegions(ctx context.Context) (*[]domain.Region, error)
 	GetRegionByID(ctx context.Context, id uuid.UUID) (*domain.Region, error)

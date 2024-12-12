@@ -155,7 +155,7 @@ func TestGetProvinceById(t *testing.T) {
 	t.Run("shpuld return province successfully", func(t *testing.T) {
 		repo.Province.EXPECT().FindByID(ctx, ids.ProvinceID).Return(mocks.Province, nil).Times(1)
 
-		resp, err := uc.GetProvinceById(ctx, ids.ProvinceID)
+		resp, err := uc.GetProvinceByID(ctx, ids.ProvinceID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, ids.ProvinceID, resp.ID)
@@ -165,7 +165,7 @@ func TestGetProvinceById(t *testing.T) {
 	t.Run("should return error when get province by id", func(t *testing.T) {
 		repo.Province.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("province not found")).Times(1)
 
-		resp, err := uc.GetProvinceById(ctx, int64(2))
+		resp, err := uc.GetProvinceByID(ctx, int64(2))
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
