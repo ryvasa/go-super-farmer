@@ -38,7 +38,7 @@ type RegionDTOMocks struct {
 	Create *dto.RegionCreateDto
 }
 
-func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks, *RegionRepoMock, usecase.RegionUseCase, context.Context) {
+func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks, *RegionRepoMock, usecase.RegionUsecase, context.Context) {
 	regionID := uuid.New()
 	cityID := int64(1)
 	provinceID := int64(1)

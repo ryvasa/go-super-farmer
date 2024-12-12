@@ -18,7 +18,7 @@ type RoleRepoMock struct {
 }
 
 type RoleIDs struct {
-	RoleID uint64
+	RoleID int64
 }
 
 type RoleMocks struct {
@@ -31,7 +31,7 @@ type RoleDTOMock struct {
 }
 
 func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRepoMock, usecase.RoleUsecase, context.Context) {
-	roleID := uint64(1)
+	roleID := int64(1)
 
 	ids := &RoleIDs{
 		RoleID: roleID,

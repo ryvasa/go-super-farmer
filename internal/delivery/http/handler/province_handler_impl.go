@@ -41,13 +41,13 @@ func (h *ProvinceHandlerImpl) GetAllProvinces(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, provinces)
 }
 
-func (h *ProvinceHandlerImpl) GetProvinceById(c *gin.Context) {
+func (h *ProvinceHandlerImpl) GetProvinceByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	province, err := h.uc.GetProvinceById(c, id)
+	province, err := h.uc.GetProvinceByID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

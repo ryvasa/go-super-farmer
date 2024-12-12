@@ -41,13 +41,13 @@ func (h *CityHandlerImpl) GetAllCities(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, cities)
 }
 
-func (h *CityHandlerImpl) GetCityById(c *gin.Context) {
+func (h *CityHandlerImpl) GetCityByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	city, err := h.uc.GetCityById(c, id)
+	city, err := h.uc.GetCityByID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

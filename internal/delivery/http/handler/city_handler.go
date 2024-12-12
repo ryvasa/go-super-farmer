@@ -7,7 +7,7 @@ import (
 type CityHandler interface {
 	CreateCity(c *gin.Context)
 	GetAllCities(c *gin.Context)
-	GetCityById(c *gin.Context)
+	GetCityByID(c *gin.Context)
 	UpdateCity(c *gin.Context)
 	DeleteCity(c *gin.Context)
 }

@@ -11,10 +11,10 @@ import (
 )
 
 type RegionHandlerImpl struct {
-	uc usecase.RegionUseCase
+	uc usecase.RegionUsecase
 }
 
-func NewRegionHandler(uc usecase.RegionUseCase) RegionHandler {
+func NewRegionHandler(uc usecase.RegionUsecase) RegionHandler {
 	return &RegionHandlerImpl{uc}
 }
 

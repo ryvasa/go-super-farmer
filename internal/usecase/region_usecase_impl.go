@@ -16,7 +16,7 @@ type RegionUseCaseImpl struct {
 	provinceRepo repository.ProvinceRepository
 }
 
-func NewRegionUsecase(regionRepo repository.RegionRepository, cityRepo repository.CityRepository, provinceRepo repository.ProvinceRepository) RegionUseCase {
+func NewRegionUsecase(regionRepo repository.RegionRepository, cityRepo repository.CityRepository, provinceRepo repository.ProvinceRepository) RegionUsecase {
 	return &RegionUseCaseImpl{regionRepo, cityRepo, provinceRepo}
 }
 

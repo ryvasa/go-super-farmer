@@ -45,7 +45,7 @@ func (uc *ProvinceUsecaseImpl) GetAllProvinces(ctx context.Context) (*[]domain.P
 	}
 	return provinces, nil
 }
-func (uc *ProvinceUsecaseImpl) GetProvinceById(ctx context.Context, id int64) (*domain.Province, error) {
+func (uc *ProvinceUsecaseImpl) GetProvinceByID(ctx context.Context, id int64) (*domain.Province, error) {
 	province, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("province not found")

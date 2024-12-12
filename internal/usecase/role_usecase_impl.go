@@ -27,7 +27,7 @@ func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	role.ID = uint64(len(*roles) + 1)
+	role.ID = int64(len(*roles) + 1)
 	role.Name = req.Name
 
 	err = u.repo.Create(ctx, &role)
