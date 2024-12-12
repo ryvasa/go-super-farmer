@@ -47,6 +47,10 @@ var authUtilSet = wire.NewSet(
 	utils.NewAuthUtil,
 )
 
+var hashSet = wire.NewSet(
+	utils.NewHasher,
+)
+
 var commoditySet = wire.NewSet(
 	repository.NewCommodityRepository,
 	usecase.NewCommodityUsecase,
@@ -107,6 +111,7 @@ func InitializeRouter() (*gin.Engine, error) {
 		citySet,
 		regionSet,
 		priceHistorySet,
+		hashSet,
 	)
 	return nil, nil
 }

@@ -105,6 +105,9 @@ func (uc *PriceUsecaseImpl) UpdatePrice(ctx context.Context, id uuid.UUID, req *
 		UpdatedAt:   existingPrice.UpdatedAt,
 	}
 	err = uc.priceHistoryRepo.Create(ctx, &historyPrice)
+	if err != nil {
+		return nil, utils.NewInternalError("failed to create price history")
+	}
 
 	price.Price = req.Price
 	price.ID = id

@@ -13,7 +13,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateCity(t *testing.T) {
+type CityRepoMock struct {
+	City *mock.MockCityRepository
+}
+
+type CityIDs struct {
+	CityID     int64
+	ProvinceID int64
+}
+
+type CityMocks struct {
+	City        *domain.City
+	Cities      *[]domain.City
+	UpdatedCity *domain.City
+}
+
+type CityDTOMock struct {
+	Create *dto.CityCreateDTO
+	Update *dto.CityUpdateDTO
+}
+
+func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRepoMock, usecase.CityUsecase, context.Context) {
+
+	cityID := int64(1)
+	provinceID := int64(2)
+
+	ids := &CityIDs{
+		CityID:     cityID,
+		ProvinceID: provinceID,
+	}
+
+	mocks := &CityMocks{
+		City: &domain.City{
+			ID:         cityID,
+			Name:       "test",
+			ProvinceID: provinceID,
+		},
+		Cities: &[]domain.City{
+			{
+				ID:         cityID,
+				Name:       "test",
+				ProvinceID: provinceID,
+			},
+		},
+		UpdatedCity: &domain.City{
+			ID:         cityID,
+			Name:       "updated",
+			ProvinceID: provinceID,
+		},
+	}
+
+	dto := &CityDTOMock{
+		Create: &dto.CityCreateDTO{
+			Name:       "test",
+			ProvinceID: provinceID,
+		},
+		Update: &dto.CityUpdateDTO{
+			Name: "updated",
+		},
+	}
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -21,53 +80,52 @@ func TestCreateCity(t *testing.T) {
 	uc := usecase.NewCityUsecase(cityRepo)
 	ctx := context.TODO()
 
-	cityID := int64(1)
-	provinceID := int64(2)
-	t.Run("Test CreateCity, successfully", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:         cityID,
-			ProvinceID: provinceID,
-			Name:       "test city",
-		}
-		cityRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.City) error {
-			p.ID = 1
+	repo := &CityRepoMock{City: cityRepo}
+
+	return ids, mocks, dto, repo, uc, ctx
+}
+
+func TestCreateCity(t *testing.T) {
+	ids, mocks, dtos, repo, uc, ctx := CityUsecaseUtils(t)
+	t.Run("should create city successfully", func(t *testing.T) {
+		repo.City.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.City) error {
+			p.ID = ids.CityID
 			return nil
 		}).Times(1)
 
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-		req := &dto.CityCreateDTO{Name: "test city", ProvinceID: provinceID}
-		resp, err := uc.CreateCity(ctx, req)
+		resp, err := uc.CreateCity(ctx, dtos.Create)
 
+		assert.NotNil(t, resp)
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
+		assert.Equal(t, dtos.Create.Name, resp.Name)
 	})
 
-	t.Run("Test CreateCity, validation error", func(t *testing.T) {
+	t.Run("should return error validation error", func(t *testing.T) {
 		req := &dto.CityCreateDTO{}
 		resp, err := uc.CreateCity(ctx, req)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "Validation failed")
 	})
 
-	t.Run("Test CreateCity, error create city", func(t *testing.T) {
-		cityRepo.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error when create city", func(t *testing.T) {
+		repo.City.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
-		req := &dto.CityCreateDTO{Name: "test city", ProvinceID: provinceID}
-		resp, err := uc.CreateCity(ctx, req)
+		resp, err := uc.CreateCity(ctx, dtos.Create)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "internal error")
 	})
 
-	t.Run("Test CreateCity, error find city by id", func(t *testing.T) {
-		cityRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
-		cityRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error when find created city by id", func(t *testing.T) {
+		repo.City.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		req := &dto.CityCreateDTO{Name: "test city", ProvinceID: provinceID}
-		resp, err := uc.CreateCity(ctx, req)
+		resp, err := uc.CreateCity(ctx, dtos.Create)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -76,30 +134,20 @@ func TestCreateCity(t *testing.T) {
 }
 
 func TestGetAllcities(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	_, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
-	cityRepo := mock.NewMockCityRepository(ctrl)
-	uc := usecase.NewCityUsecase(cityRepo)
-	ctx := context.TODO()
-
-	cityID := int64(1)
-	provinceID := int64(2)
-	t.Run("Test GetAllCities, successfully", func(t *testing.T) {
-		mockCities := &[]domain.City{
-			{ID: cityID, Name: "test city", ProvinceID: provinceID},
-		}
-		cityRepo.EXPECT().FindAll(ctx).Return(mockCities, nil).Times(1)
+	t.Run("should return all cities", func(t *testing.T) {
+		repo.City.EXPECT().FindAll(ctx).Return(mocks.Cities, nil).Times(1)
 
 		resp, err := uc.GetAllCities(ctx)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(*resp))
-		assert.Equal(t, (*mockCities)[0].Name, (*resp)[0].Name)
+		assert.Equal(t, (*mocks.Cities)[0].Name, (*resp)[0].Name)
 	})
 
-	t.Run("Test GetAllCities, error find all citys", func(t *testing.T) {
-		cityRepo.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error internal error", func(t *testing.T) {
+		repo.City.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		resp, err := uc.GetAllCities(ctx)
 
@@ -110,31 +158,20 @@ func TestGetAllcities(t *testing.T) {
 }
 
 func TestGetCityById(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
-	cityRepo := mock.NewMockCityRepository(ctrl)
-	uc := usecase.NewCityUsecase(cityRepo)
-	ctx := context.TODO()
+	t.Run("shpuld return city successfully", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-	cityID := int64(1)
-	provinceID := int64(2)
-	t.Run("Test GetCityById, successfully", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:         cityID,
-			ProvinceID: provinceID,
-			Name:       "test city",
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+		resp, err := uc.GetCityById(ctx, ids.CityID)
 
-		resp, err := uc.GetCityById(ctx, mockCity.ID)
-
+		assert.NotNil(t, resp)
 		assert.NoError(t, err)
-		assert.Equal(t, mockCity.Name, resp.Name)
+		assert.Equal(t, mocks.City.Name, resp.Name)
 	})
 
-	t.Run("Test GetCityById, error find city by id", func(t *testing.T) {
-		cityRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
+	t.Run("should return error when find city by id", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
 		resp, err := uc.GetCityById(ctx, int64(2))
 
@@ -145,95 +182,65 @@ func TestGetCityById(t *testing.T) {
 }
 
 func TestUpdateCity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, dtos, repo, uc, ctx := CityUsecaseUtils(t)
 
-	cityRepo := mock.NewMockCityRepository(ctrl)
-	uc := usecase.NewCityUsecase(cityRepo)
-	ctx := context.TODO()
+	t.Run("should update city successfully", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-	cityID := int64(1)
-	provinceID := int64(2)
-	t.Run("Test UpdateCity, successfully", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:         cityID,
-			Name:       "test city",
-			ProvinceID: provinceID,
-		}
-		mockUpdate := &domain.City{
-			ID:         cityID,
-			Name:       "updated city",
-			ProvinceID: provinceID,
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+		repo.City.EXPECT().Update(ctx, ids.CityID, gomock.Any()).DoAndReturn(func(ctx context.Context, id int64, p *domain.City) error {
+			p.ID = ids.CityID
+			return nil
+		}).Times(1)
 
-		cityRepo.EXPECT().Update(ctx, cityID, mockUpdate).Return(nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.UpdatedCity, nil).Times(1)
 
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockUpdate, nil).Times(1)
-
-		req := &dto.CityUpdateDTO{Name: "updated city", ProvinceID: provinceID}
-		resp, err := uc.UpdateCity(ctx, mockCity.ID, req)
+		resp, err := uc.UpdateCity(ctx, ids.CityID, dtos.Update)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
+		assert.Equal(t, dtos.Update.Name, resp.Name)
 	})
 
-	t.Run("Test UpdateCity, validation error", func(t *testing.T) {
+	t.Run("should return error validation error", func(t *testing.T) {
 		req := &dto.CityUpdateDTO{}
-		resp, err := uc.UpdateCity(ctx, provinceID, req)
+		resp, err := uc.UpdateCity(ctx, ids.CityID, req)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
 
-	t.Run("Test UpdateCity, error find city by id", func(t *testing.T) {
-		cityRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
+	t.Run("should return error when find city by id", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
-		req := &dto.CityUpdateDTO{Name: "updated city", ProvinceID: provinceID}
-		resp, err := uc.UpdateCity(ctx, int64(2), req)
+		resp, err := uc.UpdateCity(ctx, ids.CityID, dtos.Update)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "city not found")
 	})
 
-	t.Run("Test UpdateCity, error update city", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:         cityID,
-			Name:       "test city",
-			ProvinceID: provinceID,
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+	t.Run("should return error when update city", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-		cityRepo.EXPECT().Update(ctx, mockCity.ID, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+		repo.City.EXPECT().Update(ctx, ids.CityID, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
-		req := &dto.CityUpdateDTO{Name: "updated city", ProvinceID: provinceID}
-		resp, err := uc.UpdateCity(ctx, mockCity.ID, req)
+		resp, err := uc.UpdateCity(ctx, ids.CityID, dtos.Update)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
 
-	t.Run("Test UpdateCity, error find city by id after update", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:         cityID,
-			Name:       "test city",
-			ProvinceID: provinceID,
-		}
-		mockUpdate := &domain.City{
-			ID:         cityID,
-			Name:       "updated city",
-			ProvinceID: provinceID,
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+	t.Run("should return error when find city by id after update", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-		cityRepo.EXPECT().Update(ctx, mockCity.ID, mockUpdate).Return(nil).Times(1)
+		repo.City.EXPECT().Update(ctx, ids.CityID, gomock.Any()).DoAndReturn(func(ctx context.Context, id int64, p *domain.City) error {
+			p.ID = ids.CityID
+			return nil
+		}).Times(1)
 
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
-		req := &dto.CityUpdateDTO{Name: "updated city", ProvinceID: provinceID}
-		resp, err := uc.UpdateCity(ctx, mockCity.ID, req)
+		resp, err := uc.UpdateCity(ctx, ids.CityID, dtos.Update)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
@@ -242,31 +249,20 @@ func TestUpdateCity(t *testing.T) {
 }
 
 func TestDeleteCity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
-	cityRepo := mock.NewMockCityRepository(ctrl)
-	uc := usecase.NewCityUsecase(cityRepo)
-	ctx := context.TODO()
+	t.Run("should delete city successfully", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-	cityID := int64(1)
+		repo.City.EXPECT().Delete(ctx, ids.CityID).Return(nil).Times(1)
 
-	t.Run("Test DeleteCity, successfully", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:   cityID,
-			Name: "test city",
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
-
-		cityRepo.EXPECT().Delete(ctx, mockCity.ID).Return(nil).Times(1)
-
-		err := uc.DeleteCity(ctx, mockCity.ID)
+		err := uc.DeleteCity(ctx, ids.CityID)
 
 		assert.NoError(t, err)
 	})
 
-	t.Run("Test DeleteCity, error find city by id", func(t *testing.T) {
-		cityRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
+	t.Run("should return error when find city by id", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
 		err := uc.DeleteCity(ctx, int64(2))
 
@@ -274,16 +270,12 @@ func TestDeleteCity(t *testing.T) {
 		assert.EqualError(t, err, "city not found")
 	})
 
-	t.Run("Test DeleteCity, error delete city", func(t *testing.T) {
-		mockCity := &domain.City{
-			ID:   cityID,
-			Name: "test city",
-		}
-		cityRepo.EXPECT().FindByID(ctx, mockCity.ID).Return(mockCity, nil).Times(1)
+	t.Run("should return error when delete city", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
-		cityRepo.EXPECT().Delete(ctx, mockCity.ID).Return(utils.NewInternalError("internal error")).Times(1)
+		repo.City.EXPECT().Delete(ctx, ids.CityID).Return(utils.NewInternalError("internal error")).Times(1)
 
-		err := uc.DeleteCity(ctx, mockCity.ID)
+		err := uc.DeleteCity(ctx, ids.CityID)
 
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")

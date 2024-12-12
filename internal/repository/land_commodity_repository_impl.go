@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -18,7 +17,6 @@ func NewLandCommodityRepository(db *gorm.DB) LandCommodityRepository {
 }
 
 func (r *LandCommodityRepositoryImpl) Create(ctx context.Context, landCommodity *domain.LandCommodity) error {
-	log.Println(landCommodity)
 	err := r.db.WithContext(ctx).Create(landCommodity).Error
 	if err != nil {
 		return err

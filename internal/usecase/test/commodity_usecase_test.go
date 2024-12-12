@@ -2,7 +2,6 @@ package usecase_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -11,73 +10,123 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateCommodity(t *testing.T) {
+type CommodityRepoMock struct {
+	Commodity *mock.MockCommodityRepository
+}
+
+type CommodityIDs struct {
+	CommodityID uuid.UUID
+}
+
+type CommodityMocks struct {
+	Commodity         *domain.Commodity
+	Commodities       *[]domain.Commodity
+	UpadatedCommodity *domain.Commodity
+}
+
+type CommodityDTOMock struct {
+	Create *dto.CommodityCreateDTO
+	Update *dto.CommodityUpdateDTO
+}
+
+func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *CommodityDTOMock, *CommodityRepoMock, usecase.CommodityUsecase, context.Context) {
+	commodityID := uuid.New()
+
+	ids := &CommodityIDs{
+		CommodityID: commodityID,
+	}
+
+	mocks := &CommodityMocks{
+		Commodity: &domain.Commodity{
+			ID:          commodityID,
+			Name:        "test commodity",
+			Description: "test commodity description",
+		},
+		Commodities: &[]domain.Commodity{
+			{
+				ID:          commodityID,
+				Name:        "test commodity",
+				Description: "test commodity description",
+			},
+		},
+		UpadatedCommodity: &domain.Commodity{
+			ID:          commodityID,
+			Name:        "updated commodity",
+			Description: "updated commodity description",
+		},
+	}
+
+	dto := &CommodityDTOMock{
+		Create: &dto.CommodityCreateDTO{
+			Name:        "test commodity",
+			Description: "test commodity description",
+		},
+		Update: &dto.CommodityUpdateDTO{
+			Name:        "updated commodity",
+			Description: "updated commodity description",
+		},
+	}
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	commodityRepo := mock.NewMockCommodityRepository(ctrl)
 	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
+	ctx := context.TODO()
 
-	t.Run("Test CreateCommodity successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	repo := &CommodityRepoMock{Commodity: commodityRepo}
 
-		commodityRepo.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, c *domain.Commodity) error {
-			c.ID = commodityID
+	return ids, mocks, dto, repo, uc, ctx
+}
+
+func TestCreateCommodity(t *testing.T) {
+	ids, mocks, dtos, repo, uc, ctx := CommodityUsecaseUtils(t)
+
+	t.Run("should create commodity successfully", func(t *testing.T) {
+		repo.Commodity.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, c *domain.Commodity) error {
+			c.ID = ids.CommodityID
 			return nil
 		}).Times(1)
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		req := &dto.CommodityCreateDTO{Name: "commodity", Description: "commodity description"}
-		resp, err := uc.CreateCommodity(ctx, req)
+		resp, err := uc.CreateCommodity(ctx, dtos.Create)
 
 		assert.NoError(t, err)
-		assert.Equal(t, req.Name, resp.Name)
-		assert.Equal(t, req.Description, resp.Description)
+		assert.Equal(t, dtos.Create.Name, resp.Name)
+		assert.Equal(t, dtos.Create.Description, resp.Description)
 	})
 
-	t.Run("Test CreateCommodity validation error", func(t *testing.T) {
-		req := &dto.CommodityCreateDTO{Name: "", Description: ""}
+	t.Run("should return error validation error", func(t *testing.T) {
+		req := &dto.CommodityCreateDTO{}
 		resp, err := uc.CreateCommodity(ctx, req)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "Validation failed")
 	})
 }
 
 func TestGetAllCommodities(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	_, mocks, _, repo, uc, ctx := CommodityUsecaseUtils(t)
+	t.Run("should return all commodities successfully", func(t *testing.T) {
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
-
-	t.Run("Test GetAllCommodities successfully", func(t *testing.T) {
-		commodityID1 := uuid.New()
-		commodityID2 := uuid.New()
-
-		mockCommodity1 := &domain.Commodity{ID: commodityID1, Name: "commodity", Description: "commodity description"}
-		mockCommodity2 := &domain.Commodity{ID: commodityID2, Name: "commodity", Description: "commodity description"}
-
-		commodityRepo.EXPECT().FindAll(ctx).Return(&[]domain.Commodity{*mockCommodity1, *mockCommodity2}, nil).Times(1)
+		repo.Commodity.EXPECT().FindAll(ctx).Return(mocks.Commodities, nil).Times(1)
 
 		resp, err := uc.GetAllCommodities(ctx)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, mockCommodity1.Name, (*resp)[0].Name)
-		assert.Equal(t, mockCommodity1.Description, (*resp)[0].Description)
-		assert.Equal(t, mockCommodity2.Name, (*resp)[1].Name)
-		assert.Equal(t, mockCommodity2.Description, (*resp)[1].Description)
+		assert.Len(t, *resp, 1)
+		assert.Equal(t, (*mocks.Commodities)[0].Name, (*resp)[0].Name)
+		assert.Equal(t, (*mocks.Commodities)[0].Description, (*resp)[0].Description)
+
 	})
 
-	t.Run("Test GetAllCommodities internal error", func(t *testing.T) {
-		commodityRepo.EXPECT().FindAll(ctx).Return(nil, errors.New("internal error")).Times(1)
+	t.Run("should return error when get all commodities", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		resp, err := uc.GetAllCommodities(ctx)
 
@@ -87,199 +136,147 @@ func TestGetAllCommodities(t *testing.T) {
 }
 
 func TestGetCommodityById(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := CommodityUsecaseUtils(t)
+	t.Run("should return commodity by id successfully", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
-
-	t.Run("Test GetCommodityById successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
-
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-
-		resp, err := uc.GetCommodityById(ctx, commodityID)
+		resp, err := uc.GetCommodityById(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockCommodity.Name, resp.Name)
-		assert.Equal(t, mockCommodity.Description, resp.Description)
+		assert.Equal(t, mocks.Commodity.Name, resp.Name)
+		assert.Equal(t, mocks.Commodity.Description, resp.Description)
 	})
 
-	t.Run("Test GetCommodityById not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when commodity not found", func(t *testing.T) {
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(nil, errors.New("commodity not found")).Times(1)
+		repo.Commodity.EXPECT().FindByID(ctx, gomock.Any()).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
 
-		resp, err := uc.GetCommodityById(ctx, commodityID)
+		resp, err := uc.GetCommodityById(ctx, ids.CommodityID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-	})
-
-	t.Run("Test GetCommodityById internal error", func(t *testing.T) {
-		commodityID := uuid.New()
-
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(nil, errors.New("internal error")).Times(1)
-
-		resp, err := uc.GetCommodityById(ctx, commodityID)
-
-		assert.Error(t, err)
-		assert.Nil(t, resp)
+		assert.EqualError(t, err, "commodity not found")
 	})
 }
 
 func TestUpdateCommodity(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, dtos, repo, uc, ctx := CommodityUsecaseUtils(t)
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
+	t.Run("should update commodity successfully", func(t *testing.T) {
 
-	t.Run("Test UpdateCommodity successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
-		updateReq := &dto.CommodityUpdateDTO{Name: "commodity updated", Description: "commodity description updated"}
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Update(ctx, ids.CommodityID, gomock.Any()).DoAndReturn(func(ctx context.Context, id uuid.UUID, c *domain.Commodity) error {
+			c.ID = ids.CommodityID
+			return nil
+		})
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.UpadatedCommodity, nil).Times(1)
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Update(ctx, commodityID, gomock.Any()).Return(nil).Times(1)
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(&domain.Commodity{ID: commodityID, Name: "commodity updated", Description: "commodity description updated"}, nil).Times(1)
+		resp, err := uc.UpdateCommodity(ctx, ids.CommodityID, dtos.Update)
 
-		resp, err := uc.UpdateCommodity(ctx, commodityID, updateReq)
-
+		assert.NotNil(t, resp)
 		assert.NoError(t, err)
-		assert.Equal(t, updateReq.Name, resp.Name)
-		assert.Equal(t, updateReq.Description, resp.Description)
+		assert.Equal(t, dtos.Update.Name, resp.Name)
+		assert.Equal(t, dtos.Update.Description, resp.Description)
 	})
 
-	t.Run("Test UpdateCommodity validation error", func(t *testing.T) {
-		commodityID := uuid.New()
-		updateReq := &dto.CommodityUpdateDTO{Name: "", Description: ""}
+	t.Run("should return error validation error", func(t *testing.T) {
+		req := &dto.CommodityUpdateDTO{}
 
-		resp, err := uc.UpdateCommodity(ctx, commodityID, updateReq)
+		resp, err := uc.UpdateCommodity(ctx, ids.CommodityID, req)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "Validation failed")
 	})
 
-	t.Run("Test UpdateCommodity not found", func(t *testing.T) {
-		commodityID := uuid.New()
-		updateReq := &dto.CommodityUpdateDTO{Name: "commodity updated", Description: "commodity description updated"}
+	t.Run("should return error when commodity not found", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(nil, errors.New("commodity not found")).Times(1)
-
-		resp, err := uc.UpdateCommodity(ctx, commodityID, updateReq)
+		resp, err := uc.UpdateCommodity(ctx, ids.CommodityID, dtos.Update)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "commodity not found")
 	})
 
-	t.Run("Test UpdateCommodity internal error", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
-		updateReq := &dto.CommodityUpdateDTO{Name: "commodity updated", Description: "commodity description updated"}
+	t.Run("should return error when update commodity", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Update(ctx, ids.CommodityID, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Update(ctx, commodityID, gomock.Any()).Return(errors.New("internal error")).Times(1)
-
-		resp, err := uc.UpdateCommodity(ctx, commodityID, updateReq)
+		resp, err := uc.UpdateCommodity(ctx, ids.CommodityID, dtos.Update)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestDeleteCommodity(t *testing.T) {
+	ids, mocks, _, repo, uc, ctx := CommodityUsecaseUtils(t)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	t.Run("should delete commodity successfully", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Delete(ctx, ids.CommodityID).Return(nil).Times(1)
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
-
-	t.Run("Test DeleteCommodity successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
-
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Delete(ctx, commodityID).Return(nil).Times(1)
-
-		err := uc.DeleteCommodity(ctx, commodityID)
+		err := uc.DeleteCommodity(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
 	})
 
-	t.Run("Test DeleteCommodity not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when commodity not found", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(nil, errors.New("commodity not found")).Times(1)
-
-		err := uc.DeleteCommodity(ctx, commodityID)
+		err := uc.DeleteCommodity(ctx, ids.CommodityID)
 
 		assert.Error(t, err)
+		assert.EqualError(t, err, "commodity not found")
 	})
 
-	t.Run("Test DeleteCommodity internal error", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	t.Run("should return error when delete commodity", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Delete(ctx, ids.CommodityID).Return(utils.NewInternalError("internal error")).Times(1)
 
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Delete(ctx, commodityID).Return(errors.New("internal error")).Times(1)
-
-		err := uc.DeleteCommodity(ctx, commodityID)
+		err := uc.DeleteCommodity(ctx, ids.CommodityID)
 
 		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
 	})
 }
 
 func TestRestoreCommodity(t *testing.T) {
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	ids, mocks, _, repo, uc, ctx := CommodityUsecaseUtils(t)
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
-	ctx := context.Background()
+	t.Run("should restore commodity successfully", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindDeletedByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Restore(ctx, ids.CommodityID).Return(nil).Times(1)
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-	t.Run("Test RestoreCommodity successfully", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
-
-		commodityRepo.EXPECT().FindDeletedByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Restore(ctx, commodityID).Return(nil).Times(1)
-		commodityRepo.EXPECT().FindByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-
-		resp, err := uc.RestoreCommodity(ctx, commodityID)
+		resp, err := uc.RestoreCommodity(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockCommodity.Name, resp.Name)
-		assert.Equal(t, mockCommodity.Description, resp.Description)
+		assert.Equal(t, mocks.Commodity.Name, resp.Name)
+		assert.Equal(t, mocks.Commodity.Description, resp.Description)
 	})
 
-	t.Run("Test RestoreCommodity not found", func(t *testing.T) {
-		commodityID := uuid.New()
+	t.Run("should return error when commodity not found", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindDeletedByID(ctx, ids.CommodityID).Return(nil, utils.NewNotFoundError("deleted commodity not found")).Times(1)
 
-		commodityRepo.EXPECT().FindDeletedByID(ctx, commodityID).Return(nil, errors.New("commodity not found")).Times(1)
-
-		resp, err := uc.RestoreCommodity(ctx, commodityID)
+		resp, err := uc.RestoreCommodity(ctx, ids.CommodityID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "deleted commodity not found")
 	})
 
-	t.Run("Test RestoreCommodity internal error", func(t *testing.T) {
-		commodityID := uuid.New()
-		mockCommodity := &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"}
+	t.Run("should return error when restore commodity", func(t *testing.T) {
+		repo.Commodity.EXPECT().FindDeletedByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Commodity.EXPECT().Restore(ctx, ids.CommodityID).Return(utils.NewInternalError("internal error")).Times(1)
 
-		commodityRepo.EXPECT().FindDeletedByID(ctx, commodityID).Return(mockCommodity, nil).Times(1)
-		commodityRepo.EXPECT().Restore(ctx, commodityID).Return(errors.New("internal error")).Times(1)
-
-		resp, err := uc.RestoreCommodity(ctx, commodityID)
+		resp, err := uc.RestoreCommodity(ctx, ids.CommodityID)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
 	})
 }

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
@@ -13,10 +12,11 @@ import (
 
 type UserUsecaseImpl struct {
 	repo repository.UserRepository
+	hash utils.Hasher
 }
 
-func NewUserUsecase(repo repository.UserRepository) UserUsecase {
-	return &UserUsecaseImpl{repo: repo}
+func NewUserUsecase(repo repository.UserRepository, hash utils.Hasher) UserUsecase {
+	return &UserUsecaseImpl{repo, hash}
 }
 
 func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
@@ -28,7 +28,7 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 	user.Email = req.Email
 	user.ID = uuid.New()
 
-	hashedPassword, err := utils.HashPassword(req.Password)
+	hashedPassword, err := uc.hash.HashPassword(req.Password)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -81,7 +81,7 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dt
 	user.Phone = &req.Phone
 
 	if req.Password != "" {
-		hashedPassword, err := utils.HashPassword(req.Password)
+		hashedPassword, err := uc.hash.HashPassword(req.Password)
 		if err != nil {
 			return nil, utils.NewInternalError(err.Error())
 		}
@@ -94,7 +94,7 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dt
 	}
 	updatedUser, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, utils.NewNotFoundError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
 	return utils.UserDtoFormat(updatedUser), nil
 }
@@ -114,7 +114,6 @@ func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uuid.UUID) (*dto.UserResponseDTO, error) {
 	_, err := uc.repo.FindDeletedByID(ctx, id)
 	if err != nil {
-		log.Println("hhihihihih")
 		return nil, utils.NewNotFoundError(err.Error())
 	}
 	err = uc.repo.Restore(ctx, id)
