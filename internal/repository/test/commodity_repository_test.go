@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -16,36 +17,78 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestCommodityRepository_Create(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+type CommodityIDs struct {
+	CommodityID uuid.UUID
+}
 
-	repoImpl := repository.NewCommodityRepository(db)
+type CommodityMockRows struct {
+	Commodity   *sqlmock.Rows
+	Commodities *sqlmock.Rows
+}
+
+type CommodityMocDomain struct {
+	Commodity *domain.Commodity
+}
+
+func CommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.CommodityRepository, CommodityIDs, CommodityMockRows, CommodityMocDomain) {
+
+	sqlDB, db, mock := database.DbMock(t)
+
+	repo := repository.NewCommodityRepository(db)
 
 	commodityID := uuid.New()
 
+	ids := CommodityIDs{
+		CommodityID: commodityID,
+	}
+
+	rows := CommodityMockRows{
+		Commodity: sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).
+			AddRow(commodityID, "commodity", "commodity description", time.Now(), time.Now()),
+
+		Commodities: sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).
+			AddRow(commodityID, "commodity", "commodity description", time.Now(), time.Now()).
+			AddRow(uuid.New(), "commodity", "commodity description", time.Now(), time.Now()),
+	}
+
+	domains := CommodityMocDomain{
+		Commodity: &domain.Commodity{
+			ID:          commodityID,
+			Name:        "commodity",
+			Description: "commodity description",
+		},
+	}
+
+	return sqlDB, mock, repo, ids, rows, domains
+}
+
+func TestCommodityRepository_Create(t *testing.T) {
+	db, mock, repo, ids, _, domains := CommodityRepositorySetup(t)
+
+	defer db.Close()
+
 	expectedSQL := `INSERT INTO "commodities" ("id","name","description","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6)`
 
-	t.Run("Test Create, successfully", func(t *testing.T) {
+	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Create(context.TODO(), &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"})
+		err := repo.Create(context.TODO(), domains.Commodity)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Create, error database", func(t *testing.T) {
+	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
-		err := repoImpl.Create(context.TODO(), &domain.Commodity{ID: commodityID, Name: "commodity", Description: "commodity description"})
+		err := repo.Create(context.TODO(), domains.Commodity)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -53,76 +96,64 @@ func TestCommodityRepository_Create(t *testing.T) {
 }
 
 func TestCommodityRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := CommodityRepositorySetup(t)
 
-	repoImpl := repository.NewCommodityRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "commodities"`
-	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		commodities := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).AddRow(uuid.New(), "commodity", "commodity description", time.Now(), time.Now()).AddRow(uuid.New(), "commodity", "commodity description", time.Now(), time.Now())
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(commodities)
-		result, err := repoImpl.FindAll(context.TODO())
+
+	t.Run("should return commodities when find all successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows.Commodities)
+
+		result, err := repo.FindAll(context.TODO())
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Len(t, *result, 2)
+		assert.Equal(t, ids.CommodityID, (*result)[0].ID)
 		assert.Equal(t, "commodity", (*result)[0].Name)
 		assert.Equal(t, "commodity description", (*result)[0].Description)
-		assert.Equal(t, "commodity", (*result)[1].Name)
-		assert.Equal(t, "commodity description", (*result)[1].Description)
+
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindAll, error database", func(t *testing.T) {
+	t.Run("should return error when find all failed", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
-		result, err := repoImpl.FindAll(context.TODO())
+
+		result, err := repo.FindAll(context.TODO())
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
+
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestCommodityRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
-
-	repoImpl := repository.NewCommodityRepository(db)
-
-	commodityID := uuid.New()
-
+	db, mock, repo, ids, rows, _ := CommodityRepositorySetup(t)
+	defer db.Close()
 	expectedSQL := `SELECT * FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL ORDER BY "commodities"."id" LIMIT $2`
-	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		commodity := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).AddRow(commodityID, "commodity", "commodity description", time.Now(), time.Now())
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnRows(commodity)
-		result, err := repoImpl.FindByID(context.TODO(), commodityID)
+	t.Run("should return commodity when find by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnRows(rows.Commodity)
+		result, err := repo.FindByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, commodityID, result.ID)
+		assert.Equal(t, ids.CommodityID, result.ID)
 		assert.Equal(t, "commodity", result.Name)
 		assert.Equal(t, "commodity description", result.Description)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnError(errors.New("database error"))
-		result, err := repoImpl.FindByID(context.TODO(), commodityID)
+	t.Run("should return error when find by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByID, not found", func(t *testing.T) {
+	t.Run("should return error when find by id not found", func(t *testing.T) {
 		commodity := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at", "deleted_at"})
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnRows(commodity)
-		result, err := repoImpl.FindByID(context.TODO(), commodityID)
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnRows(commodity)
+		result, err := repo.FindByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, result)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -130,47 +161,39 @@ func TestCommodityRepository_FindByID(t *testing.T) {
 }
 
 func TestCommodityRepository_Update(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, domains := CommodityRepositorySetup(t)
+	defer db.Close()
 
-	repoImpl := repository.NewCommodityRepository(db)
+	expectedSQL := `UPDATE "commodities" SET "id"=$1,"name"=$2,"description"=$3,"updated_at"=$4 WHERE id = $5 AND "commodities"."deleted_at" IS NULL`
 
-	commodityID := uuid.New()
-	expectedSQL := `UPDATE "commodities" SET "name"=$1,"description"=$2,"updated_at"=$3 WHERE id = $4 AND "commodities"."deleted_at" IS NULL`
-
-	t.Run("Test Update, successfully", func(t *testing.T) {
+	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("commodity", "commodity description", sqlmock.AnyArg(), commodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
-
-		err := repoImpl.Update(context.TODO(), commodityID, &domain.Commodity{Name: "commodity", Description: "commodity description"})
+		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Update, error database", func(t *testing.T) {
+	t.Run("should return error when update failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("commodity", "commodity description", sqlmock.AnyArg(), commodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
-
-		err := repoImpl.Update(context.TODO(), commodityID, &domain.Commodity{Name: "commodity", Description: "commodity description"})
+		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Update, not found", func(t *testing.T) {
+	t.Run("should return error when update not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("commodity", "commodity description", sqlmock.AnyArg(), commodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
-
-		err := repoImpl.Update(context.TODO(), commodityID, &domain.Commodity{Name: "commodity", Description: "commodity description"})
+		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -178,48 +201,39 @@ func TestCommodityRepository_Update(t *testing.T) {
 }
 
 func TestCommodityRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
-
-	repoImpl := repository.NewCommodityRepository(db)
-
-	commodityID := uuid.New()
+	db, mock, repo, ids, _, _ := CommodityRepositorySetup(t)
+	defer db.Close()
 
 	expectedSQL := `UPDATE "commodities" SET "deleted_at"=$1 WHERE id = $2 AND "commodities"."deleted_at" IS NULL`
 
-	t.Run("Test Delete, successfully", func(t *testing.T) {
+	t.Run("should not return error when delete successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
-
-		err := repoImpl.Delete(context.TODO(), commodityID)
+		err := repo.Delete(context.TODO(), ids.CommodityID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Delete, error database", func(t *testing.T) {
+	t.Run("should return error when delete failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
-
-		err := repoImpl.Delete(context.TODO(), commodityID)
+		err := repo.Delete(context.TODO(), ids.CommodityID)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Delete, not found", func(t *testing.T) {
+	t.Run("should return error when delete not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
-
-		err := repoImpl.Delete(context.TODO(), commodityID)
+		err := repo.Delete(context.TODO(), ids.CommodityID)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -227,47 +241,39 @@ func TestCommodityRepository_Delete(t *testing.T) {
 }
 
 func TestCommodityRepository_Restore(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := CommodityRepositorySetup(t)
+	defer db.Close()
 
-	repoImpl := repository.NewCommodityRepository(db)
-
-	commodityID := uuid.New()
 	expectedSQL := `UPDATE "commodities" SET "deleted_at"=$1,"updated_at"=$2 WHERE id = $3`
 
-	t.Run("Test Restore, successfully", func(t *testing.T) {
+	t.Run("should not return error when restore successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
-
-		err := repoImpl.Restore(context.TODO(), commodityID)
+		err := repo.Restore(context.TODO(), ids.CommodityID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Restore, error database", func(t *testing.T) {
+	t.Run("should return error when restore failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
-
-		err := repoImpl.Restore(context.TODO(), commodityID)
+		err := repo.Restore(context.TODO(), ids.CommodityID)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test Restore, not found", func(t *testing.T) {
+	t.Run("should return error when restore not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), commodityID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
-
-		err := repoImpl.Restore(context.TODO(), commodityID)
+		err := repo.Restore(context.TODO(), ids.CommodityID)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -275,45 +281,33 @@ func TestCommodityRepository_Restore(t *testing.T) {
 }
 
 func TestCommodityRepository_FindDeletedByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := CommodityRepositorySetup(t)
+	defer db.Close()
 
-	repoImpl := repository.NewCommodityRepository(db)
-
-	commodityID := uuid.New()
 	expectedSQL := `SELECT * FROM "commodities" WHERE id = $1 AND deleted_at IS NOT NULL ORDER BY "commodities"."id" LIMIT $2`
 
-	t.Run("Test FindDeletedByID, successfully", func(t *testing.T) {
-		commodity := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at"}).AddRow(commodityID, "commodity", "commodity description", time.Now(), time.Now())
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnRows(commodity)
-		result, err := repoImpl.FindDeletedByID(context.TODO(), commodityID)
+	t.Run("should return commodity when find deleted by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnRows(rows.Commodity)
+		result, err := repo.FindDeletedByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, commodityID, result.ID)
+		assert.Equal(t, ids.CommodityID, result.ID)
 		assert.Equal(t, "commodity", result.Name)
 		assert.Equal(t, "commodity description", result.Description)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindDeletedByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnError(errors.New("database error"))
-		result, err := repoImpl.FindDeletedByID(context.TODO(), commodityID)
+	t.Run("should return error when find deleted by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindDeletedByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindDeletedByID, not found", func(t *testing.T) {
+	t.Run("should return error when find deleted by id not found", func(t *testing.T) {
 		commodity := sqlmock.NewRows([]string{"id", "name", "description", "created_at", "updated_at", "deleted_at"})
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(commodityID, 1).
-			WillReturnRows(commodity)
-		result, err := repoImpl.FindDeletedByID(context.TODO(), commodityID)
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, 1).WillReturnRows(commodity)
+		result, err := repo.FindDeletedByID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, result)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())

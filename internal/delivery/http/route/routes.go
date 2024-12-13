@@ -47,6 +47,8 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 	ProvinceRoute(public, protected, handler.ProvinceHandler)
 	CityRoute(public, protected, handler.CityHandler)
 	RegionRoute(public, protected, handler.RegionHandler)
+	DemandRoutes(public, protected, handler.DemandHandler)
+	SupplyRoutes(public, protected, handler.SupplyHandler)
 	return r
 
 }

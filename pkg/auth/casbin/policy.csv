@@ -7,6 +7,8 @@ p, Admin, /api/prices*, *
 p, Admin, /api/land_commodities*, *
 p, Admin, /api/commodities*, *
 p, Admin, /api/cities*, *
+p, Admin, /api/demands*, *
+p, Admin, /api/supplies*, *
 
 p, Farmer, /api/users*, PATCH
 p, Farmer, /api/users/*, GET
@@ -17,3 +19,5 @@ p, Farmer, /api/prices*, GET
 p, Farmer, /api/land_commodities*, *
 p, Farmer, /api/commodities*, GET
 p, Farmer, /api/cities*, GET
+p, Farmer, /api/demands*, GET
+p, Farmer, /api/supplies*, GET

@@ -91,6 +91,26 @@ var priceHistorySet = wire.NewSet(
 	repository.NewPriceHistoryRepository,
 )
 
+var demandSet = wire.NewSet(
+	repository.NewDemandRepository,
+	usecase.NewDemandUsecase,
+	handler.NewDemandHandler,
+)
+
+var supplySet = wire.NewSet(
+	repository.NewSupplyRepository,
+	usecase.NewSupplyUsecase,
+	handler.NewSupplyHandler,
+)
+
+var demandHistorySet = wire.NewSet(
+	repository.NewDemandHistoryRepository,
+)
+
+var supplyHistorySet = wire.NewSet(
+	repository.NewSupplyHistoryRepository,
+)
+
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -112,6 +132,10 @@ func InitializeRouter() (*gin.Engine, error) {
 		regionSet,
 		priceHistorySet,
 		hashSet,
+		demandSet,
+		supplySet,
+		demandHistorySet,
+		supplyHistorySet,
 	)
 	return nil, nil
 }

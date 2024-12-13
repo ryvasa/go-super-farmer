@@ -17,11 +17,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) error {
-	err := r.db.WithContext(ctx).Create(user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Create(user).Error
 }
 func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
@@ -49,27 +45,15 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error
 }
 
 func (r *UserRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
-	err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.User{}).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.User{}).Error
 }
 
 func (r *UserRepositoryImpl) Restore(ctx context.Context, id uuid.UUID) error {
-	err := r.db.WithContext(ctx).Unscoped().Model(&domain.User{}).Where("id = ?", id).Update("deleted_at", nil).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Unscoped().Model(&domain.User{}).Where("id = ?", id).Update("deleted_at", nil).Error
 }
 
 func (r *UserRepositoryImpl) Update(ctx context.Context, id uuid.UUID, user *domain.User) error {
-	err := r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(user).Error
 }
 
 func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
