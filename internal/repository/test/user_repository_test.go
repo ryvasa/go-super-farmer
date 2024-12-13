@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -16,174 +17,196 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestUserRepository_Create(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+type UserRepositoryIDs struct {
+	UserID uuid.UUID
+}
 
-	repoImpl := repository.NewUserRepository(db)
+type UserRepositoryMockRows struct {
+	User     *sqlmock.Rows
+	NotFound *sqlmock.Rows
+}
+
+type UserRepositoryMocDomain struct {
+	User *domain.User
+}
+
+func UserRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.UserRepository, UserRepositoryIDs, UserRepositoryMockRows, UserRepositoryMocDomain) {
+
+	sqlDB, db, mock := database.DbMock(t)
+
+	repo := repository.NewUserRepository(db)
+
+	userID := uuid.New()
+
+	ids := UserRepositoryIDs{
+		UserID: userID,
+	}
+
+	rows := UserRepositoryMockRows{
+		User: sqlmock.NewRows([]string{"id", "name", "email", "phone", "password", "created_at", "updated_at", "deleted_at"}).
+			AddRow(userID, "user name", "user@email.com", "123456789", "password", time.Now(), time.Now(), nil),
+
+		NotFound: sqlmock.NewRows([]string{"id", "name", "email", "phone", "password", "created_at", "updated_at", "deleted_at"}),
+	}
+
+	phone := "123456789"
+	domains := UserRepositoryMocDomain{
+		User: &domain.User{
+			ID:        userID,
+			Name:      "user name",
+			Email:     "user@email.com",
+			Phone:     &phone,
+			Password:  "password",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	}
+
+	return sqlDB, mock, repo, ids, rows, domains
+}
+
+func TestUserRepository_Create(t *testing.T) {
+	db, mock, repo, ids, _, domains := UserRepositorySetup(t)
+
+	defer db.Close()
 
 	expectedSQL := `INSERT INTO "users" ("id","name","email","password","role_id","phone","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
-	userID := uuid.New()
-	phone := "122233"
-
-	t.Run("Test Create, successfully", func(t *testing.T) {
-
+	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(userID, "admin", "admin@example.com", "password", 1, &phone, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Create(context.TODO(), &domain.User{ID: userID, Name: "admin", Email: "admin@example.com", Password: "password", RoleID: 1, Phone: &phone})
+		err := repo.Create(context.TODO(), domains.User)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Create, error database", func(t *testing.T) {
+	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(userID, "admin", "admin@example.com", "password", 1, &phone, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
-		err := repoImpl.Create(context.TODO(), &domain.User{ID: userID, Name: "admin", Email: "admin@example.com", Password: "password", RoleID: 1, Phone: &phone})
+		err := repo.Create(context.TODO(), domains.User)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-}
-
-func TestUserRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
-
-	repoImpl := repository.NewUserRepository(db)
-
-	expectedSQL := `SELECT users.id,users.name,users.email,users.phone,users.created_at,users.updated_at FROM "users" WHERE "users"."deleted_at" IS NULL`
-
-	t.Run("Test FindAll, error database", func(t *testing.T) {
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindAll(context.TODO())
-		assert.Nil(t, result)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"}).
-			AddRow(uuid.New(), "admin", "admin@example.com", "122233", time.Now(), time.Now()).
-			AddRow(uuid.New(), "user", "user@example.com", "12233", time.Now(), time.Now())
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows)
-
-		result, err := repoImpl.FindAll(context.TODO())
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Len(t, *result, 2)
-		assert.Equal(t, "admin@example.com", (*result)[0].Email)
-		assert.Equal(t, "user@example.com", (*result)[1].Email)
-
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestUserRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT users.id,users.name,users.email,users.phone,users.created_at,users.updated_at FROM "users" WHERE "users"."id" = $1 AND "users"."deleted_at" IS NULL ORDER BY "users"."id" LIMIT $2`
 
-	userID := uuid.New()
-
-	t.Run("Test FindByID, error notfound", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"})
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindByID(context.TODO(), userID)
-		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
+	t.Run("should return user when find by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnRows(rows.User)
+		result, err := repo.FindByID(context.TODO(), ids.UserID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.UserID, result.ID)
+		assert.Equal(t, "user name", result.Name)
+		assert.Equal(t, "user@email.com", result.Email)
+		assert.Equal(t, "123456789", *result.Phone)
+		assert.Equal(t, "password", result.Password)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindByID(context.TODO(), userID)
+	t.Run("should return error when find by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindByID(context.TODO(), ids.UserID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+	t.Run("should return error when find by id not found", func(t *testing.T) {
+		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "password", "created_at", "updated_at", "deleted_at"})
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnRows(user)
+		result, err := repo.FindByID(context.TODO(), ids.UserID)
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+}
 
+func TestUserRepository_FindAll(t *testing.T) {
+	db, mock, repo, ids, rows, _ := UserRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `SELECT users.id,users.name,users.email,users.phone,users.created_at,users.updated_at FROM "users" WHERE "users"."deleted_at" IS NULL`
+
+	t.Run("should return users when find all successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows.User)
+
+		result, err := repo.FindAll(context.TODO())
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.UserID, (*result)[0].ID)
+		assert.Equal(t, "user name", (*result)[0].Name)
+		assert.Equal(t, "user@email.com", (*result)[0].Email)
+		assert.Equal(t, "123456789", *(*result)[0].Phone)
+		assert.Equal(t, "password", (*result)[0].Password)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"}).
-			AddRow(userID, "admin", "admin@example.com", "122233", time.Now(), time.Now())
+	t.Run("should return error when find all failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindByID(context.TODO(), userID)
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, "admin", result.Name)
-
+		result, err := repo.FindAll(context.TODO())
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestUserRepository_Update(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, domains := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
-	expectedSQL := `UPDATE "users" SET "name"=$1,"email"=$2,"password"=$3,"phone"=$4,"updated_at"=$5 WHERE id = $6 AND "users"."deleted_at" IS NULL`
+	expectedSQL := `UPDATE "users" SET "id"=$1,"name"=$2,"email"=$3,"password"=$4,"phone"=$5,"created_at"=$6,"updated_at"=$7 WHERE id = $8 AND "users"."deleted_at" IS NULL`
 
-	userID := uuid.New()
-	phone := "122233"
-
-	t.Run("Test Update, successfully", func(t *testing.T) {
+	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("admin", "admin@example.com", "password", &phone, sqlmock.AnyArg(), userID).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Update(context.TODO(), userID, &domain.User{Name: "admin", Email: "admin@example.com", Password: "password", Phone: &phone})
+		err := repo.Update(context.TODO(), ids.UserID, domains.User)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Update, error database", func(t *testing.T) {
+	t.Run("should return error when update failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("admin", "admin@example.com", "password", &phone, sqlmock.AnyArg(), userID).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
-		err := repoImpl.Update(context.TODO(), userID, &domain.User{Name: "admin", Email: "admin@example.com", Password: "password", Phone: &phone})
+		err := repo.Update(context.TODO(), ids.UserID, domains.User)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Update, not found", func(t *testing.T) {
+	t.Run("should return error when update not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("admin", "admin@example.com", "password", &phone, sqlmock.AnyArg(), userID).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
 
-		err := repoImpl.Update(context.TODO(), userID, &domain.User{Name: "admin", Email: "admin@example.com", Password: "password", Phone: &phone})
+		err := repo.Update(context.TODO(), ids.UserID, domains.User)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -191,48 +214,48 @@ func TestUserRepository_Update(t *testing.T) {
 }
 
 func TestUserRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
 	expectedSQL := `UPDATE "users" SET "deleted_at"=$1 WHERE id = $2 AND "users"."deleted_at" IS NULL`
 
-	userID := uuid.New()
-
-	t.Run("Test Delete, successfully", func(t *testing.T) {
+	t.Run("should not return error when delete successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), userID).
+			WithArgs(sqlmock.AnyArg(), ids.UserID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
+
 		mock.ExpectCommit()
 
-		err := repoImpl.Delete(context.TODO(), userID)
+		err := repo.Delete(context.TODO(), ids.UserID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Delete, error database", func(t *testing.T) {
+	t.Run("should return error when delete failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), userID).
-			WillReturnError(errors.New("database error"))
+			WithArgs(sqlmock.AnyArg(), ids.UserID).
+			WillReturnError(errors.New("error"))
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Delete(context.TODO(), userID)
+		err := repo.Delete(context.TODO(), ids.UserID)
 		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Delete, not found", func(t *testing.T) {
+	t.Run("should return error when delete not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), userID).
+			WithArgs(sqlmock.AnyArg(), ids.UserID).
 			WillReturnError(gorm.ErrRecordNotFound)
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Delete(context.TODO(), userID)
+		err := repo.Delete(context.TODO(), ids.UserID)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -240,152 +263,125 @@ func TestUserRepository_Delete(t *testing.T) {
 }
 
 func TestUserRepository_Restore(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
 	expectedSQL := `UPDATE "users" SET "deleted_at"=$1,"updated_at"=$2 WHERE id = $3`
 
-	userID := uuid.New()
-
-	t.Run("Test Restore, successfully", func(t *testing.T) {
+	t.Run("should not return error when restore successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), userID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
+
 		mock.ExpectCommit()
 
-		err := repoImpl.Restore(context.TODO(), userID)
+		err := repo.Restore(context.TODO(), ids.UserID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Restore, error database", func(t *testing.T) {
+	t.Run("should return error when restore failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), userID).
-			WillReturnError(errors.New("database error"))
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
+			WillReturnError(errors.New("error"))
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Restore(context.TODO(), userID)
+		err := repo.Restore(context.TODO(), ids.UserID)
 		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
+		assert.EqualError(t, err, "error")
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Restore, not found", func(t *testing.T) {
+	t.Run("should return error when restore not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), userID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.UserID).
 			WillReturnError(gorm.ErrRecordNotFound)
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Restore(context.TODO(), userID)
+		err := repo.Restore(context.TODO(), ids.UserID)
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
-func TestUserRepository_FindDeletedByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+func TestUserRepository_FindDeleted(t *testing.T) {
+	db, mock, repo, ids, rows, _ := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "users" WHERE id = $1 AND deleted_at IS NOT NULL ORDER BY "users"."id" LIMIT $2`
 
-	userID := uuid.New()
+	t.Run("should return user when find deleted by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnRows(rows.User)
 
-	parsedTime, err := time.Parse(time.RFC3339, "2022-01-01T00:00:00Z")
-	assert.Nil(t, err)
-
-	t.Run("Test FindDeletedByID, error notfound", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"})
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindDeletedByID(context.TODO(), userID)
-		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
+		result, err := repo.FindDeletedByID(context.TODO(), ids.UserID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.UserID, result.ID)
+		assert.Equal(t, "user name", result.Name)
+		assert.Equal(t, "user@email.com", result.Email)
+		assert.Equal(t, "123456789", *result.Phone)
+		assert.Equal(t, "password", result.Password)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindDeletedByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindDeletedByID(context.TODO(), userID)
+	t.Run("should return error when find deleted by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindDeletedByID(context.TODO(), ids.UserID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindDeletedByID, successfully", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"}).
-			AddRow(userID, "admin", "admin@example.com", "122233", parsedTime, parsedTime)
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(userID, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindDeletedByID(context.TODO(), userID)
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, "admin", result.Name)
-
+	t.Run("should return error when find deleted by id not found", func(t *testing.T) {
+		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "password", "created_at", "updated_at", "deleted_at"})
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.UserID, 1).WillReturnRows(user)
+		result, err := repo.FindDeletedByID(context.TODO(), ids.UserID)
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestUserRepository_FindByEmail(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := UserRepositorySetup(t)
 
-	repoImpl := repository.NewUserRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "users" WHERE email = $1 AND "users"."deleted_at" IS NULL ORDER BY "users"."id" LIMIT $2`
 
-	email := "admin@example.com"
-
-	parsedTime, err := time.Parse(time.RFC3339, "2022-01-01T00:00:00Z")
-	assert.Nil(t, err)
-
-	t.Run("Test FindByEmail, error notfound", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"})
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(email, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindByEmail(context.TODO(), email)
-		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
+	t.Run("should return user when find by email successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("user@email.com", 1).WillReturnRows(rows.User)
+		result, err := repo.FindByEmail(context.TODO(), "user@email.com")
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.UserID, result.ID)
+		assert.Equal(t, "user name", result.Name)
+		assert.Equal(t, "user@email.com", result.Email)
+		assert.Equal(t, "123456789", *result.Phone)
+		assert.Equal(t, "password", result.Password)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByEmail, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(email, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindByEmail(context.TODO(), email)
+	t.Run("should return error when find by email failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("user@email.com", 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindByEmail(context.TODO(), "user@email.com")
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByEmail, successfully", func(t *testing.T) {
-		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "created_at", "updated_at"}).
-			AddRow(uuid.New(), "admin", "admin@example.com", "122233", parsedTime, parsedTime)
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(email, 1).WillReturnRows(user)
-
-		result, err := repoImpl.FindByEmail(context.TODO(), email)
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, "admin", result.Name)
-
+	t.Run("should return error when find by email not found", func(t *testing.T) {
+		user := sqlmock.NewRows([]string{"id", "name", "email", "phone", "password", "created_at", "updated_at", "deleted_at"})
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("user@email.com", 1).WillReturnRows(user)
+		result, err := repo.FindByEmail(context.TODO(), "user@email.com")
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }

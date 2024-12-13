@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -14,31 +15,112 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestCityRepository_Create(t *testing.T) {
+type CityIDs struct {
+	CityID     int64
+	ProvinceID int64
+}
+
+type CityMockRows struct {
+	City     *sqlmock.Rows
+	Notfound *sqlmock.Rows
+}
+
+type CityMockDomains struct {
+	City *domain.City
+}
+
+func CityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.CityRepository, CityIDs, CityMockRows, CityMockDomains) {
+
 	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
 
-	repoImpl := repository.NewCityRepository(db)
+	repo := repository.NewCityRepository(db)
 
-	expectedSQL := `INSERT INTO "cities" ("name","province_id") VALUES ($1,$2) RETURNING "id"`
-	t.Run("Test Create, successfully", func(t *testing.T) {
+	cityID := int64(1)
+	provinceID := int64(2)
+
+	ids := CityIDs{
+		CityID:     cityID,
+		ProvinceID: provinceID,
+	}
+
+	rows := CityMockRows{
+		City: sqlmock.NewRows([]string{
+			"id", "name",
+		}).AddRow(ids.CityID, "city1"),
+		Notfound: sqlmock.NewRows([]string{
+			"id", "name",
+		}),
+	}
+
+	domains := CityMockDomains{
+		City: &domain.City{
+			ID:         ids.CityID,
+			Name:       "city1",
+			ProvinceID: provinceID,
+		},
+	}
+
+	return sqlDB, mock, repo, ids, rows, domains
+}
+
+func TestCityRepository_Create(t *testing.T) {
+	db, mock, repo, ids, _, domains := CityRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `INSERT INTO "cities" ("name","province_id","id") VALUES ($1,$2,$3) RETURNING "id"`
+
+	t.Run("should return no error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnRows(sqlmock.NewRows([]string{"id"}))
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(domains.City.Name, ids.ProvinceID, ids.CityID).
+			WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
 		mock.ExpectCommit()
 
-		err := repoImpl.Create(context.TODO(), &domain.City{ProvinceID: 1, Name: "Tasikmalaya"})
-
+		err := repo.Create(context.TODO(), domains.City)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Create, error database", func(t *testing.T) {
+	t.Run("should return error when failed create city", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnError(errors.New("database error"))
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(domains.City.Name, ids.ProvinceID, ids.CityID).
+			WillReturnError(errors.New("database error"))
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Create(context.TODO(), &domain.City{ProvinceID: 1, Name: "Tasikmalaya"})
+		err := repo.Create(context.TODO(), domains.City)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+}
 
+func TestCityRepository_FindAll(t *testing.T) {
+	db, mock, repo, ids, rows, domains := CityRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `SELECT * FROM "cities"`
+
+	t.Run("should return cities commodities when find all successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows.City)
+
+		result, err := repo.FindAll(context.TODO())
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, len(*result))
+		assert.Equal(t, ids.CityID, (*result)[0].ID)
+		assert.Equal(t, domains.City.Name, (*result)[0].Name)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+	t.Run("should return error when find all failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
+
+		result, err := repo.FindAll(context.TODO())
+		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -46,174 +128,143 @@ func TestCityRepository_Create(t *testing.T) {
 }
 
 func TestCityRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, domains := CityRepositorySetup(t)
 
-	repoImpl := repository.NewCityRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "cities" WHERE "cities"."id" = $1 ORDER BY "cities"."id" LIMIT $2`
-	t.Run("Test FindByID, error notfound", func(t *testing.T) {
-		city := sqlmock.NewRows([]string{"id", "province_id", "name"})
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(2, 1).WillReturnRows(city)
+	t.Run("should return city when find by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID, 1).
+			WillReturnRows(rows.City)
 
-		result, err := repoImpl.FindByID(context.TODO(), int64(2))
+		result, err := repo.FindByID(context.TODO(), ids.CityID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.CityID, result.ID)
+		assert.Equal(t, domains.City.Name, result.Name)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("should return error when find by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CityID, 1).WillReturnError(errors.New("database error"))
+
+		result, err := repo.FindByID(context.TODO(), ids.CityID)
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("should return error when find by id not found", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CityID, 1).WillReturnRows(rows.Notfound)
+
+		result, err := repo.FindByID(context.TODO(), ids.CityID)
 		assert.Nil(t, result)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindByID(context.TODO(), int64(1))
-		assert.Nil(t, result)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		city := sqlmock.NewRows([]string{"id", "province_id", "name"}).
-			AddRow(1, 1, "Tasikmalaya")
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, 1).WillReturnRows(city)
-
-		result, err := repoImpl.FindByID(context.TODO(), int64(1))
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, int64(1), result.ID)
-		assert.Equal(t, int64(1), result.ProvinceID)
-		assert.Equal(t, "Tasikmalaya", result.Name)
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-}
-
-func TestCityRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
-
-	repoImpl := repository.NewCityRepository(db)
-
-	expectedSQL := `SELECT * FROM "cities"`
-	t.Run("Test FindAll, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindAll(context.TODO())
-		assert.Nil(t, result)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"id", "province_id", "name"}).
-			AddRow(1, 1, "Tasikmalaya").
-			AddRow(2, 1, "Bangkok")
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows)
-
-		result, err := repoImpl.FindAll(context.TODO())
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Len(t, *result, 2)
-		assert.Equal(t, int64(1), (*result)[0].ID)
-		assert.Equal(t, "Tasikmalaya", (*result)[0].Name)
-		assert.Equal(t, int64(2), (*result)[1].ID)
-		assert.Equal(t, "Bangkok", (*result)[1].Name)
 
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestCityRepository_Update(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, domains := CityRepositorySetup(t)
 
-	repoImpl := repository.NewCityRepository(db)
+	defer db.Close()
 
-	expectedSQL := `UPDATE "cities" SET "name"=$1 WHERE id = $2`
-	t.Run("Test Update, error notfound", func(t *testing.T) {
+	expectedSQL := `UPDATE "cities" SET "id"=$1,"name"=$2,"province_id"=$3 WHERE id = $4`
+
+	t.Run("should return no error when update successfully", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnError(gorm.ErrRecordNotFound)
-		mock.ExpectRollback()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID, domains.City.Name,
+				ids.ProvinceID, ids.CityID).
+			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		err := repoImpl.Update(context.TODO(), 1, &domain.City{Name: "Tasikmalaya"})
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, gorm.ErrRecordNotFound.Error())
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test Update, error database", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnError(errors.New("database error"))
-		mock.ExpectRollback()
-
-		err := repoImpl.Update(context.TODO(), 1, &domain.City{Name: "Tasikmalaya"})
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test Update, successfully", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs("Tasikmalaya", 1).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Update(context.TODO(), 1, &domain.City{Name: "Tasikmalaya"})
+		err := repo.Update(context.TODO(), ids.CityID, domains.City)
 		assert.Nil(t, err)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
 
+	t.Run("should return error when failed update province", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID, domains.City.Name,
+				ids.ProvinceID, ids.CityID).
+			WillReturnError(errors.New("database error"))
+
+		mock.ExpectRollback()
+
+		err := repo.Update(context.TODO(), ids.CityID, domains.City)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("should return error when update not found", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID, domains.City.Name,
+				ids.ProvinceID, ids.CityID).
+			WillReturnError(gorm.ErrRecordNotFound)
+
+		mock.ExpectRollback()
+
+		err := repo.Update(context.TODO(), ids.CityID, domains.City)
+		assert.NotNil(t, err)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestCityRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := CityRepositorySetup(t)
 
-	repoImpl := repository.NewCityRepository(db)
+	defer db.Close()
 
 	expectedSQL := `DELETE FROM "cities" WHERE id = $1`
 
-	t.Run("Test Delete, error notfound", func(t *testing.T) {
+	t.Run("should return no error when delete successfully", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs(1).WillReturnError(gorm.ErrRecordNotFound)
-		mock.ExpectRollback()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID).
+			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		err := repoImpl.Delete(context.TODO(), 1)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, gorm.ErrRecordNotFound.Error())
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test Delete, error database", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs(1).WillReturnError(errors.New("database error"))
-		mock.ExpectRollback()
-
-		err := repoImpl.Delete(context.TODO(), 1)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test Delete, successfully", func(t *testing.T) {
-
-		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Delete(context.TODO(), 1)
+		err := repo.Delete(context.TODO(), ids.CityID)
 		assert.Nil(t, err)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
 
+	t.Run("should return error when failed delete", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID).
+			WillReturnError(errors.New("database error"))
+
+		mock.ExpectRollback()
+
+		err := repo.Delete(context.TODO(), ids.CityID)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("should return error when delete not found", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+			WithArgs(ids.CityID).
+			WillReturnError(gorm.ErrRecordNotFound)
+
+		mock.ExpectRollback()
+
+		err := repo.Delete(context.TODO(), ids.CityID)
+		assert.NotNil(t, err)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }

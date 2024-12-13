@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -16,39 +17,90 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestRegionRepository_Create(t *testing.T) {
+type RegionRepositoryIDs struct {
+	RegionID   uuid.UUID
+	ProvinceID int64
+	CityID     int64
+}
+
+type RegionRepositoryMockRows struct {
+	Region    *sqlmock.Rows
+	Notfound  *sqlmock.Rows
+	Commodity *sqlmock.Rows
+	Province  *sqlmock.Rows
+}
+
+type RegionRepositoryMocDomain struct {
+	Region *domain.Region
+}
+
+func RegionRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.RegionRepository, RegionRepositoryIDs, RegionRepositoryMockRows, RegionRepositoryMocDomain) {
+
 	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
 
-	repoImpl := repository.NewRegionRepository(db)
-
-	expectedSQL := `INSERT INTO "regions" ("id","province_id","city_id","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6)`
+	repo := repository.NewRegionRepository(db)
 
 	regionID := uuid.New()
 	provinceID := int64(1)
 	cityID := int64(1)
-	t.Run("Test Create, successfully", func(t *testing.T) {
+
+	ids := RegionRepositoryIDs{
+		RegionID:   regionID,
+		ProvinceID: provinceID,
+		CityID:     cityID,
+	}
+
+	rows := RegionRepositoryMockRows{
+		Region: sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}).
+			AddRow(regionID, provinceID, cityID, time.Now(), time.Now(), nil),
+
+		Notfound: sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}),
+
+		Commodity: sqlmock.NewRows([]string{"id", "name"}).
+			AddRow(regionID, "commodity name"),
+
+		Province: sqlmock.NewRows([]string{"id", "name"}).
+			AddRow(regionID, "province name"),
+	}
+
+	domains := RegionRepositoryMocDomain{
+		Region: &domain.Region{
+			ID:         regionID,
+			ProvinceID: provinceID,
+			CityID:     cityID,
+		},
+	}
+
+	return sqlDB, mock, repo, ids, rows, domains
+}
+
+func TestRegionRepository_Create(t *testing.T) {
+	db, mock, repo, ids, _, domains := RegionRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `INSERT INTO "regions" ("id","province_id","city_id","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6)`
+
+	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(regionID, provinceID, cityID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.RegionID, ids.ProvinceID, ids.CityID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Create(context.TODO(), &domain.Region{ID: regionID, ProvinceID: provinceID, CityID: cityID})
-
+		err := repo.Create(context.TODO(), domains.Region)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Create, error database", func(t *testing.T) {
+	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(regionID, provinceID, cityID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.RegionID, ids.ProvinceID, ids.CityID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
-		err := repoImpl.Create(context.TODO(), &domain.Region{ID: regionID, ProvinceID: provinceID, CityID: cityID})
-
+		err := repo.Create(context.TODO(), domains.Region)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -56,53 +108,36 @@ func TestRegionRepository_Create(t *testing.T) {
 }
 
 func TestRegionRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "regions" WHERE "regions"."id" = $1 AND "regions"."deleted_at" IS NULL ORDER BY "regions"."id" LIMIT $2`
 
-	regionID := uuid.New()
-	cityID := int64(1)
-	provinceID := int64(1)
-	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		region := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}).
-			AddRow(regionID, cityID, provinceID, time.Now(), time.Now(), nil)
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(regionID, 1).
-			WillReturnRows(region)
-
-		result, err := repoImpl.FindByID(context.TODO(), regionID)
-
+	t.Run("should return region when find by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID, 1).WillReturnRows(rows.Region)
+		result, err := repo.FindByID(context.TODO(), ids.RegionID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
+		assert.Equal(t, ids.RegionID, result.ID)
 		assert.Equal(t, int64(1), result.ProvinceID)
 		assert.Equal(t, int64(1), result.CityID)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-
-	t.Run("Test FindByID, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(regionID, 1).
-			WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindByID(context.TODO(), regionID)
-
+	t.Run("should return error when find by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID, 1).WillReturnError(errors.New("database error"))
+		result, err := repo.FindByID(context.TODO(), ids.RegionID)
+		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-		assert.Nil(t, result)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
-	t.Run("Test FindByID, error not found", func(t *testing.T) {
+	t.Run("should return error when find by id not found", func(t *testing.T) {
 		region := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"})
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(regionID, 1).
-			WillReturnRows(region)
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID, 1).WillReturnRows(region)
 
-		result, err := repoImpl.FindByID(context.TODO(), regionID)
+		result, err := repo.FindByID(context.TODO(), ids.RegionID)
 
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "record not found")
@@ -111,39 +146,30 @@ func TestRegionRepository_FindByID(t *testing.T) {
 	})
 }
 
-func TestRegionRepository_FindByProvinceID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+func TestRegionRepository_FindAll(t *testing.T) {
+	db, mock, repo, ids, rows, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
-	expectedSQL := `SELECT * FROM "regions" WHERE province_id = $1 AND "regions"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "regions" WHERE "regions"."deleted_at" IS NULL`
 
-	regionID := uuid.New()
-	provinceID := int64(1)
+	t.Run("should return regions when find all successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows.Region)
 
-	t.Run("Test FindByProvinceID, successfully", func(t *testing.T) {
-		regions := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}).AddRow(regionID, provinceID, 1, time.Now(), time.Now(), nil)
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(provinceID).
-			WillReturnRows(regions)
-
-		result, err := repoImpl.FindByProvinceID(context.TODO(), provinceID)
+		result, err := repo.FindAll(context.TODO())
 
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, int64(1), (*result)[0].ProvinceID)
-		assert.Equal(t, regionID, (*result)[0].ID)
+		assert.Equal(t, ids.RegionID, (*result)[0].ID)
+		assert.Equal(t, ids.ProvinceID, (*result)[0].ProvinceID)
+		assert.Equal(t, int64(1), (*result)[0].CityID)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindByProvinceID, database error", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(provinceID).
-			WillReturnError(errors.New("database error"))
+	t.Run("should return error when find all failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
 
-		result, err := repoImpl.FindByProvinceID(context.TODO(), provinceID)
+		result, err := repo.FindAll(context.TODO())
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
@@ -152,38 +178,30 @@ func TestRegionRepository_FindByProvinceID(t *testing.T) {
 	})
 }
 
-func TestRegionRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+func TestRegionRepository_FindByProvinceID(t *testing.T) {
+	db, mock, repo, ids, rows, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
-	expectedSQL := `SELECT * FROM "regions" WHERE "regions"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "regions" WHERE province_id = $1 AND "regions"."deleted_at" IS NULL`
 
-	regionID := uuid.New()
-	cityID := int64(1)
-	provinceID := int64(1)
-	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		regions := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}).
-			AddRow(regionID, provinceID, cityID, time.Now(), time.Now(), nil)
+	t.Run("should return regions when find by province id successfully", func(t *testing.T) {
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WillReturnRows(regions)
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.ProvinceID).WillReturnRows(rows.Region)
 
-		result, err := repoImpl.FindAll(context.TODO())
+		result, err := repo.FindByProvinceID(context.TODO(), ids.ProvinceID)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, provinceID, (*result)[0].ProvinceID)
-		assert.Equal(t, regionID, (*result)[0].ID)
+		assert.Equal(t, ids.RegionID, (*result)[0].ID)
+		assert.Equal(t, ids.ProvinceID, (*result)[0].ProvinceID)
+		assert.Equal(t, int64(1), (*result)[0].CityID)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindAll, database error", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindAll(context.TODO())
+	t.Run("should return error when find by province id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.ProvinceID).WillReturnError(errors.New("database error"))
+		result, err := repo.FindByProvinceID(context.TODO(), ids.ProvinceID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
@@ -193,209 +211,169 @@ func TestRegionRepository_FindAll(t *testing.T) {
 }
 
 func TestRegionRepository_Update(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, domains := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
-	expectedSQL := `UPDATE "regions" SET "province_id"=$1,"city_id"=$2,"updated_at"=$3 WHERE id = $4 AND "regions"."deleted_at" IS NULL`
+	expectedSQL := `UPDATE "regions" SET "id"=$1,"province_id"=$2,"city_id"=$3,"updated_at"=$4 WHERE id = $5 AND "regions"."deleted_at" IS NULL`
 
-	regionID := uuid.New()
-	cityID := int64(1)
-	provinceID := int64(1)
-	t.Run("Test Update, successfully", func(t *testing.T) {
-
+	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(provinceID, cityID, sqlmock.AnyArg(), regionID).
+			WithArgs(ids.RegionID, ids.ProvinceID, ids.CityID, sqlmock.AnyArg(), ids.RegionID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repoImpl.Update(context.TODO(),
-			regionID, &domain.Region{
-				ProvinceID: provinceID,
-				CityID:     cityID,
-			})
+		err := repo.Update(context.TODO(),
+			ids.RegionID, domains.Region)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Update, database error", func(t *testing.T) {
+	t.Run("should return error when update failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(provinceID, cityID, sqlmock.AnyArg(), regionID).
+			WithArgs(ids.RegionID, ids.ProvinceID, ids.CityID, sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
-		err := repoImpl.Update(context.TODO(),
-			regionID, &domain.Region{
-				ProvinceID: provinceID,
-				CityID:     cityID,
-			})
+		err := repo.Update(context.TODO(),
+			ids.RegionID, domains.Region)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Update, record not found", func(t *testing.T) {
+	t.Run("should return error when update not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(provinceID, cityID, sqlmock.AnyArg(), regionID).
+			WithArgs(ids.RegionID, ids.ProvinceID, ids.CityID, sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
 
-		err := repoImpl.Update(context.TODO(),
-			regionID, &domain.Region{
-				ProvinceID: provinceID,
-				CityID:     cityID,
-			})
+		err := repo.Update(context.TODO(),
+			ids.RegionID, domains.Region)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestRegionRepository_Delete(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
 	expectedSQL := `UPDATE "regions" SET "deleted_at"=$1 WHERE "regions"."id" = $2 AND "regions"."deleted_at" IS NULL`
 
-	regionID := uuid.New()
-
-	t.Run("Test Delete, successfully", func(t *testing.T) {
+	t.Run("should not return error when delete successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), ids.RegionID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
 		mock.ExpectCommit()
 
-		err := repoImpl.Delete(context.TODO(), regionID)
+		err := repo.Delete(context.TODO(), ids.RegionID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Delete, database error", func(t *testing.T) {
+	t.Run("should return error when delete failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(errors.New("error"))
 
 		mock.ExpectRollback()
 
-		err := repoImpl.Delete(context.TODO(), regionID)
+		err := repo.Delete(context.TODO(), ids.RegionID)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Delete, not found", func(t *testing.T) {
+	t.Run("should return error when delete not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(gorm.ErrRecordNotFound)
 
 		mock.ExpectRollback()
 
-		err := repoImpl.Delete(context.TODO(), regionID)
+		err := repo.Delete(context.TODO(), ids.RegionID)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestRegionRepository_Restore(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, _, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
 	expectedSQL := `UPDATE "regions" SET "deleted_at"=$1,"updated_at"=$2 WHERE id = $3`
 
-	regionID := uuid.New()
-
-	t.Run("Test Restore, successfully", func(t *testing.T) {
+	t.Run("should not return error when restore successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.RegionID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
 		mock.ExpectCommit()
 
-		err := repoImpl.Restore(context.TODO(), regionID)
+		err := repo.Restore(context.TODO(), ids.RegionID)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Restore, database error", func(t *testing.T) {
+	t.Run("should return error when restore failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(errors.New("error"))
 
 		mock.ExpectRollback()
 
-		err := repoImpl.Restore(context.TODO(), regionID)
+		err := repo.Restore(context.TODO(), ids.RegionID)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Restore, not found", func(t *testing.T) {
+	t.Run("should return error when restore not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), regionID).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), ids.RegionID).
 			WillReturnError(gorm.ErrRecordNotFound)
 
 		mock.ExpectRollback()
 
-		err := repoImpl.Restore(context.TODO(), regionID)
+		err := repo.Restore(context.TODO(), ids.RegionID)
 		assert.NotNil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestRegionRepository_FindDeleted(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, _ := RegionRepositorySetup(t)
 
-	repoImpl := repository.NewRegionRepository(db)
+	defer db.Close()
 
 	expectedSQL := `SELECT * FROM "regions" WHERE "regions"."id" = $1 ORDER BY "regions"."id" LIMIT $2`
 
-	regionID := uuid.New()
-	provinceID := int64(1)
-	cityID := int64(1)
-	t.Run("Test FindDeleted, error notfound", func(t *testing.T) {
-		region := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"})
+	t.Run("should return region when find deleted by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID, 1).WillReturnRows(rows.Region)
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(regionID, 1).WillReturnRows(region)
-
-		result, err := repoImpl.FindDeleted(context.TODO(), regionID)
-		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindDeleted, error database", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(regionID, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindDeleted(context.TODO(), regionID)
-		assert.Nil(t, result)
-		assert.NotNil(t, err)
-		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindDeleted, successfully", func(t *testing.T) {
-		region := sqlmock.NewRows([]string{"id", "province_id", "city_id", "created_at", "updated_at", "deleted_at"}).AddRow(regionID, provinceID, cityID, time.Now(), time.Now(), time.Now())
-
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(regionID, 1).WillReturnRows(region)
-
-		result, err := repoImpl.FindDeleted(context.TODO(), regionID)
+		result, err := repo.FindDeleted(context.TODO(), ids.RegionID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
-		assert.Equal(t, regionID, result.ID)
+		assert.Equal(t, ids.RegionID, result.ID)
+		assert.Equal(t, int64(1), result.ProvinceID)
+		assert.Equal(t, int64(1), result.CityID)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+	t.Run("should return error when find deleted by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID, 1).WillReturnError(gorm.ErrRecordNotFound)
+		result, err := repo.FindDeleted(context.TODO(), ids.RegionID)
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})

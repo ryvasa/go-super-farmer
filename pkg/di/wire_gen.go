@@ -65,9 +65,17 @@ func InitializeRouter() (*gin.Engine, error) {
 	cityRepository := repository.NewCityRepository(db)
 	cityUsecase := usecase.NewCityUsecase(cityRepository)
 	cityHandler := handler.NewCityHandler(cityUsecase)
-	regionUseCase := usecase.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
-	regionHandler := handler.NewRegionHandler(regionUseCase)
-	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler)
+	regionUsecase := usecase.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
+	regionHandler := handler.NewRegionHandler(regionUsecase)
+	demandRepository := repository.NewDemandRepository(db)
+	demandHistoryRepository := repository.NewDemandHistoryRepository(db)
+	demandUsecase := usecase.NewDemandUsecase(demandRepository, demandHistoryRepository, commodityRepository, regionRepository)
+	demandHandler := handler.NewDemandHandler(demandUsecase)
+	supplyRepository := repository.NewSupplyRepository(db)
+	supplyHistoryRepository := repository.NewSupplyHistoryRepository(db)
+	supplyUsecase := usecase.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository)
+	supplyHandler := handler.NewSupplyHandler(supplyUsecase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
 }
@@ -101,3 +109,11 @@ var citySet = wire.NewSet(repository.NewCityRepository, usecase.NewCityUsecase, 
 var regionSet = wire.NewSet(repository.NewRegionRepository, usecase.NewRegionUsecase, handler.NewRegionHandler)
 
 var priceHistorySet = wire.NewSet(repository.NewPriceHistoryRepository)
+
+var demandSet = wire.NewSet(repository.NewDemandRepository, usecase.NewDemandUsecase, handler.NewDemandHandler)
+
+var supplySet = wire.NewSet(repository.NewSupplyRepository, usecase.NewSupplyUsecase, handler.NewSupplyHandler)
+
+var demandHistorySet = wire.NewSet(repository.NewDemandHistoryRepository)
+
+var supplyHistorySet = wire.NewSet(repository.NewSupplyHistoryRepository)

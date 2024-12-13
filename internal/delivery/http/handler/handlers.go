@@ -11,9 +11,11 @@ type Handlers struct {
 	ProvinceHandler      ProvinceHandler
 	CityHandler          CityHandler
 	RegionHandler        RegionHandler
+	DemandHandler        DemandHandler
+	SupplyHandler        SupplyHandler
 }
 
-func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler LandHandler, authHandler AuthHandler, commodityHandler CommodityHandler, landCommodityHandler LandCommodityHandler, priceHandler PriceHandler, provinceHandler ProvinceHandler, cityHandler CityHandler, regionHandler RegionHandler) *Handlers {
+func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler LandHandler, authHandler AuthHandler, commodityHandler CommodityHandler, landCommodityHandler LandCommodityHandler, priceHandler PriceHandler, provinceHandler ProvinceHandler, cityHandler CityHandler, regionHandler RegionHandler, demandHandler DemandHandler, supplyHandler SupplyHandler) *Handlers {
 	return &Handlers{
 		RoleHandler:          roleHandler,
 		UserHandler:          userHandler,
@@ -25,5 +27,7 @@ func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler L
 		ProvinceHandler:      provinceHandler,
 		CityHandler:          cityHandler,
 		RegionHandler:        regionHandler,
+		DemandHandler:        demandHandler,
+		SupplyHandler:        supplyHandler,
 	}
 }

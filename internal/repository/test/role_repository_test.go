@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"regexp"
 	"testing"
@@ -14,36 +15,78 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestRoleRepository_Create(t *testing.T) {
+type RoleIDs struct {
+	RoleID int64
+}
+
+type RoleMockRows struct {
+	Role     *sqlmock.Rows
+	Notfound *sqlmock.Rows
+}
+
+type RoleMockDomains struct {
+	Role *domain.Role
+}
+
+func RoleRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.RoleRepository, RoleIDs, RoleMockRows, RoleMockDomains) {
+
 	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
 
-	repoImpl := repository.NewRoleRepository(db)
+	repo := repository.NewRoleRepository(db)
 
-	t.Run("Test Create, successfully", func(t *testing.T) {
-		expectedSQL := `INSERT INTO "roles" ("name") VALUES ($1) RETURNING "id"`
+	roleID := int64(1)
 
+	ids := RoleIDs{RoleID: roleID}
+
+	rows := RoleMockRows{
+		Role: sqlmock.NewRows([]string{
+			"id", "name",
+		}).AddRow(ids.RoleID, "role1"),
+		Notfound: sqlmock.NewRows([]string{
+			"id", "name",
+		}),
+	}
+
+	domains := RoleMockDomains{
+		Role: &domain.Role{
+			ID:   ids.RoleID,
+			Name: "role1",
+		},
+	}
+
+	return sqlDB, mock, repo, ids, rows, domains
+
+}
+
+func TestRoleRepository_Create(t *testing.T) {
+	db, mock, repo, ids, _, domains := RoleRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `INSERT INTO "roles" ("name","id") VALUES ($1,$2) RETURNING "id"`
+
+	t.Run("should return no error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("admin").
-			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+			WithArgs(domains.Role.Name, ids.RoleID).
+			WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
 		mock.ExpectCommit()
 
-		err := repoImpl.Create(context.TODO(), &domain.Role{Name: "admin"})
+		err := repo.Create(context.TODO(), domains.Role)
 		assert.Nil(t, err)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test Create, error database", func(t *testing.T) {
-		expectedSQL := `INSERT INTO "roles" ("name") VALUES ($1) RETURNING "id"`
-
+	t.Run("should return error when failed create role", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs("admin").
+			WithArgs(domains.Role.Name, ids.RoleID).
 			WillReturnError(errors.New("database error"))
+
 		mock.ExpectRollback()
 
-		err := repoImpl.Create(context.TODO(), &domain.Role{Name: "admin"})
+		err := repo.Create(context.TODO(), domains.Role)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mock.ExpectationsWereMet())
@@ -51,86 +94,68 @@ func TestRoleRepository_Create(t *testing.T) {
 }
 
 func TestRoleRepository_FindAll(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, domains := RoleRepositorySetup(t)
 
-	repoImpl := repository.NewRoleRepository(db)
-	t.Run("Test FindAll, error database", func(t *testing.T) {
-		expectedSQL := `SELECT * FROM "roles"`
+	defer db.Close()
 
+	expectedSQL := `SELECT * FROM "roles"`
+
+	t.Run("should return roles commodities when find all successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows.Role)
+
+		result, err := repo.FindAll(context.TODO())
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, len(*result))
+		assert.Equal(t, ids.RoleID, (*result)[0].ID)
+		assert.Equal(t, domains.Role.Name, (*result)[0].Name)
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+	t.Run("should return error when find all failed", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnError(errors.New("database error"))
 
-		result, err := repoImpl.FindAll(context.TODO())
+		result, err := repo.FindAll(context.TODO())
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-
-		assert.Nil(t, mock.ExpectationsWereMet())
-	})
-
-	t.Run("Test FindAll, successfully", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"id", "name"}).
-			AddRow(1, "admin").
-			AddRow(2, "user")
-
-		expectedSQL := `SELECT * FROM "roles"`
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WillReturnRows(rows)
-
-		result, err := repoImpl.FindAll(context.TODO())
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Len(t, *result, 2)
-		assert.Equal(t, "admin", (*result)[0].Name)
-		assert.Equal(t, "user", (*result)[1].Name)
-
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
 
 func TestRoleRepository_FindByID(t *testing.T) {
-	sqlDB, db, mock := database.DbMock(t)
-	defer sqlDB.Close()
+	db, mock, repo, ids, rows, domains := RoleRepositorySetup(t)
 
-	repoImpl := repository.NewRoleRepository(db)
+	defer db.Close()
 
-	t.Run("Test FindByID, error notfound", func(t *testing.T) {
-		role := sqlmock.NewRows([]string{"id", "name"})
+	expectedSQL := `SELECT * FROM "roles" WHERE "roles"."id" = $1 ORDER BY "roles"."id" LIMIT $2`
 
-		expectedSQL := `SELECT * FROM "roles" WHERE "roles"."id" = $1 ORDER BY "roles"."id" LIMIT $2`
+	t.Run("should return role when find by id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RoleID, 1).WillReturnRows(rows.Role)
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(2, 1).WillReturnRows(role)
-
-		result, err := repoImpl.FindByID(context.TODO(), 2)
-		assert.Nil(t, result)
-		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
-
+		result, err := repo.FindByID(context.TODO(), ids.RoleID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.RoleID, result.ID)
+		assert.Equal(t, domains.Role.Name, result.Name)
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindByID, error database", func(t *testing.T) {
-		expectedSQL := `SELECT * FROM "roles" WHERE "roles"."id" = $1 ORDER BY "roles"."id" LIMIT $2`
+	t.Run("should return error when find by id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RoleID, 1).WillReturnError(errors.New("database error"))
 
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, 1).WillReturnError(errors.New("database error"))
-
-		result, err := repoImpl.FindByID(context.TODO(), 1)
+		result, err := repo.FindByID(context.TODO(), ids.RoleID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
-
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("Test FindByID, successfully", func(t *testing.T) {
-		role := sqlmock.NewRows([]string{"id", "name"}).
-			AddRow(1, "admin")
+	t.Run("should return error when find by id not found", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RoleID, 1).WillReturnRows(rows.Notfound)
 
-		expectedSQL := `SELECT * FROM "roles" WHERE "roles"."id" = $1 ORDER BY "roles"."id" LIMIT $2`
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(1, 1).WillReturnRows(role)
-
-		result, err := repoImpl.FindByID(context.TODO(), 1)
-		assert.Nil(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, "admin", result.Name)
+		result, err := repo.FindByID(context.TODO(), ids.RoleID)
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
 
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
