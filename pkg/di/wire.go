@@ -111,6 +111,12 @@ var supplyHistorySet = wire.NewSet(
 	repository.NewSupplyHistoryRepository,
 )
 
+var harvestSet = wire.NewSet(
+	repository.NewHarvestRepository,
+	usecase.NewHarvestUsecase,
+	handler.NewHarvestHandler,
+)
+
 func InitializeRouter() (*gin.Engine, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -136,6 +142,7 @@ func InitializeRouter() (*gin.Engine, error) {
 		supplySet,
 		demandHistorySet,
 		supplyHistorySet,
+		harvestSet,
 	)
 	return nil, nil
 }

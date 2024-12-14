@@ -71,12 +71,12 @@ func TestLandRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "lands" ("id","user_id","land_area","certificate","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`
+	expectedSQL := `INSERT INTO "lands" ("id","user_id","land_area","unit","certificate","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.LandID, ids.UserID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -88,7 +88,7 @@ func TestLandRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.LandID, ids.UserID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 

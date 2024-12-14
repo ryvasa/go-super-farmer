@@ -246,7 +246,7 @@ func TestSupplyHandler_GetSupplyByID(t *testing.T) {
 func TestSupplyHandler_GetSupplyByCommodityID(t *testing.T) {
 	r, h, uc, ids, mocks := SupplyHandlerSetUp(t)
 
-	r.GET("/supplies/commodity/:id", h.GetSupplyByCommodityID)
+	r.GET("/supplies/commodity/:commodity_id", h.GetSupplyByCommodityID)
 
 	t.Run("should get supplies by commodity id successfully", func(t *testing.T) {
 		uc.EXPECT().GetSupplyByCommodityID(gomock.Any(), ids.CommodityID).Return(mocks.Supplies, nil).Times(1)

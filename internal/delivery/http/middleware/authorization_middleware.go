@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"log"
+
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -35,6 +37,7 @@ func (m *AutzMiddleware) Handle() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		method := c.Request.Method
 
+		log.Println(role, path, method)
 		allowed, err := m.enforcer.Enforce(role, path, method)
 		if err != nil {
 			utils.ErrorResponse(c, utils.NewUnauthorizedError("Authorization check failed"))

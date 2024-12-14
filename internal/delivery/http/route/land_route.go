@@ -6,7 +6,6 @@ import (
 )
 
 func LandRoutes(public, protected *gin.RouterGroup, landHandler handler.LandHandler) {
-
 	protected.GET("/lands", landHandler.GetAllLands)
 	protected.POST("/lands", landHandler.CreateLand)
 	protected.GET("/lands/:id", landHandler.GetLandByID)

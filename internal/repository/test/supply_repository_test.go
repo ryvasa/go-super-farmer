@@ -73,12 +73,12 @@ func TestSupplyRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "supplies" ("id","commodity_id","region_id","quantity","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`
+	expectedSQL := `INSERT INTO "supplies" ("id","commodity_id","region_id","quantity","unit","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.SupplyID, ids.CommodityID, ids.RegionID, float64(10), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.SupplyID, ids.CommodityID, ids.RegionID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -90,7 +90,7 @@ func TestSupplyRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.SupplyID, ids.CommodityID, ids.RegionID, float64(10), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.SupplyID, ids.CommodityID, ids.RegionID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 

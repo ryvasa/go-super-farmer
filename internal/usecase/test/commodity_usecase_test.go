@@ -45,18 +45,21 @@ func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *Commo
 			ID:          commodityID,
 			Name:        "test commodity",
 			Description: "test commodity description",
+			Code:        "12345",
 		},
 		Commodities: &[]domain.Commodity{
 			{
 				ID:          commodityID,
 				Name:        "test commodity",
 				Description: "test commodity description",
+				Code:        "12345",
 			},
 		},
 		UpadatedCommodity: &domain.Commodity{
 			ID:          commodityID,
 			Name:        "updated commodity",
 			Description: "updated commodity description",
+			Code:        "12345",
 		},
 	}
 
@@ -64,10 +67,12 @@ func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *Commo
 		Create: &dto.CommodityCreateDTO{
 			Name:        "test commodity",
 			Description: "test commodity description",
+			Code:        "12345",
 		},
 		Update: &dto.CommodityUpdateDTO{
 			Name:        "updated commodity",
 			Description: "updated commodity description",
+			Code:        "12345",
 		},
 	}
 
@@ -98,6 +103,7 @@ func TestCreateCommodity(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, dtos.Create.Name, resp.Name)
 		assert.Equal(t, dtos.Create.Description, resp.Description)
+		assert.Equal(t, dtos.Create.Code, resp.Code)
 	})
 
 	t.Run("should return error validation error", func(t *testing.T) {
@@ -177,6 +183,8 @@ func TestUpdateCommodity(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, dtos.Update.Name, resp.Name)
 		assert.Equal(t, dtos.Update.Description, resp.Description)
+		assert.Equal(t, dtos.Update.Code, resp.Code)
+
 	})
 
 	t.Run("should return error validation error", func(t *testing.T) {

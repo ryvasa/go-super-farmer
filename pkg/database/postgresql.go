@@ -50,6 +50,7 @@ func ConnectDB(dsn string) (*gorm.DB, error) {
 		&domain.SupplyHistory{},
 		&domain.Demand{},
 		&domain.DemandHistory{},
+		&domain.Harvest{},
 	)
 
 	seeders.Seeders(db)

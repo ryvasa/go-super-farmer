@@ -10,16 +10,16 @@ import (
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
-type LandUseCaseImpl struct {
+type LandUsecaseImpl struct {
 	landRepo repository.LandRepository
 	userRepo repository.UserRepository
 }
 
 func NewLandUsecase(landRepo repository.LandRepository, userRepo repository.UserRepository) LandUsecase {
-	return &LandUseCaseImpl{landRepo, userRepo}
+	return &LandUsecaseImpl{landRepo, userRepo}
 }
 
-func (u *LandUseCaseImpl) CreateLand(ctx context.Context, userId uuid.UUID, req *dto.LandCreateDTO) (*domain.Land, error) {
+func (u *LandUsecaseImpl) CreateLand(ctx context.Context, userId uuid.UUID, req *dto.LandCreateDTO) (*domain.Land, error) {
 	land := domain.Land{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
@@ -43,7 +43,7 @@ func (u *LandUseCaseImpl) CreateLand(ctx context.Context, userId uuid.UUID, req 
 	return createdLand, nil
 }
 
-func (u *LandUseCaseImpl) GetLandByID(ctx context.Context, id uuid.UUID) (*domain.Land, error) {
+func (u *LandUsecaseImpl) GetLandByID(ctx context.Context, id uuid.UUID) (*domain.Land, error) {
 	land, err := u.landRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("land not found")
@@ -51,7 +51,7 @@ func (u *LandUseCaseImpl) GetLandByID(ctx context.Context, id uuid.UUID) (*domai
 	return land, nil
 }
 
-func (u *LandUseCaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID) (*[]domain.Land, error) {
+func (u *LandUsecaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID) (*[]domain.Land, error) {
 	_, err := u.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("user not found")
@@ -63,7 +63,7 @@ func (u *LandUseCaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID)
 	return land, nil
 }
 
-func (u *LandUseCaseImpl) GetAllLands(ctx context.Context) (*[]domain.Land, error) {
+func (u *LandUsecaseImpl) GetAllLands(ctx context.Context) (*[]domain.Land, error) {
 	lands, err := u.landRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -71,7 +71,7 @@ func (u *LandUseCaseImpl) GetAllLands(ctx context.Context) (*[]domain.Land, erro
 	return lands, nil
 }
 
-func (u *LandUseCaseImpl) UpdateLand(ctx context.Context, userId, id uuid.UUID, req *dto.LandUpdateDTO) (*domain.Land, error) {
+func (u *LandUsecaseImpl) UpdateLand(ctx context.Context, userId, id uuid.UUID, req *dto.LandUpdateDTO) (*domain.Land, error) {
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
@@ -96,7 +96,7 @@ func (u *LandUseCaseImpl) UpdateLand(ctx context.Context, userId, id uuid.UUID, 
 	return updatedLand, nil
 }
 
-func (u *LandUseCaseImpl) DeleteLand(ctx context.Context, id uuid.UUID) error {
+func (u *LandUsecaseImpl) DeleteLand(ctx context.Context, id uuid.UUID) error {
 	_, err := u.landRepo.FindByID(ctx, id)
 	if err != nil {
 		return utils.NewNotFoundError("land not found")
@@ -110,7 +110,7 @@ func (u *LandUseCaseImpl) DeleteLand(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (u *LandUseCaseImpl) RestoreLand(ctx context.Context, id uuid.UUID) (*domain.Land, error) {
+func (u *LandUsecaseImpl) RestoreLand(ctx context.Context, id uuid.UUID) (*domain.Land, error) {
 	_, err := u.landRepo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("deleted land not found")
