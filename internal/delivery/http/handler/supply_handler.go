@@ -10,4 +10,5 @@ type SupplyHandler interface {
 	GetSupplyByRegionID(c *gin.Context)
 	UpdateSupply(c *gin.Context)
 	DeleteSupply(c *gin.Context)
+	GetSupplyHistoryByCommodityIDAndRegionID(c *gin.Context)
 }

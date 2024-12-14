@@ -9,8 +9,9 @@ func DemandRoutes(public, protected *gin.RouterGroup, demandHandler handler.Dema
 	protected.POST("/demands", demandHandler.CreateDemand)
 	protected.GET("/demands", demandHandler.GetAllDemands)
 	protected.GET("/demands/:id", demandHandler.GetDemandByID)
-	protected.GET("/demands/commodity/:id", demandHandler.GetDemandsByCommodityID)
+	protected.GET("/demands/commodity/:commodity_id", demandHandler.GetDemandsByCommodityID)
 	protected.GET("/demands/region/:id", demandHandler.GetDemandsByRegionID)
 	protected.PATCH("/demands/:id", demandHandler.UpdateDemand)
 	protected.DELETE("/demands/:id", demandHandler.DeleteDemand)
+	protected.GET("/demands/commodity/:commodity_id/region/:region_id", demandHandler.GetDemandHistoryByCommodityIDAndRegionID)
 }

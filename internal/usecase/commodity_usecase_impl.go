@@ -26,6 +26,7 @@ func (c *CommodityUsecaseImpl) CreateCommodity(ctx context.Context, req *dto.Com
 
 	commodity.Name = req.Name
 	commodity.Description = req.Description
+	commodity.Code = req.Code
 	commodity.ID = uuid.New()
 
 	err := c.commodityRepository.Create(ctx, &commodity)
@@ -69,6 +70,7 @@ func (c *CommodityUsecaseImpl) UpdateCommodity(ctx context.Context, id uuid.UUID
 
 	commodity.Name = req.Name
 	commodity.Description = req.Description
+	commodity.Code = req.Code
 
 	err = c.commodityRepository.Update(ctx, id, commodity)
 	if err != nil {

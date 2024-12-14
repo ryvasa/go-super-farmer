@@ -34,17 +34,19 @@ type responseSuppliesHandler struct {
 	Errors  response.Error  `json:"errors"`
 }
 
+type responseSupplyHistoryHandler struct {
+	Status  int             `json:"status"`
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
+	Data    []domain.Supply `json:"data"`
+	Errors  response.Error  `json:"errors"`
+}
+
 type SupplyHandlerDomainMocks struct {
 	Supply        *domain.Supply
 	Supplies      *[]domain.Supply
 	UpdatedSupply *domain.Supply
-}
-
-type SupplyHandlerMocks struct {
-	Supply        *domain.Supply
-	Supplies      *[]domain.Supply
-	UpdatedSupply *domain.Supply
-	// SupplyHistory *[]domain.SupplyHistory
+	SupplyHistory *[]domain.SupplyHistory
 }
 
 type SupplyHandlerIDs struct {
@@ -53,7 +55,7 @@ type SupplyHandlerIDs struct {
 	RegionID    uuid.UUID
 }
 
-func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler.SupplyHandler, *mock.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerMocks) {
+func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler.SupplyHandler, *mock.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerDomainMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock.NewMockSupplyUsecase(ctrl)
@@ -70,7 +72,7 @@ func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler.SupplyHandler, *mock
 		RegionID:    RegionID,
 	}
 
-	mocks := SupplyHandlerMocks{
+	mocks := SupplyHandlerDomainMocks{
 		Supply: &domain.Supply{
 			ID:          supplyID,
 			CommodityID: CommodityID,
@@ -88,13 +90,13 @@ func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler.SupplyHandler, *mock
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		// SupplyHistory: &[]domain.SupplyHistory{
-		// 	{
-		// 		ID:          supplyID,
-		// 		CommodityID: CommodityID,
-		// 		RegionID:    RegionID,
-		// 	},
-		// },
+		SupplyHistory: &[]domain.SupplyHistory{
+			{
+				ID:          supplyID,
+				CommodityID: CommodityID,
+				RegionID:    RegionID,
+			},
+		},
 	}
 	return r, h, uc, ids, mocks
 }
@@ -451,6 +453,55 @@ func TestSupplyHandler_DeleteSupply(t *testing.T) {
 		r.ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/supplies/aa", nil))
 
 		var response response.ResponseMessage
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestSupplyHandler_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
+	r, h, uc, ids, mocks := SupplyHandlerSetUp(t)
+
+	r.GET("/supplies/commodity/:commodity_id/region/:region_id", h.GetSupplyHistoryByCommodityIDAndRegionID)
+
+	t.Run("should get supply history by commodity id and region id successfully", func(t *testing.T) {
+		uc.EXPECT().GetSupplyHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(mocks.SupplyHistory, nil).Times(1)
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/supplies/commodity/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String(), nil))
+
+		var response responseSupplyHistoryHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, true, response.Success)
+		assert.Equal(t, len(*mocks.SupplyHistory), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (*mocks.SupplyHistory)[0].ID)
+	})
+
+	t.Run("should return error when internal error", func(t *testing.T) {
+		uc.EXPECT().GetSupplyHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("Internal error"))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/supplies/commodity/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String(), nil))
+
+		var response responseSupplyHistoryHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("should return error when id is invalid", func(t *testing.T) {
+		uc.EXPECT().GetSupplyHistoryByCommodityIDAndRegionID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/supplies/commodity/aa/region/bb", nil))
+
+		var response responseSupplyHistoryHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response.Errors)

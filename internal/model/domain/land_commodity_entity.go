@@ -10,6 +10,7 @@ import (
 type LandCommodity struct {
 	ID          uuid.UUID      `gorm:"primary_key;"`
 	LandArea    float64        `gorm:"not null"`
+	Unit        string         `gorm:"not null;type:varchar(255); default:ha"`
 	CommodityID uuid.UUID      `gorm:"not null"`
 	Commodity   *Commodity     `gorm:"foreignKey:CommodityID;references:ID"`
 	LandID      uuid.UUID      `gorm:"not null"`

@@ -52,3 +52,11 @@ func (r *DemandHistoryRepositoryImpl) FindByRegionID(ctx context.Context, id uui
 	}
 	return &supplies, nil
 }
+
+func (r *DemandHistoryRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.DemandHistory, error) {
+	var supplies []domain.DemandHistory
+	if err := r.db.WithContext(ctx).Where("commodity_id = ? AND region_id = ?", commodityID, regionID).Find(&supplies).Error; err != nil {
+		return nil, err
+	}
+	return &supplies, nil
+}

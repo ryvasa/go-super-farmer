@@ -60,3 +60,12 @@ func (r *DemandRepositoryImpl) Update(ctx context.Context, id uuid.UUID, supply 
 func (r *DemandRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&domain.Demand{}).Error
 }
+
+func (r *DemandRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*domain.Demand, error) {
+	var supply domain.Demand
+	err := r.db.WithContext(ctx).Where("commodity_id = ? AND region_id = ?", commodityID, regionID).First(&supply).Error
+	if err != nil {
+		return nil, err
+	}
+	return &supply, nil
+}

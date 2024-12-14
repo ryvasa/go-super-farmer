@@ -29,11 +29,12 @@ type SupplyIDs struct {
 }
 
 type SupplyDomainMocks struct {
-	Supply        *domain.Supply
-	Supplys       *[]domain.Supply
-	UpdatedSupply *domain.Supply
-	Commodity     *domain.Commodity
-	Region        *domain.Region
+	Supply         *domain.Supply
+	Supplys        *[]domain.Supply
+	UpdatedSupply  *domain.Supply
+	Commodity      *domain.Commodity
+	Region         *domain.Region
+	SupplyHistorys *[]domain.SupplyHistory
 }
 
 type SupplyDTOMocks struct {
@@ -80,6 +81,14 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 		},
 		Region: &domain.Region{
 			ID: regionID,
+		},
+		SupplyHistorys: &[]domain.SupplyHistory{
+			{
+				ID:          supplyHstoryID,
+				CommodityID: commodityID,
+				RegionID:    regionID,
+				Quantity:    50,
+			},
 		},
 	}
 
@@ -384,4 +393,33 @@ func TestSupplyRepository_DeleteSupply(t *testing.T) {
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
+}
+
+func TestSupplyUsecase_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
+	ids, domains, _, repo, uc, ctx := SupplyUsecaseSetup(t)
+
+	t.Run("should return supply history successfully", func(t *testing.T) {
+
+		repo.SupplyHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.SupplyHistorys, nil).Times(1)
+
+		repo.Supply.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.Supply, nil).Times(1)
+
+		resp, err := uc.GetSupplyHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(*resp))
+		assert.Equal(t, (*domains.SupplyHistorys)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, (*domains.SupplyHistorys)[0].Quantity, (*resp)[0].Quantity)
+	})
+
+	t.Run("should return error when get supply history fails", func(t *testing.T) {
+		repo.SupplyHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.GetSupplyHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
+	})
+
 }
