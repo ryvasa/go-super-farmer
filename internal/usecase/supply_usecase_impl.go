@@ -139,3 +139,29 @@ func (u *SupplyUsecaseImpl) DeleteSupply(ctx context.Context, id uuid.UUID) erro
 	}
 	return nil
 }
+
+func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.SupplyHistory, error) {
+	supplys, err := u.supplyHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	supply, err := u.supplyRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	currentSupply := domain.SupplyHistory{
+		ID:          supply.ID,
+		CommodityID: supply.CommodityID,
+		Commodity:   supply.Commodity,
+		RegionID:    supply.RegionID,
+		Region:      supply.Region,
+		Quantity:    supply.Quantity,
+		CreatedAt:   supply.CreatedAt,
+		UpdatedAt:   supply.UpdatedAt,
+		DeletedAt:   supply.DeletedAt,
+	}
+
+	allSupplyHistory := append(*supplys, currentSupply)
+	return &allSupplyHistory, nil
+}

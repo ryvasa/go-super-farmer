@@ -80,6 +80,21 @@ func (mr *MockSupplyHistoryRepositoryMockRecorder) FindByCommodityID(ctx, id int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityID", reflect.TypeOf((*MockSupplyHistoryRepository)(nil).FindByCommodityID), ctx, id)
 }
 
+// FindByCommodityIDAndRegionID mocks base method.
+func (m *MockSupplyHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.SupplyHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByCommodityIDAndRegionID", ctx, commodityID, regionID)
+	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByCommodityIDAndRegionID indicates an expected call of FindByCommodityIDAndRegionID.
+func (mr *MockSupplyHistoryRepositoryMockRecorder) FindByCommodityIDAndRegionID(ctx, commodityID, regionID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityIDAndRegionID", reflect.TypeOf((*MockSupplyHistoryRepository)(nil).FindByCommodityIDAndRegionID), ctx, commodityID, regionID)
+}
+
 // FindByID mocks base method.
 func (m *MockSupplyHistoryRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()

@@ -147,3 +147,30 @@ func (u *DemandUsecaseImpl) DeleteDemand(ctx context.Context, id uuid.UUID) erro
 	}
 	return nil
 }
+
+func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.DemandHistory, error) {
+	demands, err := u.demandHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	demand, err := u.demandRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	currentDemand := domain.DemandHistory{
+		ID:          demand.ID,
+		CommodityID: demand.CommodityID,
+		Commodity:   demand.Commodity,
+		RegionID:    demand.RegionID,
+		Region:      demand.Region,
+		Quantity:    demand.Quantity,
+		CreatedAt:   demand.CreatedAt,
+		UpdatedAt:   demand.UpdatedAt,
+		Unit:        demand.Unit,
+		DeletedAt:   demand.DeletedAt,
+	}
+
+	allDemandHistory := append(*demands, currentDemand)
+	return &allDemandHistory, nil
+}

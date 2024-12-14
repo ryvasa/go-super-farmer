@@ -233,3 +233,36 @@ func TestSupplyHistoryRepository_FindByRegionID(t *testing.T) {
 		assert.Nil(t, mock.ExpectationsWereMet())
 	})
 }
+
+func TestSupplyHistoryRepository_FindByCommodityIDAndRegionID(t *testing.T) {
+	db, mock, repo, ids, rows, _ := SupplyHistoryRepositorySetup(t)
+
+	defer db.Close()
+
+	expectedSQL := `SELECT * FROM "supply_histories" WHERE (commodity_id = $1 AND region_id = $2) AND "supply_histories"."deleted_at" IS NULL`
+
+	t.Run("should return supply history when find by commodity id and region id successfully", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnRows(rows.SupplyHistory)
+
+		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, ids.SupplyHistoryID, (*result)[0].ID)
+		assert.Equal(t, ids.RegionID, (*result)[0].RegionID)
+		assert.Equal(t, ids.CommodityID, (*result)[0].CommodityID)
+		assert.Equal(t, float64(10), (*result)[0].Quantity)
+
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("should return error when find by commodity id and region id failed", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnError(errors.New("database error"))
+
+		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+
+		assert.Nil(t, mock.ExpectationsWereMet())
+	})
+}

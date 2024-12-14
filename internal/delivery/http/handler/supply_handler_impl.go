@@ -57,7 +57,7 @@ func (h *SupplyHandlerImpl) GetSupplyByID(c *gin.Context) {
 }
 
 func (h *SupplyHandlerImpl) GetSupplyByCommodityID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
@@ -115,4 +115,23 @@ func (h *SupplyHandlerImpl) DeleteSupply(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Supply deleted successfully"})
+}
+
+func (h *SupplyHandlerImpl) GetSupplyHistoryByCommodityIDAndRegionID(c *gin.Context) {
+	commodityID, err := uuid.Parse(c.Param("commodity_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	regionID, err := uuid.Parse(c.Param("region_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	supplies, err := h.supplyUsecase.GetSupplyHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, supplies)
 }

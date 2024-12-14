@@ -14,6 +14,7 @@ type Price struct {
 	RegionID    uuid.UUID      `gorm:"not null,uniqueIndex"`
 	Region      *Region        `gorm:"foreignKey:RegionID;references:ID"`
 	Price       float64        `gorm:"not null"`
+	Unit        string         `gorm:"not null;type:varchar(255); default:idr"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`

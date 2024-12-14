@@ -12,6 +12,7 @@ type Land struct {
 	UserID      uuid.UUID      `gorm:"not null;type:varchar(255)"`
 	User        User           `gorm:"foreignKey:UserID" json:"-"`
 	LandArea    float64        `gorm:"not null;type:bigint"`
+	Unit        string         `gorm:"not null;type:varchar(255); default:ha"`
 	Certificate string         `gorm:"not null;type:varchar(255)"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`

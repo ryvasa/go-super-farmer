@@ -29,11 +29,12 @@ type DemandIDs struct {
 }
 
 type DemandDomainMocks struct {
-	Demand        *domain.Demand
-	Demands       *[]domain.Demand
-	UpdatedDemand *domain.Demand
-	Commodity     *domain.Commodity
-	Region        *domain.Region
+	Demand         *domain.Demand
+	Demands        *[]domain.Demand
+	UpdatedDemand  *domain.Demand
+	Commodity      *domain.Commodity
+	Region         *domain.Region
+	DemandHistorys *[]domain.DemandHistory
 }
 
 type DemandDTOMocks struct {
@@ -80,6 +81,14 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 		},
 		Region: &domain.Region{
 			ID: regionID,
+		},
+		DemandHistorys: &[]domain.DemandHistory{
+			{
+				ID:          demandHstoryID,
+				CommodityID: commodityID,
+				RegionID:    regionID,
+				Quantity:    20,
+			},
 		},
 	}
 
@@ -384,4 +393,33 @@ func TestDemandRepository_DeleteDemand(t *testing.T) {
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
+}
+
+func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
+	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
+
+	t.Run("should return demand history successfully", func(t *testing.T) {
+
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.DemandHistorys, nil).Times(1)
+
+		repo.Demand.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.Demand, nil).Times(1)
+
+		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(*resp))
+		assert.Equal(t, (*domains.DemandHistorys)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, (*domains.DemandHistorys)[0].Quantity, (*resp)[0].Quantity)
+	})
+
+	t.Run("should return error when get demand history fails", func(t *testing.T) {
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
+	})
+
 }

@@ -16,4 +16,5 @@ type DemandUsecase interface {
 	GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Demand, error)
 	UpdateDemand(ctx context.Context, id uuid.UUID, req *dto.DemandUpdateDTO) (*domain.Demand, error)
 	DeleteDemand(ctx context.Context, id uuid.UUID) error
+	GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.DemandHistory, error)
 }

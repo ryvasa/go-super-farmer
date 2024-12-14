@@ -3,7 +3,6 @@ package handler
 import "github.com/gin-gonic/gin"
 
 type DemandHandler interface {
-
 	CreateDemand(c *gin.Context)
 	GetAllDemands(c *gin.Context)
 	GetDemandByID(c *gin.Context)
@@ -11,5 +10,5 @@ type DemandHandler interface {
 	GetDemandsByRegionID(c *gin.Context)
 	UpdateDemand(c *gin.Context)
 	DeleteDemand(c *gin.Context)
-
+	GetDemandHistoryByCommodityIDAndRegionID(c *gin.Context)
 }

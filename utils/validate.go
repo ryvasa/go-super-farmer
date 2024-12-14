@@ -29,10 +29,10 @@ func ValidateStruct(data interface{}) []*errorResponse {
 
 func getErrorMsg(fe validator.FieldError) string {
 	msgMap := map[string]func(string) string{
-		"required": func(param string) string { return "Field ini wajib diisi" },
-		"min":      func(param string) string { return fmt.Sprintf("Minimal panjang karakter adalah %s", param) },
-		"max":      func(param string) string { return fmt.Sprintf("Maksimal panjang karakter adalah %s", param) },
-		"gt":       func(param string) string { return fmt.Sprintf("Nilai harus lebih besar dari %s", param) },
+		"required": func(param string) string { return "This field is required" },
+		"min":      func(param string) string { return fmt.Sprintf("Minimum length is %s", param) },
+		"max":      func(param string) string { return fmt.Sprintf("Maximum length is %s", param) },
+		"gt":       func(param string) string { return fmt.Sprintf("The value must be greater than %s", param) },
 	}
 	msgFunc, ok := msgMap[fe.Tag()]
 	if ok {

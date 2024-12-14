@@ -16,4 +16,5 @@ type SupplyUsecase interface {
 	GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Supply, error)
 	UpdateSupply(ctx context.Context, id uuid.UUID, req *dto.SupplyUpdateDTO) (*domain.Supply, error)
 	DeleteSupply(ctx context.Context, id uuid.UUID) error
+	GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.SupplyHistory, error)
 }

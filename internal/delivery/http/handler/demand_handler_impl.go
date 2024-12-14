@@ -57,7 +57,7 @@ func (h *DemandHandlerImpl) GetDemandByID(c *gin.Context) {
 }
 
 func (h *DemandHandlerImpl) GetDemandsByCommodityID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
@@ -115,4 +115,23 @@ func (h *DemandHandlerImpl) DeleteDemand(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Demand deleted successfully"})
+}
+
+func (h *DemandHandlerImpl) GetDemandHistoryByCommodityIDAndRegionID(c *gin.Context) {
+	commodityID, err := uuid.Parse(c.Param("commodity_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	regionID, err := uuid.Parse(c.Param("region_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	demands, err := h.demandUsecase.GetDemandHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, demands)
 }

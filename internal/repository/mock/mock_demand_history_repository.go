@@ -80,6 +80,21 @@ func (mr *MockDemandHistoryRepositoryMockRecorder) FindByCommodityID(ctx, id int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityID", reflect.TypeOf((*MockDemandHistoryRepository)(nil).FindByCommodityID), ctx, id)
 }
 
+// FindByCommodityIDAndRegionID mocks base method.
+func (m *MockDemandHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.DemandHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByCommodityIDAndRegionID", ctx, commodityID, regionID)
+	ret0, _ := ret[0].(*[]domain.DemandHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByCommodityIDAndRegionID indicates an expected call of FindByCommodityIDAndRegionID.
+func (mr *MockDemandHistoryRepositoryMockRecorder) FindByCommodityIDAndRegionID(ctx, commodityID, regionID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityIDAndRegionID", reflect.TypeOf((*MockDemandHistoryRepository)(nil).FindByCommodityIDAndRegionID), ctx, commodityID, regionID)
+}
+
 // FindByID mocks base method.
 func (m *MockDemandHistoryRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.DemandHistory, error) {
 	m.ctrl.T.Helper()
