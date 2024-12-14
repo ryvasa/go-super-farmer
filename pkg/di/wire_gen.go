@@ -75,7 +75,10 @@ func InitializeRouter() (*gin.Engine, error) {
 	supplyHistoryRepository := repository.NewSupplyHistoryRepository(db)
 	supplyUsecase := usecase.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository)
 	supplyHandler := handler.NewSupplyHandler(supplyUsecase)
-	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler)
+	harvestRepository := repository.NewHarvestRepository(db)
+	harvestUsecase := usecase.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository)
+	harvestHandler := handler.NewHarvestHandler(harvestUsecase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler, harvestHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
 }
@@ -117,3 +120,5 @@ var supplySet = wire.NewSet(repository.NewSupplyRepository, usecase.NewSupplyUse
 var demandHistorySet = wire.NewSet(repository.NewDemandHistoryRepository)
 
 var supplyHistorySet = wire.NewSet(repository.NewSupplyHistoryRepository)
+
+var harvestSet = wire.NewSet(repository.NewHarvestRepository, usecase.NewHarvestUsecase, handler.NewHarvestHandler)

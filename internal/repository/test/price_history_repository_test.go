@@ -72,12 +72,12 @@ func TestPriceHistoryRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "price_histories" ("id","commodity_id","region_id","price","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`
+	expectedSQL := `INSERT INTO "price_histories" ("id","commodity_id","region_id","price","unit","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.PriceHistoryID, ids.CommodityID, ids.RegionID, float64(100), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.PriceHistoryID, ids.CommodityID, ids.RegionID, float64(100), "idr", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -89,7 +89,7 @@ func TestPriceHistoryRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.PriceHistoryID, ids.CommodityID, ids.RegionID, float64(100), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.PriceHistoryID, ids.CommodityID, ids.RegionID, float64(100), "idr", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 

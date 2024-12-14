@@ -246,7 +246,7 @@ func TestDemandHandler_GetDemandByID(t *testing.T) {
 func TestDemandHandler_GetDemandsByCommodityID(t *testing.T) {
 	r, h, uc, ids, mocks := DemandHandlerSetUp(t)
 
-	r.GET("/demands/commodity/:id", h.GetDemandsByCommodityID)
+	r.GET("/demands/commodity/:commodity_id", h.GetDemandsByCommodityID)
 
 	t.Run("should get demands by commodity id successfully", func(t *testing.T) {
 		uc.EXPECT().GetDemandsByCommodityID(gomock.Any(), ids.CommodityID).Return(mocks.Demands, nil).Times(1)

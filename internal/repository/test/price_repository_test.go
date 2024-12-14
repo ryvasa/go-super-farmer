@@ -80,12 +80,12 @@ func TestPriceRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "prices" ("id","commodity_id","region_id","price","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`
+	expectedSQL := `INSERT INTO "prices" ("id","commodity_id","region_id","price","unit","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.PriceID, ids.CommodityID, ids.RegionID, float64(100), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.PriceID, ids.CommodityID, ids.RegionID, float64(100), "idr", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -97,7 +97,7 @@ func TestPriceRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.PriceID, ids.CommodityID, ids.RegionID, float64(100), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.PriceID, ids.CommodityID, ids.RegionID, float64(100), "idr", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
@@ -152,7 +152,7 @@ func TestPriceRepository_FindByID(t *testing.T) {
 
 	expectedSQL1 := `SELECT * FROM "prices" WHERE "prices"."id" = $1 AND "prices"."deleted_at" IS NULL ORDER BY "prices"."id" LIMIT $2`
 
-	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1`
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
 
 	expectedSQL3 := `SELECT "regions"."id","regions"."province_id","regions"."city_id" FROM "regions" WHERE "regions"."id" = $1`
 
@@ -195,7 +195,7 @@ func TestPriceRepository_FindByCommodityID(t *testing.T) {
 
 	expectedSQL1 := `SELECT * FROM "prices" WHERE prices.commodity_id = $1 AND "prices"."deleted_at" IS NULL`
 
-	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
 
 	expectedSQL3 := `SELECT "regions"."id","regions"."province_id","regions"."city_id" FROM "regions" WHERE "regions"."id" = $1 AND "regions"."deleted_at" IS NULL`
 
@@ -235,7 +235,7 @@ func TestPriceRepository_FindByRegionID(t *testing.T) {
 
 	expectedSQL3 := `SELECT "regions"."id","regions"."province_id","regions"."city_id" FROM "regions" WHERE "regions"."id" = $1 AND "regions"."deleted_at" IS NULL`
 
-	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
 
 	t.Run("should return prices when find by region id successfully", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL1)).WithArgs(ids.RegionID).WillReturnRows(rows.Price)
@@ -409,7 +409,7 @@ func TestPriceRepository_FindDeletedByID(t *testing.T) {
 
 	expectedSQL1 := `SELECT * FROM "prices" WHERE prices.id = $1 AND prices.deleted_at IS NOT NULL ORDER BY "prices"."id" LIMIT $2`
 
-	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1`
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1`
 
 	expectedSQL3 := `SELECT "regions"."id","regions"."province_id","regions"."city_id" FROM "regions" WHERE "regions"."id" = $1`
 

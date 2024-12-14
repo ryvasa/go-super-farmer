@@ -10,17 +10,17 @@ import (
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
-type RegionUseCaseImpl struct {
+type RegionUsecaseImpl struct {
 	regionRepo   repository.RegionRepository
 	cityRepo     repository.CityRepository
 	provinceRepo repository.ProvinceRepository
 }
 
 func NewRegionUsecase(regionRepo repository.RegionRepository, cityRepo repository.CityRepository, provinceRepo repository.ProvinceRepository) RegionUsecase {
-	return &RegionUseCaseImpl{regionRepo, cityRepo, provinceRepo}
+	return &RegionUsecaseImpl{regionRepo, cityRepo, provinceRepo}
 }
 
-func (uc *RegionUseCaseImpl) CreateRegion(ctx context.Context, req *dto.RegionCreateDto) (*domain.Region, error) {
+func (uc *RegionUsecaseImpl) CreateRegion(ctx context.Context, req *dto.RegionCreateDto) (*domain.Region, error) {
 	region := domain.Region{}
 
 	if err := utils.ValidateStruct(req); len(err) > 0 {
@@ -52,7 +52,7 @@ func (uc *RegionUseCaseImpl) CreateRegion(ctx context.Context, req *dto.RegionCr
 	return createdRegion, nil
 }
 
-func (uc *RegionUseCaseImpl) GetAllRegions(ctx context.Context) (*[]domain.Region, error) {
+func (uc *RegionUsecaseImpl) GetAllRegions(ctx context.Context) (*[]domain.Region, error) {
 	regions, err := uc.regionRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -60,7 +60,7 @@ func (uc *RegionUseCaseImpl) GetAllRegions(ctx context.Context) (*[]domain.Regio
 	return regions, nil
 }
 
-func (uc *RegionUseCaseImpl) GetRegionByID(ctx context.Context, id uuid.UUID) (*domain.Region, error) {
+func (uc *RegionUsecaseImpl) GetRegionByID(ctx context.Context, id uuid.UUID) (*domain.Region, error) {
 	region, err := uc.regionRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

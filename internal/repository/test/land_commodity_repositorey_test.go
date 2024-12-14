@@ -86,12 +86,12 @@ func TestLandCommodityRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "land_commodities" ("id","land_area","commodity_id","land_id","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`
+	expectedSQL := `INSERT INTO "land_commodities" ("id","land_area","unit","commodity_id","land_id","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandCommodityID, float64(100), ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -103,7 +103,7 @@ func TestLandCommodityRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandCommodityID, float64(100), ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
@@ -121,9 +121,9 @@ func TestLandCommodityRepository_FindByID(t *testing.T) {
 
 	expectedSQL1 := `SELECT * FROM "land_commodities" WHERE "land_commodities"."id" = $1 AND "land_commodities"."deleted_at" IS NULL ORDER BY "land_commodities"."id" LIMIT $2`
 
-	expectedSQL2 := `SELECT "commodities"."id","commodities"."name" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
 
-	expectedSQL3 := `SELECT "lands"."id","lands"."user_id","lands"."land_area","lands"."certificate" FROM "lands" WHERE "lands"."id" = $1 AND "lands"."deleted_at" IS NULL`
+	expectedSQL3 := `SELECT "lands"."id","lands"."user_id","lands"."land_area","lands"."unit","lands"."certificate" FROM "lands" WHERE "lands"."id" = $1 AND "lands"."deleted_at" IS NULL`
 
 	t.Run("should return land commodity when find by id successfully", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL1)).WithArgs(ids.LandCommodityID, 1).WillReturnRows(rows.LandCommodity)

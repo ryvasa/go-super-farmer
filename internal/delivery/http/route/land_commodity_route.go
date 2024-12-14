@@ -6,7 +6,6 @@ import (
 )
 
 func LandCommodityRoutes(public, protected *gin.RouterGroup, landCommodityHandler handler.LandCommodityHandler) {
-
 	protected.POST("/land_commodities", landCommodityHandler.CreateLandCommodity)
 	protected.GET("/land_commodities", landCommodityHandler.GetAllLandCommodity)
 	protected.GET("/land_commodities/:id", landCommodityHandler.GetLandCommodityByID)

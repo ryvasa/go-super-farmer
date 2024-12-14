@@ -56,6 +56,7 @@ func CommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repositor
 			ID:          commodityID,
 			Name:        "commodity",
 			Description: "commodity description",
+			Code:        "12345",
 		},
 	}
 
@@ -67,12 +68,12 @@ func TestCommodityRepository_Create(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `INSERT INTO "commodities" ("id","name","description","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6)`
+	expectedSQL := `INSERT INTO "commodities" ("id","name","description","code","duration","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", "12345", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
@@ -84,7 +85,7 @@ func TestCommodityRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", "12345", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 
@@ -164,12 +165,12 @@ func TestCommodityRepository_Update(t *testing.T) {
 	db, mock, repo, ids, _, domains := CommodityRepositorySetup(t)
 	defer db.Close()
 
-	expectedSQL := `UPDATE "commodities" SET "id"=$1,"name"=$2,"description"=$3,"updated_at"=$4 WHERE id = $5 AND "commodities"."deleted_at" IS NULL`
+	expectedSQL := `UPDATE "commodities" SET "id"=$1,"name"=$2,"description"=$3,"code"=$4,"updated_at"=$5 WHERE id = $6 AND "commodities"."deleted_at" IS NULL`
 
 	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", "12345", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)
@@ -179,7 +180,7 @@ func TestCommodityRepository_Update(t *testing.T) {
 	t.Run("should return error when update failed", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", "12345", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(errors.New("database error"))
 		mock.ExpectRollback()
 		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)
@@ -190,7 +191,7 @@ func TestCommodityRepository_Update(t *testing.T) {
 	t.Run("should return error when update not found", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID, "commodity", "commodity description", sqlmock.AnyArg(), ids.CommodityID).
+			WithArgs(ids.CommodityID, "commodity", "commodity description", "12345", sqlmock.AnyArg(), ids.CommodityID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mock.ExpectRollback()
 		err := repo.Update(context.TODO(), ids.CommodityID, domains.Commodity)

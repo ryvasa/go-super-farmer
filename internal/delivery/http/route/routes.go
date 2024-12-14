@@ -11,6 +11,18 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 )
 
+// type Routes interface {
+// 	NewRouter(handler *handler.Handlers) *gin.Engine
+// }
+
+// type RoutesImpl struct {
+// 	handler *handler.Handlers
+// }
+
+// func NewRoutes(handler *handler.Handlers) Routes {
+// 	return &RoutesImpl{handler}
+// }
+
 func NewRouter(handler *handler.Handlers) *gin.Engine {
 	r := gin.Default()
 
@@ -49,6 +61,8 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 	RegionRoute(public, protected, handler.RegionHandler)
 	DemandRoutes(public, protected, handler.DemandHandler)
 	SupplyRoutes(public, protected, handler.SupplyHandler)
+	HarvestRoutes(public, protected, handler.HarvestHandler)
+
 	return r
 
 }
