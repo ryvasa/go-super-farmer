@@ -2,35 +2,30 @@ package database
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/pkg/database/seeders"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-func ProvideDSN(cfg *env.Env) (string, error) {
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	// name := os.Getenv("DB_TEST")
-	name := os.Getenv("DB_NAME")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	timezone := os.Getenv("DB_TIMEZONE")
+func NewPostgres(env *env.Env) (*gorm.DB, error) {
+	host := env.Database.Host
+	port := env.Database.Port
+	name := env.Database.Name
+	user := env.Database.User
+	password := env.Database.Password
+	timezone := env.Database.Timezone
 
 	if host == "" || port == "" || name == "" || user == "" || password == "" {
-		return "", fmt.Errorf("missing database environment variables")
+		return nil, fmt.Errorf("missing database environment variables")
 	}
 
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s", host, user, password, name, port, timezone), nil
-}
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s", host, user, password, name, port, timezone)
 
-func ConnectDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		// Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, err
