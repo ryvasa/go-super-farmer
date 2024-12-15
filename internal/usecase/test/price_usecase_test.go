@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -43,7 +44,7 @@ type PriceDTOmocks struct {
 	Update *dto.PriceUpdateDTO
 }
 
-func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *PriceRepoMock, usecase.PriceUsecase, context.Context) {
+func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *PriceRepoMock, usecase_interface.PriceUsecase, context.Context) {
 	regionID := uuid.New()
 	commodityID := uuid.New()
 	priceID := uuid.New()
@@ -119,7 +120,7 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 	priceRepo := mock.NewMockPriceRepository(ctrl)
 	priceHostoryRepo := mock.NewMockPriceHistoryRepository(ctrl)
 
-	uc := usecase.NewPriceUsecase(priceRepo, priceHostoryRepo, regionRepo, commodityRepo)
+	uc := usecase_implementation.NewPriceUsecase(priceRepo, priceHostoryRepo, regionRepo, commodityRepo)
 	ctx := context.Background()
 
 	repo := &PriceRepoMock{

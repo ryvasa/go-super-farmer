@@ -10,9 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	"github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	"github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
@@ -34,50 +35,50 @@ func InitializeRouter() (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	roleRepository := repository.NewRoleRepository(db)
-	roleUsecase := usecase.NewRoleUsecase(roleRepository)
-	roleHandler := handler.NewRoleHandler(roleUsecase)
-	userRepository := repository.NewUserRepository(db)
+	roleRepository := repository_implementation.NewRoleRepository(db)
+	roleUsecase := usecase_implementation.NewRoleUsecase(roleRepository)
+	roleHandler := handler_implementation.NewRoleHandler(roleUsecase)
+	userRepository := repository_implementation.NewUserRepository(db)
 	hasher := utils.NewHasher()
-	userUsecase := usecase.NewUserUsecase(userRepository, hasher)
-	userHandler := handler.NewUserHandler(userUsecase)
-	landRepository := repository.NewLandRepository(db)
-	landUsecase := usecase.NewLandUsecase(landRepository, userRepository)
+	userUsecase := usecase_implementation.NewUserUsecase(userRepository, hasher)
+	userHandler := handler_implementation.NewUserHandler(userUsecase)
+	landRepository := repository_implementation.NewLandRepository(db)
+	landUsecase := usecase_implementation.NewLandUsecase(landRepository, userRepository)
 	authUtil := utils.NewAuthUtil()
-	landHandler := handler.NewLandHandler(landUsecase, authUtil)
+	landHandler := handler_implementation.NewLandHandler(landUsecase, authUtil)
 	tokenToken := token.NewToken(envEnv)
-	authUsecase := usecase.NewAuthUsecase(userRepository, tokenToken, hasher)
-	authHandler := handler.NewAuthHandler(authUsecase)
-	commodityRepository := repository.NewCommodityRepository(db)
-	commodityUsecase := usecase.NewCommodityUsecase(commodityRepository)
-	commodityHandler := handler.NewCommodityHandler(commodityUsecase)
-	landCommodityRepository := repository.NewLandCommodityRepository(db)
-	landCommodityUsecase := usecase.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
-	landCommodityHandler := handler.NewLandCommodityHandler(landCommodityUsecase)
-	priceRepository := repository.NewPriceRepository(db)
-	priceHistoryRepository := repository.NewPriceHistoryRepository(db)
-	regionRepository := repository.NewRegionRepository(db)
-	priceUsecase := usecase.NewPriceUsecase(priceRepository, priceHistoryRepository, regionRepository, commodityRepository)
-	priceHandler := handler.NewPriceHandler(priceUsecase)
-	provinceRepository := repository.NewProvinceRepository(db)
-	provinceUsecase := usecase.NewProvinceUsecase(provinceRepository)
-	provinceHandler := handler.NewProvinceHandler(provinceUsecase)
-	cityRepository := repository.NewCityRepository(db)
-	cityUsecase := usecase.NewCityUsecase(cityRepository)
-	cityHandler := handler.NewCityHandler(cityUsecase)
-	regionUsecase := usecase.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
-	regionHandler := handler.NewRegionHandler(regionUsecase)
-	demandRepository := repository.NewDemandRepository(db)
-	demandHistoryRepository := repository.NewDemandHistoryRepository(db)
-	demandUsecase := usecase.NewDemandUsecase(demandRepository, demandHistoryRepository, commodityRepository, regionRepository)
-	demandHandler := handler.NewDemandHandler(demandUsecase)
-	supplyRepository := repository.NewSupplyRepository(db)
-	supplyHistoryRepository := repository.NewSupplyHistoryRepository(db)
-	supplyUsecase := usecase.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository)
-	supplyHandler := handler.NewSupplyHandler(supplyUsecase)
-	harvestRepository := repository.NewHarvestRepository(db)
-	harvestUsecase := usecase.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository)
-	harvestHandler := handler.NewHarvestHandler(harvestUsecase)
+	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher)
+	authHandler := handler_implementation.NewAuthHandler(authUsecase)
+	commodityRepository := repository_implementation.NewCommodityRepository(db)
+	commodityUsecase := usecase_implementation.NewCommodityUsecase(commodityRepository)
+	commodityHandler := handler_implementation.NewCommodityHandler(commodityUsecase)
+	landCommodityRepository := repository_implementation.NewLandCommodityRepository(db)
+	landCommodityUsecase := usecase_implementation.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
+	landCommodityHandler := handler_implementation.NewLandCommodityHandler(landCommodityUsecase)
+	priceRepository := repository_implementation.NewPriceRepository(db)
+	priceHistoryRepository := repository_implementation.NewPriceHistoryRepository(db)
+	regionRepository := repository_implementation.NewRegionRepository(db)
+	priceUsecase := usecase_implementation.NewPriceUsecase(priceRepository, priceHistoryRepository, regionRepository, commodityRepository)
+	priceHandler := handler_implementation.NewPriceHandler(priceUsecase)
+	provinceRepository := repository_implementation.NewProvinceRepository(db)
+	provinceUsecase := usecase_implementation.NewProvinceUsecase(provinceRepository)
+	provinceHandler := handler_implementation.NewProvinceHandler(provinceUsecase)
+	cityRepository := repository_implementation.NewCityRepository(db)
+	cityUsecase := usecase_implementation.NewCityUsecase(cityRepository)
+	cityHandler := handler_implementation.NewCityHandler(cityUsecase)
+	regionUsecase := usecase_implementation.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
+	regionHandler := handler_implementation.NewRegionHandler(regionUsecase)
+	demandRepository := repository_implementation.NewDemandRepository(db)
+	demandHistoryRepository := repository_implementation.NewDemandHistoryRepository(db)
+	demandUsecase := usecase_implementation.NewDemandUsecase(demandRepository, demandHistoryRepository, commodityRepository, regionRepository)
+	demandHandler := handler_implementation.NewDemandHandler(demandUsecase)
+	supplyRepository := repository_implementation.NewSupplyRepository(db)
+	supplyHistoryRepository := repository_implementation.NewSupplyHistoryRepository(db)
+	supplyUsecase := usecase_implementation.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository)
+	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
+	harvestRepository := repository_implementation.NewHarvestRepository(db)
+	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository)
+	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
 	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler, harvestHandler)
 	engine := route.NewRouter(handlers)
 	return engine, nil
@@ -85,13 +86,13 @@ func InitializeRouter() (*gin.Engine, error) {
 
 // wire.go:
 
-var roleSet = wire.NewSet(repository.NewRoleRepository, usecase.NewRoleUsecase, handler.NewRoleHandler)
+var roleSet = wire.NewSet(repository_implementation.NewRoleRepository, usecase_implementation.NewRoleUsecase, handler_implementation.NewRoleHandler)
 
-var userSet = wire.NewSet(repository.NewUserRepository, usecase.NewUserUsecase, handler.NewUserHandler)
+var userSet = wire.NewSet(repository_implementation.NewUserRepository, usecase_implementation.NewUserUsecase, handler_implementation.NewUserHandler)
 
-var landSet = wire.NewSet(repository.NewLandRepository, usecase.NewLandUsecase, handler.NewLandHandler)
+var landSet = wire.NewSet(repository_implementation.NewLandRepository, usecase_implementation.NewLandUsecase, handler_implementation.NewLandHandler)
 
-var authSet = wire.NewSet(usecase.NewAuthUsecase, handler.NewAuthHandler)
+var authSet = wire.NewSet(usecase_implementation.NewAuthUsecase, handler_implementation.NewAuthHandler)
 
 var tokenSet = wire.NewSet(token.NewToken)
 
@@ -99,26 +100,26 @@ var authUtilSet = wire.NewSet(utils.NewAuthUtil)
 
 var hashSet = wire.NewSet(utils.NewHasher)
 
-var commoditySet = wire.NewSet(repository.NewCommodityRepository, usecase.NewCommodityUsecase, handler.NewCommodityHandler)
+var commoditySet = wire.NewSet(repository_implementation.NewCommodityRepository, usecase_implementation.NewCommodityUsecase, handler_implementation.NewCommodityHandler)
 
-var landCommoditySet = wire.NewSet(repository.NewLandCommodityRepository, usecase.NewLandCommodityUsecase, handler.NewLandCommodityHandler)
+var landCommoditySet = wire.NewSet(repository_implementation.NewLandCommodityRepository, usecase_implementation.NewLandCommodityUsecase, handler_implementation.NewLandCommodityHandler)
 
-var priceSet = wire.NewSet(repository.NewPriceRepository, usecase.NewPriceUsecase, handler.NewPriceHandler)
+var priceSet = wire.NewSet(repository_implementation.NewPriceRepository, usecase_implementation.NewPriceUsecase, handler_implementation.NewPriceHandler)
 
-var provinceSet = wire.NewSet(repository.NewProvinceRepository, usecase.NewProvinceUsecase, handler.NewProvinceHandler)
+var provinceSet = wire.NewSet(repository_implementation.NewProvinceRepository, usecase_implementation.NewProvinceUsecase, handler_implementation.NewProvinceHandler)
 
-var citySet = wire.NewSet(repository.NewCityRepository, usecase.NewCityUsecase, handler.NewCityHandler)
+var citySet = wire.NewSet(repository_implementation.NewCityRepository, usecase_implementation.NewCityUsecase, handler_implementation.NewCityHandler)
 
-var regionSet = wire.NewSet(repository.NewRegionRepository, usecase.NewRegionUsecase, handler.NewRegionHandler)
+var regionSet = wire.NewSet(repository_implementation.NewRegionRepository, usecase_implementation.NewRegionUsecase, handler_implementation.NewRegionHandler)
 
-var priceHistorySet = wire.NewSet(repository.NewPriceHistoryRepository)
+var priceHistorySet = wire.NewSet(repository_implementation.NewPriceHistoryRepository)
 
-var demandSet = wire.NewSet(repository.NewDemandRepository, usecase.NewDemandUsecase, handler.NewDemandHandler)
+var demandSet = wire.NewSet(repository_implementation.NewDemandRepository, usecase_implementation.NewDemandUsecase, handler_implementation.NewDemandHandler)
 
-var supplySet = wire.NewSet(repository.NewSupplyRepository, usecase.NewSupplyUsecase, handler.NewSupplyHandler)
+var supplySet = wire.NewSet(repository_implementation.NewSupplyRepository, usecase_implementation.NewSupplyUsecase, handler_implementation.NewSupplyHandler)
 
-var demandHistorySet = wire.NewSet(repository.NewDemandHistoryRepository)
+var demandHistorySet = wire.NewSet(repository_implementation.NewDemandHistoryRepository)
 
-var supplyHistorySet = wire.NewSet(repository.NewSupplyHistoryRepository)
+var supplyHistorySet = wire.NewSet(repository_implementation.NewSupplyHistoryRepository)
 
-var harvestSet = wire.NewSet(repository.NewHarvestRepository, usecase.NewHarvestUsecase, handler.NewHarvestHandler)
+var harvestSet = wire.NewSet(repository_implementation.NewHarvestRepository, usecase_implementation.NewHarvestUsecase, handler_implementation.NewHarvestHandler)

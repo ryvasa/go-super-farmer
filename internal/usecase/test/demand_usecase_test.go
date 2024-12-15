@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +43,7 @@ type DemandDTOMocks struct {
 	Update *dto.DemandUpdateDTO
 }
 
-func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDTOMocks, *DemandRepoMock, usecase.DemandUsecase, context.Context) {
+func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDTOMocks, *DemandRepoMock, usecase_interface.DemandUsecase, context.Context) {
 	regionID := uuid.New()
 	commodityID := uuid.New()
 	demandID := uuid.New()
@@ -111,7 +112,7 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 	demandRepo := mock.NewMockDemandRepository(ctrl)
 	demandHistoryRepo := mock.NewMockDemandHistoryRepository(ctrl)
 
-	uc := usecase.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, regionRepo)
+	uc := usecase_implementation.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, regionRepo)
 	ctx := context.Background()
 
 	repo := &DemandRepoMock{

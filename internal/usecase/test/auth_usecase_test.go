@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mockToken "github.com/ryvasa/go-super-farmer/pkg/auth/token/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	mockUtils "github.com/ryvasa/go-super-farmer/utils/mock"
@@ -36,7 +37,7 @@ type AuthDTOMock struct {
 	Login *dto.AuthDTO
 }
 
-func AuthUsecaseUtils(t *testing.T) (*AuthIDs, *AuthMocks, *AuthDTOMock, *AuthRepoMock, usecase.AuthUsecase, context.Context) {
+func AuthUsecaseUtils(t *testing.T) (*AuthIDs, *AuthMocks, *AuthDTOMock, *AuthRepoMock, usecase_interface.AuthUsecase, context.Context) {
 	userID := uuid.New()
 
 	ids := &AuthIDs{
@@ -73,7 +74,7 @@ func AuthUsecaseUtils(t *testing.T) (*AuthIDs, *AuthMocks, *AuthDTOMock, *AuthRe
 	utilToken := mockToken.NewMockToken(ctrl)
 	userRepo := mock.NewMockUserRepository(ctrl)
 	hash := mockUtils.NewMockHasher(ctrl)
-	uc := usecase.NewAuthUsecase(userRepo, utilToken, hash)
+	uc := usecase_implementation.NewAuthUsecase(userRepo, utilToken, hash)
 	ctx := context.TODO()
 
 	repo := &AuthRepoMock{User: userRepo, Token: utilToken, Hash: hash}

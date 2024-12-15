@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +32,11 @@ type SupplyHistoryMocDomain struct {
 	SupplyHistory *domain.SupplyHistory
 }
 
-func SupplyHistoryRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.SupplyHistoryRepository, SupplyHistoryIDs, SupplyHistoryMockRows, SupplyHistoryMocDomain) {
+func SupplyHistoryRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.SupplyHistoryRepository, SupplyHistoryIDs, SupplyHistoryMockRows, SupplyHistoryMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewSupplyHistoryRepository(db)
+	repo := repository_implementation.NewSupplyHistoryRepository(db)
 
 	supplyHistoryID := uuid.New()
 	regionID := uuid.New()

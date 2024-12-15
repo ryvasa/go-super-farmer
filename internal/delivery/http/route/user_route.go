@@ -2,14 +2,22 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func UserRoutes(public, protected *gin.RouterGroup, userHandler handler.UserHandler) {
-	public.POST("/users", userHandler.RegisterUser)
-	protected.GET("/users", userHandler.GetAllUsers)
-	protected.GET("/users/:id", userHandler.GetOneUser)
-	protected.PATCH("/users/:id", userHandler.UpdateUser)
-	protected.DELETE("/users/:id", userHandler.DeleteUser)
-	protected.PATCH("/users/:id/restore", userHandler.RestoreUser)
+type UserRoute struct {
+	handler handler_interface.UserHandler
+}
+
+func NewUserRoute(handler handler_interface.UserHandler) *UserRoute {
+	return &UserRoute{handler}
+}
+
+func (r *UserRoute) Register(public, protected *gin.RouterGroup) {
+	public.POST("/users", r.handler.RegisterUser)
+	protected.GET("/users", r.handler.GetAllUsers)
+	protected.GET("/users/:id", r.handler.GetOneUser)
+	protected.PATCH("/users/:id", r.handler.UpdateUser)
+	protected.DELETE("/users/:id", r.handler.DeleteUser)
+	protected.PATCH("/users/:id/restore", r.handler.RestoreUser)
 }

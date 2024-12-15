@@ -10,7 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
@@ -44,12 +45,12 @@ type UserHandlerIDs struct {
 	RoleID int64
 }
 
-func UserHandlerSetup(t *testing.T) (*gin.Engine, handler.UserHandler, *mock.MockUserUsecase, UserHandlerIDs, UserHandlerMocks) {
+func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler, *mock.MockUserUsecase, UserHandlerIDs, UserHandlerMocks) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock.NewMockUserUsecase(ctrl)
-	h := handler.NewUserHandler(uc)
+	h := handler_implementation.NewUserHandler(uc)
 	r := gin.Default()
 
 	ids := UserHandlerIDs{

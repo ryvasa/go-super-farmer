@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +43,7 @@ type SupplyDTOMocks struct {
 	Update *dto.SupplyUpdateDTO
 }
 
-func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDTOMocks, *SupplyRepoMock, usecase.SupplyUsecase, context.Context) {
+func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDTOMocks, *SupplyRepoMock, usecase_interface.SupplyUsecase, context.Context) {
 	regionID := uuid.New()
 	commodityID := uuid.New()
 	supplyID := uuid.New()
@@ -111,7 +112,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 	supplyRepo := mock.NewMockSupplyRepository(ctrl)
 	supplyHistoryRepo := mock.NewMockSupplyHistoryRepository(ctrl)
 
-	uc := usecase.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, regionRepo)
+	uc := usecase_implementation.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, regionRepo)
 	ctx := context.Background()
 
 	repo := &SupplyRepoMock{

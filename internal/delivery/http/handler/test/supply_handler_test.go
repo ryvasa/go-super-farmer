@@ -10,7 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
@@ -55,11 +56,11 @@ type SupplyHandlerIDs struct {
 	RegionID    uuid.UUID
 }
 
-func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler.SupplyHandler, *mock.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerDomainMocks) {
+func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.SupplyHandler, *mock.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerDomainMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock.NewMockSupplyUsecase(ctrl)
-	h := handler.NewSupplyHandler(uc)
+	h := handler_implementation.NewSupplyHandler(uc)
 	r := gin.Default()
 
 	supplyID := uuid.New()

@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +32,11 @@ type SupplyMocDomain struct {
 	Supply *domain.Supply
 }
 
-func SupplyRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.SupplyRepository, SupplyID, SupplyMockRows, SupplyMocDomain) {
+func SupplyRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.SupplyRepository, SupplyID, SupplyMockRows, SupplyMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewSupplyRepository(db)
+	repo := repository_implementation.NewSupplyRepository(db)
 
 	supplyID := uuid.New()
 	regionID := uuid.New()

@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -34,11 +35,11 @@ type RegionRepositoryMocDomain struct {
 	Region *domain.Region
 }
 
-func RegionRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.RegionRepository, RegionRepositoryIDs, RegionRepositoryMockRows, RegionRepositoryMocDomain) {
+func RegionRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.RegionRepository, RegionRepositoryIDs, RegionRepositoryMockRows, RegionRepositoryMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewRegionRepository(db)
+	repo := repository_implementation.NewRegionRepository(db)
 
 	regionID := uuid.New()
 	provinceID := int64(1)

@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -30,11 +31,11 @@ type UserRepositoryMocDomain struct {
 	User *domain.User
 }
 
-func UserRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.UserRepository, UserRepositoryIDs, UserRepositoryMockRows, UserRepositoryMocDomain) {
+func UserRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.UserRepository, UserRepositoryIDs, UserRepositoryMockRows, UserRepositoryMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewUserRepository(db)
+	repo := repository_implementation.NewUserRepository(db)
 
 	userID := uuid.New()
 

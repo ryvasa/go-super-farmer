@@ -10,7 +10,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	mockUtils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ type MockUserDTOs struct {
 	UpdateWithPassword *dto.UserUpdateDTO
 }
 
-func UserUsecaseUtils(t *testing.T) (*UserIDs, *UserMocks, *MockUserDTOs, *UserRepoMock, usecase.UserUsecase, context.Context) {
+func UserUsecaseUtils(t *testing.T) (*UserIDs, *UserMocks, *MockUserDTOs, *UserRepoMock, usecase_interface.UserUsecase, context.Context) {
 	userID := uuid.New()
 
 	ids := &UserIDs{
@@ -85,7 +86,7 @@ func UserUsecaseUtils(t *testing.T) (*UserIDs, *UserMocks, *MockUserDTOs, *UserR
 
 	userRepo := mock.NewMockUserRepository(ctrl)
 	hash := mockUtils.NewMockHasher(ctrl)
-	uc := usecase.NewUserUsecase(userRepo, hash)
+	uc := usecase_implementation.NewUserUsecase(userRepo, hash)
 	ctx := context.TODO()
 
 	repo := &UserRepoMock{User: userRepo, Hash: hash}

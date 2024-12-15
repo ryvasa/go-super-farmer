@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -36,11 +37,11 @@ type HarvestMocDomain struct {
 	Harvest *domain.Harvest
 }
 
-func HarvestRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.HarvestRepository, HarvestIDs, HarvestMockRows, HarvestMocDomain) {
+func HarvestRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.HarvestRepository, HarvestIDs, HarvestMockRows, HarvestMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewHarvestRepository(db)
+	repo := repository_implementation.NewHarvestRepository(db)
 
 	harvestID := uuid.New()
 	landCommodityID := uuid.New()

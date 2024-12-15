@@ -2,13 +2,19 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func RegionRoute(public, protected *gin.RouterGroup, handler handler.RegionHandler) {
+type RegionRoute struct {
+	handler handler_interface.RegionHandler
+}
 
-	public.GET("/regions", handler.GetAllRegions)
-	public.GET("/regions/:id", handler.GetRegionByID)
-	protected.POST("/regions", handler.CreateRegion)
+func NewRegionRoute(handler handler_interface.RegionHandler) *RegionRoute {
+	return &RegionRoute{handler}
+}
 
+func (r *RegionRoute) Register(public, protected *gin.RouterGroup) {
+	public.GET("/regions", r.handler.GetAllRegions)
+	public.GET("/regions/:id", r.handler.GetRegionByID)
+	protected.POST("/regions", r.handler.CreateRegion)
 }

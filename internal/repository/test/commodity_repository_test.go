@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -30,11 +31,11 @@ type CommodityMocDomain struct {
 	Commodity *domain.Commodity
 }
 
-func CommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.CommodityRepository, CommodityIDs, CommodityMockRows, CommodityMocDomain) {
+func CommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.CommodityRepository, CommodityIDs, CommodityMockRows, CommodityMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewCommodityRepository(db)
+	repo := repository_implementation.NewCommodityRepository(db)
 
 	commodityID := uuid.New()
 

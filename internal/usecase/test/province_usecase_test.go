@@ -8,7 +8,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +33,7 @@ type ProvinceDTOMock struct {
 	Update *dto.ProvinceUpdateDTO
 }
 
-func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *ProvinceDTOMock, *ProvinceRepoMock, usecase.ProvinceUsecase, context.Context) {
+func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *ProvinceDTOMock, *ProvinceRepoMock, usecase_interface.ProvinceUsecase, context.Context) {
 	provinceID := int64(1)
 
 	ids := &ProvinceIDs{
@@ -69,7 +70,7 @@ func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *Province
 	defer ctrl.Finish()
 
 	provinceRepo := mock.NewMockProvinceRepository(ctrl)
-	uc := usecase.NewProvinceUsecase(provinceRepo)
+	uc := usecase_implementation.NewProvinceUsecase(provinceRepo)
 	ctx := context.TODO()
 
 	repo := &ProvinceRepoMock{Province: provinceRepo}

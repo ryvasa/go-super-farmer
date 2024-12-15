@@ -11,7 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
@@ -41,11 +42,11 @@ type HarvestHandlerIDs struct {
 	CommodityID     uuid.UUID
 }
 
-func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler.HarvestHandler, *mock.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks) {
+func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHandler, *mock.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock.NewMockHarvestUsecase(ctrl)
-	h := handler.NewHarvestHandler(uc)
+	h := handler_implementation.NewHarvestHandler(uc)
 	r := gin.Default()
 
 	harvestID := uuid.New()

@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,7 @@ type LandCommodityDTOMocks struct {
 	Update *dto.LandCommodityUpdateDTO
 }
 
-func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *LandCommodityDTOMocks, *LandCommodityRepoMock, usecase.LandCommodityUsecase, context.Context) {
+func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *LandCommodityDTOMocks, *LandCommodityRepoMock, usecase_interface.LandCommodityUsecase, context.Context) {
 	landID := uuid.New()
 	commodityID := uuid.New()
 	landCommodityID := uuid.New()
@@ -105,7 +106,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 		Commodity:     mock.NewMockCommodityRepository(gomock.NewController(t)),
 	}
 
-	uc := usecase.NewLandCommodityUsecase(repoMock.LandCommodity, repoMock.Land, repoMock.Commodity)
+	uc := usecase_implementation.NewLandCommodityUsecase(repoMock.LandCommodity, repoMock.Land, repoMock.Commodity)
 	ctx := context.Background()
 
 	return ids, mocks, dtoMocks, repoMock, uc, ctx

@@ -7,9 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
@@ -17,26 +18,26 @@ import (
 )
 
 var roleSet = wire.NewSet(
-	repository.NewRoleRepository,
-	usecase.NewRoleUsecase,
-	handler.NewRoleHandler,
+	repository_implementation.NewRoleRepository,
+	usecase_implementation.NewRoleUsecase,
+	handler_implementation.NewRoleHandler,
 )
 
 var userSet = wire.NewSet(
-	repository.NewUserRepository,
-	usecase.NewUserUsecase,
-	handler.NewUserHandler,
+	repository_implementation.NewUserRepository,
+	usecase_implementation.NewUserUsecase,
+	handler_implementation.NewUserHandler,
 )
 
 var landSet = wire.NewSet(
-	repository.NewLandRepository,
-	usecase.NewLandUsecase,
-	handler.NewLandHandler,
+	repository_implementation.NewLandRepository,
+	usecase_implementation.NewLandUsecase,
+	handler_implementation.NewLandHandler,
 )
 
 var authSet = wire.NewSet(
-	usecase.NewAuthUsecase,
-	handler.NewAuthHandler,
+	usecase_implementation.NewAuthUsecase,
+	handler_implementation.NewAuthHandler,
 )
 
 var tokenSet = wire.NewSet(
@@ -52,69 +53,69 @@ var hashSet = wire.NewSet(
 )
 
 var commoditySet = wire.NewSet(
-	repository.NewCommodityRepository,
-	usecase.NewCommodityUsecase,
-	handler.NewCommodityHandler,
+	repository_implementation.NewCommodityRepository,
+	usecase_implementation.NewCommodityUsecase,
+	handler_implementation.NewCommodityHandler,
 )
 
 var landCommoditySet = wire.NewSet(
-	repository.NewLandCommodityRepository,
-	usecase.NewLandCommodityUsecase,
-	handler.NewLandCommodityHandler,
+	repository_implementation.NewLandCommodityRepository,
+	usecase_implementation.NewLandCommodityUsecase,
+	handler_implementation.NewLandCommodityHandler,
 )
 
 var priceSet = wire.NewSet(
-	repository.NewPriceRepository,
-	usecase.NewPriceUsecase,
-	handler.NewPriceHandler,
+	repository_implementation.NewPriceRepository,
+	usecase_implementation.NewPriceUsecase,
+	handler_implementation.NewPriceHandler,
 )
 
 var provinceSet = wire.NewSet(
-	repository.NewProvinceRepository,
-	usecase.NewProvinceUsecase,
-	handler.NewProvinceHandler,
+	repository_implementation.NewProvinceRepository,
+	usecase_implementation.NewProvinceUsecase,
+	handler_implementation.NewProvinceHandler,
 )
 
 var citySet = wire.NewSet(
-	repository.NewCityRepository,
-	usecase.NewCityUsecase,
-	handler.NewCityHandler,
+	repository_implementation.NewCityRepository,
+	usecase_implementation.NewCityUsecase,
+	handler_implementation.NewCityHandler,
 )
 
 var regionSet = wire.NewSet(
-	repository.NewRegionRepository,
-	usecase.NewRegionUsecase,
-	handler.NewRegionHandler,
+	repository_implementation.NewRegionRepository,
+	usecase_implementation.NewRegionUsecase,
+	handler_implementation.NewRegionHandler,
 )
 
 var priceHistorySet = wire.NewSet(
-	repository.NewPriceHistoryRepository,
+	repository_implementation.NewPriceHistoryRepository,
 )
 
 var demandSet = wire.NewSet(
-	repository.NewDemandRepository,
-	usecase.NewDemandUsecase,
-	handler.NewDemandHandler,
+	repository_implementation.NewDemandRepository,
+	usecase_implementation.NewDemandUsecase,
+	handler_implementation.NewDemandHandler,
 )
 
 var supplySet = wire.NewSet(
-	repository.NewSupplyRepository,
-	usecase.NewSupplyUsecase,
-	handler.NewSupplyHandler,
+	repository_implementation.NewSupplyRepository,
+	usecase_implementation.NewSupplyUsecase,
+	handler_implementation.NewSupplyHandler,
 )
 
 var demandHistorySet = wire.NewSet(
-	repository.NewDemandHistoryRepository,
+	repository_implementation.NewDemandHistoryRepository,
 )
 
 var supplyHistorySet = wire.NewSet(
-	repository.NewSupplyHistoryRepository,
+	repository_implementation.NewSupplyHistoryRepository,
 )
 
 var harvestSet = wire.NewSet(
-	repository.NewHarvestRepository,
-	usecase.NewHarvestUsecase,
-	handler.NewHarvestHandler,
+	repository_implementation.NewHarvestRepository,
+	usecase_implementation.NewHarvestUsecase,
+	handler_implementation.NewHarvestHandler,
 )
 
 func InitializeRouter() (*gin.Engine, error) {

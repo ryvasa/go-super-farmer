@@ -9,7 +9,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -29,11 +30,11 @@ type CityMockDomains struct {
 	City *domain.City
 }
 
-func CityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.CityRepository, CityIDs, CityMockRows, CityMockDomains) {
+func CityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.CityRepository, CityIDs, CityMockRows, CityMockDomains) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewCityRepository(db)
+	repo := repository_implementation.NewCityRepository(db)
 
 	cityID := int64(1)
 	provinceID := int64(2)

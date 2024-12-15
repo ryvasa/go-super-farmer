@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +32,11 @@ type DemandMocDomain struct {
 	Demand *domain.Demand
 }
 
-func DemandRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.DemandRepository, DemandIDs, DemandMockRows, DemandMocDomain) {
+func DemandRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.DemandRepository, DemandIDs, DemandMockRows, DemandMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewDemandRepository(db)
+	repo := repository_implementation.NewDemandRepository(db)
 
 	demandID := uuid.New()
 	regionID := uuid.New()

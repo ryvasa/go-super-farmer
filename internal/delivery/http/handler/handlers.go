@@ -1,22 +1,24 @@
 package handler
 
+import handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
+
 type Handlers struct {
-	RoleHandler          RoleHandler
-	UserHandler          UserHandler
-	LandHandler          LandHandler
-	AuthHandler          AuthHandler
-	CommodityHandler     CommodityHandler
-	LandCommodityHandler LandCommodityHandler
-	PriceHandler         PriceHandler
-	ProvinceHandler      ProvinceHandler
-	CityHandler          CityHandler
-	RegionHandler        RegionHandler
-	DemandHandler        DemandHandler
-	SupplyHandler        SupplyHandler
-	HarvestHandler       HarvestHandler
+	RoleHandler          handler_interface.RoleHandler
+	UserHandler          handler_interface.UserHandler
+	LandHandler          handler_interface.LandHandler
+	AuthHandler          handler_interface.AuthHandler
+	CommodityHandler     handler_interface.CommodityHandler
+	LandCommodityHandler handler_interface.LandCommodityHandler
+	PriceHandler         handler_interface.PriceHandler
+	ProvinceHandler      handler_interface.ProvinceHandler
+	CityHandler          handler_interface.CityHandler
+	RegionHandler        handler_interface.RegionHandler
+	DemandHandler        handler_interface.DemandHandler
+	SupplyHandler        handler_interface.SupplyHandler
+	HarvestHandler       handler_interface.HarvestHandler
 }
 
-func NewHandlers(roleHandler RoleHandler, userHandler UserHandler, landHandler LandHandler, authHandler AuthHandler, commodityHandler CommodityHandler, landCommodityHandler LandCommodityHandler, priceHandler PriceHandler, provinceHandler ProvinceHandler, cityHandler CityHandler, regionHandler RegionHandler, demandHandler DemandHandler, supplyHandler SupplyHandler, harvestHandler HarvestHandler) *Handlers {
+func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_interface.UserHandler, landHandler handler_interface.LandHandler, authHandler handler_interface.AuthHandler, commodityHandler handler_interface.CommodityHandler, landCommodityHandler handler_interface.LandCommodityHandler, priceHandler handler_interface.PriceHandler, provinceHandler handler_interface.ProvinceHandler, cityHandler handler_interface.CityHandler, regionHandler handler_interface.RegionHandler, demandHandler handler_interface.DemandHandler, supplyHandler handler_interface.SupplyHandler, harvestHandler handler_interface.HarvestHandler) *Handlers {
 	return &Handlers{
 		RoleHandler:          roleHandler,
 		UserHandler:          userHandler,

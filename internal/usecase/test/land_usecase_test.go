@@ -10,7 +10,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +38,7 @@ type LandDTOMock struct {
 	Update *dto.LandUpdateDTO
 }
 
-func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRepoMock, usecase.LandUsecase, context.Context) {
+func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRepoMock, usecase_interface.LandUsecase, context.Context) {
 	landID := uuid.New()
 	userID := uuid.New()
 
@@ -88,7 +89,7 @@ func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRe
 
 	landRepo := mock.NewMockLandRepository(ctrl)
 	userRepo := mock.NewMockUserRepository(ctrl)
-	uc := usecase.NewLandUsecase(landRepo, userRepo)
+	uc := usecase_implementation.NewLandUsecase(landRepo, userRepo)
 	ctx := context.TODO()
 
 	repo := &LandRepoMock{Land: landRepo, User: userRepo}

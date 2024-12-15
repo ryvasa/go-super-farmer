@@ -2,18 +2,26 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func PriceRoutes(public, protected *gin.RouterGroup, priceHandler handler.PriceHandler) {
-	protected.POST("/prices", priceHandler.CreatePrice)
-	protected.GET("/prices", priceHandler.GetAllPrices)
-	public.GET("/prices/:id", priceHandler.GetPriceByID)
-	protected.GET("/prices/commodity/:id", priceHandler.GetPricesByCommodityID)
-	protected.GET("/prices/region/:id", priceHandler.GetPricesByRegionID)
-	protected.PATCH("/prices/:id", priceHandler.UpdatePrice)
-	protected.DELETE("/prices/:id", priceHandler.DeletePrice)
-	protected.PATCH("/prices/:id/restore", priceHandler.RestorePrice)
-	public.GET("/prices/current/commodity/:commodity_id/region/:region_id", priceHandler.GetPriceByCommodityIDAndRegionID)
-	public.GET("/prices/history/commodity/:commodity_id/region/:region_id", priceHandler.GetPricesHistoryByCommodityIDAndRegionID)
+type PriceRoute struct {
+	handler handler_interface.PriceHandler
+}
+
+func NewPriceRoute(handler handler_interface.PriceHandler) *PriceRoute {
+	return &PriceRoute{handler}
+}
+
+func (r *PriceRoute) Register(public, protected *gin.RouterGroup) {
+	protected.POST("/prices", r.handler.CreatePrice)
+	protected.GET("/prices", r.handler.GetAllPrices)
+	public.GET("/prices/:id", r.handler.GetPriceByID)
+	protected.GET("/prices/commodity/:id", r.handler.GetPricesByCommodityID)
+	protected.GET("/prices/region/:id", r.handler.GetPricesByRegionID)
+	protected.PATCH("/prices/:id", r.handler.UpdatePrice)
+	protected.DELETE("/prices/:id", r.handler.DeletePrice)
+	protected.PATCH("/prices/:id/restore", r.handler.RestorePrice)
+	public.GET("/prices/current/commodity/:commodity_id/region/:region_id", r.handler.GetPriceByCommodityIDAndRegionID)
+	public.GET("/prices/history/commodity/:commodity_id/region/:region_id", r.handler.GetPricesHistoryByCommodityIDAndRegionID)
 }

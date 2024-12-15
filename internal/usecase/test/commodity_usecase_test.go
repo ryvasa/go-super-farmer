@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +34,7 @@ type CommodityDTOMock struct {
 	Update *dto.CommodityUpdateDTO
 }
 
-func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *CommodityDTOMock, *CommodityRepoMock, usecase.CommodityUsecase, context.Context) {
+func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *CommodityDTOMock, *CommodityRepoMock, usecase_interface.CommodityUsecase, context.Context) {
 	commodityID := uuid.New()
 
 	ids := &CommodityIDs{
@@ -80,7 +81,7 @@ func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *Commo
 	defer ctrl.Finish()
 
 	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	uc := usecase.NewCommodityUsecase(commodityRepo)
+	uc := usecase_implementation.NewCommodityUsecase(commodityRepo)
 	ctx := context.TODO()
 
 	repo := &CommodityRepoMock{Commodity: commodityRepo}
