@@ -1,8 +1,6 @@
 package route
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/middleware"
@@ -11,19 +9,11 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 )
 
-// type Routes interface {
-// 	NewRouter(handler *handler.Handlers) *gin.Engine
-// }
+type Router interface {
+	Register(public, protected *gin.RouterGroup)
+}
 
-// type RoutesImpl struct {
-// 	handler *handler.Handlers
-// }
-
-// func NewRoutes(handler *handler.Handlers) Routes {
-// 	return &RoutesImpl{handler}
-// }
-
-func NewRouter(handler *handler.Handlers) *gin.Engine {
+func NewRouter(handlers *handler.Handlers) *gin.Engine {
 	r := gin.Default()
 
 	public := r.Group("/api")
@@ -31,38 +21,42 @@ func NewRouter(handler *handler.Handlers) *gin.Engine {
 
 	env, err := env.LoadEnv()
 	if err != nil {
-		fmt.Printf("failed to load env: %v", err)
+		panic(err)
 	}
 
-	modelPath := "./pkg/auth/casbin/model.conf"
-	policyPath := "./pkg/auth/casbin/policy.csv"
-
-	enforcer, err := casbin.Init(modelPath, policyPath)
+	// Setup middleware
+	enforcer, err := casbin.Init("./pkg/auth/casbin/model.conf", "./pkg/auth/casbin/policy.csv")
 	if err != nil {
-		fmt.Printf("failed to initialize casbin: %v", err)
+		panic(err)
 	}
 
-	token := token.NewToken(env)
-	authMiddleware := middleware.NewAuthMiddleware(token)
+	tokenService := token.NewToken(env)
+	authMiddleware := middleware.NewAuthMiddleware(tokenService)
 	autzMiddleware := middleware.NewAutzMiddleware(enforcer)
 
 	protected.Use(authMiddleware.Handle())
 	protected.Use(autzMiddleware.Handle())
 
-	RoleRoutes(public, protected, handler.RoleHandler)
-	UserRoutes(public, protected, handler.UserHandler)
-	LandRoutes(public, protected, handler.LandHandler)
-	AuthRoutes(public, handler.AuthHandler)
-	CommodityRoutes(public, protected, handler.CommodityHandler)
-	LandCommodityRoutes(public, protected, handler.LandCommodityHandler)
-	PriceRoutes(public, protected, handler.PriceHandler)
-	ProvinceRoute(public, protected, handler.ProvinceHandler)
-	CityRoute(public, protected, handler.CityHandler)
-	RegionRoute(public, protected, handler.RegionHandler)
-	DemandRoutes(public, protected, handler.DemandHandler)
-	SupplyRoutes(public, protected, handler.SupplyHandler)
-	HarvestRoutes(public, protected, handler.HarvestHandler)
+	routes := []Router{
+		NewAuthRoute(handlers.AuthHandler),
+		NewUserRoute(handlers.UserHandler),
+		NewLandRoute(handlers.LandHandler),
+		NewCommodityRoute(handlers.CommodityHandler),
+		NewPriceRoute(handlers.PriceHandler),
+		NewProvinceRoute(handlers.ProvinceHandler),
+		NewCityRoute(handlers.CityHandler),
+		NewRegionRoute(handlers.RegionHandler),
+		NewDemandRoute(handlers.DemandHandler),
+		NewSupplyRoute(handlers.SupplyHandler),
+		NewHarvestRoute(handlers.HarvestHandler),
+		NewLandCommodityRoute(handlers.LandCommodityHandler),
+		NewRoleRoute(handlers.RoleHandler),
+	}
+
+	// Register all routes
+	for _, router := range routes {
+		router.Register(public, protected)
+	}
 
 	return r
-
 }

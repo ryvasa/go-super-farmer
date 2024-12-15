@@ -8,7 +8,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +34,7 @@ type CityDTOMock struct {
 	Update *dto.CityUpdateDTO
 }
 
-func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRepoMock, usecase.CityUsecase, context.Context) {
+func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRepoMock, usecase_interface.CityUsecase, context.Context) {
 
 	cityID := int64(1)
 	provinceID := int64(2)
@@ -77,7 +78,7 @@ func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRe
 	defer ctrl.Finish()
 
 	cityRepo := mock.NewMockCityRepository(ctrl)
-	uc := usecase.NewCityUsecase(cityRepo)
+	uc := usecase_implementation.NewCityUsecase(cityRepo)
 	ctx := context.TODO()
 
 	repo := &CityRepoMock{City: cityRepo}

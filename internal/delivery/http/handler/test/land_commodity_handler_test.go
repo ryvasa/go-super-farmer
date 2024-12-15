@@ -10,7 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
@@ -45,11 +46,11 @@ type LandCommodityHandlerIDs struct {
 	LandID          uuid.UUID
 }
 
-func LandCommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler.LandCommodityHandler, *mock.MockLandCommodityUsecase, LandCommodityHandlerIDs, LandCommodityHandlerMocks) {
+func LandCommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.LandCommodityHandler, *mock.MockLandCommodityUsecase, LandCommodityHandlerIDs, LandCommodityHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock.NewMockLandCommodityUsecase(ctrl)
-	h := handler.NewLandCommodityHandler(uc)
+	h := handler_implementation.NewLandCommodityHandler(uc)
 	r := gin.Default()
 
 	landCommodityID := uuid.New()

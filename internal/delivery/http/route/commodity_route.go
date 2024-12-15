@@ -2,14 +2,22 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func CommodityRoutes(public, protected *gin.RouterGroup, commodityHandler handler.CommodityHandler) {
-	protected.POST("/commodities", commodityHandler.CreateCommodity)
-	protected.GET("/commodities", commodityHandler.GetAllCommodities)
-	protected.GET("/commodities/:id", commodityHandler.GetCommodityById)
-	protected.PATCH("/commodities/:id", commodityHandler.UpdateCommodity)
-	protected.DELETE("/commodities/:id", commodityHandler.DeleteCommodity)
-	protected.PATCH("/commodities/:id/restore", commodityHandler.RestoreCommodity)
+type CommodityRoute struct {
+	handler handler_interface.CommodityHandler
+}
+
+func NewCommodityRoute(handler handler_interface.CommodityHandler) *CommodityRoute {
+	return &CommodityRoute{handler}
+}
+
+func (r *CommodityRoute) Register(public, protected *gin.RouterGroup) {
+	protected.POST("/commodities", r.handler.CreateCommodity)
+	protected.GET("/commodities", r.handler.GetAllCommodities)
+	protected.GET("/commodities/:id", r.handler.GetCommodityById)
+	protected.PATCH("/commodities/:id", r.handler.UpdateCommodity)
+	protected.DELETE("/commodities/:id", r.handler.DeleteCommodity)
+	protected.PATCH("/commodities/:id/restore", r.handler.RestoreCommodity)
 }

@@ -2,16 +2,24 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func SupplyRoutes(public, protected *gin.RouterGroup, supplyHandler handler.SupplyHandler) {
-	protected.POST("/supplies", supplyHandler.CreateSupply)
-	protected.GET("/supplies", supplyHandler.GetAllSupply)
-	protected.GET("/supplies/:id", supplyHandler.GetSupplyByID)
-	protected.GET("/supplies/commodity/:commodity_id", supplyHandler.GetSupplyByCommodityID)
-	protected.GET("/supplies/region/:id", supplyHandler.GetSupplyByRegionID)
-	protected.PATCH("/supplies/:id", supplyHandler.UpdateSupply)
-	protected.DELETE("/supplies/:id", supplyHandler.DeleteSupply)
-	protected.GET("/supplies/commodity/:commodity_id/region/:region_id", supplyHandler.GetSupplyHistoryByCommodityIDAndRegionID)
+type SupplyRoute struct {
+	handler handler_interface.SupplyHandler
+}
+
+func NewSupplyRoute(handler handler_interface.SupplyHandler) *SupplyRoute {
+	return &SupplyRoute{handler}
+}
+
+func (r *SupplyRoute) Register(public, protected *gin.RouterGroup) {
+	protected.POST("/supplies", r.handler.CreateSupply)
+	protected.GET("/supplies", r.handler.GetAllSupply)
+	protected.GET("/supplies/:id", r.handler.GetSupplyByID)
+	protected.GET("/supplies/commodity/:commodity_id", r.handler.GetSupplyByCommodityID)
+	protected.GET("/supplies/region/:id", r.handler.GetSupplyByRegionID)
+	protected.PATCH("/supplies/:id", r.handler.UpdateSupply)
+	protected.DELETE("/supplies/:id", r.handler.DeleteSupply)
+	protected.GET("/supplies/commodity/:commodity_id/region/:region_id", r.handler.GetSupplyHistoryByCommodityIDAndRegionID)
 }

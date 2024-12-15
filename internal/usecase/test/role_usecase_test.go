@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +31,7 @@ type RoleDTOMock struct {
 	Create *dto.RoleCreateDTO
 }
 
-func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRepoMock, usecase.RoleUsecase, context.Context) {
+func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRepoMock, usecase_interface.RoleUsecase, context.Context) {
 	roleID := int64(1)
 
 	ids := &RoleIDs{
@@ -64,7 +65,7 @@ func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRe
 	defer ctrl.Finish()
 
 	roleRepo := mock.NewMockRoleRepository(ctrl)
-	uc := usecase.NewRoleUsecase(roleRepo)
+	uc := usecase_implementation.NewRoleUsecase(roleRepo)
 	ctx := context.Background()
 
 	repo := &RoleRepoMock{Role: roleRepo}

@@ -11,7 +11,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -35,11 +36,11 @@ type LandCommodityMocDomain struct {
 	LandCommodity *domain.LandCommodity
 }
 
-func LandCommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository.LandCommodityRepository, LandCommodityIDs, LandCommodityMockRows, LandCommodityMocDomain) {
+func LandCommodityRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, repository_interface.LandCommodityRepository, LandCommodityIDs, LandCommodityMockRows, LandCommodityMocDomain) {
 
 	sqlDB, db, mock := database.DbMock(t)
 
-	repo := repository.NewLandCommodityRepository(db)
+	repo := repository_implementation.NewLandCommodityRepository(db)
 
 	landCommodityID := uuid.New()
 	landID := uuid.New()

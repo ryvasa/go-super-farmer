@@ -2,15 +2,23 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func LandRoutes(public, protected *gin.RouterGroup, landHandler handler.LandHandler) {
-	protected.GET("/lands", landHandler.GetAllLands)
-	protected.POST("/lands", landHandler.CreateLand)
-	protected.GET("/lands/:id", landHandler.GetLandByID)
-	protected.PATCH("/lands/:id", landHandler.UpdateLand)
-	protected.DELETE("/lands/:id", landHandler.DeleteLand)
-	protected.PATCH("/lands/:id/restore", landHandler.RestoreLand)
-	protected.GET("/lands/user/:id", landHandler.GetLandByUserID)
+type LandRoute struct {
+	handler handler_interface.LandHandler
+}
+
+func NewLandRoute(handler handler_interface.LandHandler) *LandRoute {
+	return &LandRoute{handler}
+}
+
+func (r *LandRoute) Register(public, protected *gin.RouterGroup) {
+	protected.GET("/lands", r.handler.GetAllLands)
+	protected.POST("/lands", r.handler.CreateLand)
+	protected.GET("/lands/:id", r.handler.GetLandByID)
+	protected.PATCH("/lands/:id", r.handler.UpdateLand)
+	protected.DELETE("/lands/:id", r.handler.DeleteLand)
+	protected.PATCH("/lands/:id/restore", r.handler.RestoreLand)
+	protected.GET("/lands/user/:id", r.handler.GetLandByUserID)
 }

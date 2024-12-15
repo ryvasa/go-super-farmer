@@ -10,7 +10,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +43,7 @@ type HarvestDTOMock struct {
 	Update *dto.HarvestUpdateDTO
 }
 
-func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *HarvestDTOMock, *HarvestRepoMock, usecase.HarvestUsecase, context.Context) {
+func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *HarvestDTOMock, *HarvestRepoMock, usecase_interface.HarvestUsecase, context.Context) {
 	regionID := uuid.New()
 	landCommodityID := uuid.New()
 	harvestID := uuid.New()
@@ -113,7 +114,7 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 	landCommodityRepo := mock.NewMockLandCommodityRepository(ctrl)
 	harvestRepo := mock.NewMockHarvestRepository(ctrl)
 
-	uc := usecase.NewHarvestUsecase(harvestRepo, regionRepo, landCommodityRepo)
+	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, regionRepo, landCommodityRepo)
 	ctx := context.TODO()
 
 	repo := &HarvestRepoMock{Harvest: harvestRepo, Region: regionRepo, LandCommodity: landCommodityRepo}

@@ -9,7 +9,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
-	"github.com/ryvasa/go-super-farmer/internal/usecase"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +39,7 @@ type RegionDTOMocks struct {
 	Create *dto.RegionCreateDto
 }
 
-func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks, *RegionRepoMock, usecase.RegionUsecase, context.Context) {
+func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks, *RegionRepoMock, usecase_interface.RegionUsecase, context.Context) {
 	regionID := uuid.New()
 	cityID := int64(1)
 	provinceID := int64(1)
@@ -86,7 +87,7 @@ func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks
 		Province: mock.NewMockProvinceRepository(gomock.NewController(t)),
 	}
 
-	uc := usecase.NewRegionUsecase(regionRepoMock.Region, regionRepoMock.City, regionRepoMock.Province)
+	uc := usecase_implementation.NewRegionUsecase(regionRepoMock.Region, regionRepoMock.City, regionRepoMock.Province)
 	ctx := context.Background()
 
 	return ids, mocks, dtoMocks, regionRepoMock, uc, ctx

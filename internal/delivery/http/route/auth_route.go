@@ -2,9 +2,17 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
+	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 )
 
-func AuthRoutes(public *gin.RouterGroup, authHandler handler.AuthHandler) {
-	public.POST("/auth/login", authHandler.Login)
+type AuthRoute struct {
+	handler handler_interface.AuthHandler
+}
+
+func NewAuthRoute(handler handler_interface.AuthHandler) *AuthRoute {
+	return &AuthRoute{handler}
+}
+
+func (r *AuthRoute) Register(public, protected *gin.RouterGroup) {
+	public.POST("/auth/login", r.handler.Login)
 }
