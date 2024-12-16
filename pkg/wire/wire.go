@@ -10,6 +10,7 @@ import (
 	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
+	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
@@ -81,19 +82,29 @@ var rabbitMQSet = wire.NewSet(
 	rabbitmq.NewPublisher,
 )
 
+var cacheSet = wire.NewSet(
+	cache.NewRedisCache,
+)
+
+var databaseSet = wire.NewSet(
+	database.NewPostgres,
+	database.NewRedisClient,
+)
+
 func InitializeApp() (*app.App, error) {
 	wire.Build(
 		env.LoadEnv,
 		handler.NewHandlers,
 		route.NewRouter,
 		app.NewApp,
-		database.NewPostgres,
+		databaseSet,
 		rabbitMQSet,
 		tokenSet,
 		utilSet,
 		repositorySet,
 		usecaseSet,
 		handlerSet,
+		cacheSet,
 	)
 	return nil, nil
 }
