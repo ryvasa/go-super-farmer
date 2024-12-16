@@ -26,16 +26,6 @@ func (r *PriceHistoryRepositoryImpl) Create(ctx context.Context, priceHistory *d
 	return r.db.WithContext(ctx).Create(priceHistory).Error
 }
 
-func (r *PriceHistoryRepositoryImpl) FindAll(ctx context.Context) (*[]domain.PriceHistory, error) {
-
-	priceHistories := []domain.PriceHistory{}
-	if err := r.db.WithContext(ctx).Find(&priceHistories).Error; err != nil {
-		return nil, err
-	}
-
-	return &priceHistories, nil
-}
-
 func (r *PriceHistoryRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.PriceHistory, error) {
 	var priceHistory domain.PriceHistory
 	err := r.db.WithContext(ctx).First(&priceHistory, id).Error
