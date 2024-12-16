@@ -21,6 +21,12 @@ type Env struct {
 	Secret struct {
 		JwtSecretKey string
 	}
+	RabbitMQ struct {
+		Host     string
+		User     string
+		Password string
+		Port     string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -44,6 +50,12 @@ func LoadEnv() (*Env, error) {
 
 	// Secret
 	env.Secret.JwtSecretKey = os.Getenv("JWT_SECRET_KEY")
+
+	// RabbitMQ
+	env.RabbitMQ.Host = os.Getenv("RABBITMQ_HOST")
+	env.RabbitMQ.User = os.Getenv("RABBITMQ_USER")
+	env.RabbitMQ.Password = os.Getenv("RABBITMQ_PASSWORD")
+	env.RabbitMQ.Port = os.Getenv("RABBITMQ_PORT")
 
 	return env, nil
 }

@@ -19,4 +19,5 @@ type PriceUsecase interface {
 	RestorePrice(ctx context.Context, id uuid.UUID) (*domain.Price, error)
 	GetPriceByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*domain.Price, error)
 	GetPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.PriceHistory, error)
+	DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) error
 }

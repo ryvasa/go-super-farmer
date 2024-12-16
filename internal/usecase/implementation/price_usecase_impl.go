@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
@@ -16,10 +17,11 @@ type PriceUsecaseImpl struct {
 	priceHistoryRepo repository_interface.PriceHistoryRepository
 	regionRepo       repository_interface.RegionRepository
 	commodityRepo    repository_interface.CommodityRepository
+	publisher        rabbitmq.Publisher
 }
 
-func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, regionRepo repository_interface.RegionRepository, commodityRepo repository_interface.CommodityRepository) usecase_interface.PriceUsecase {
-	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, regionRepo, commodityRepo}
+func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, regionRepo repository_interface.RegionRepository, commodityRepo repository_interface.CommodityRepository, publisher rabbitmq.Publisher) usecase_interface.PriceUsecase {
+	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, regionRepo, commodityRepo, publisher}
 }
 
 func (uc *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error) {
@@ -183,4 +185,20 @@ func (uc *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.
 	}
 	newHistoryPrices := append(*historyPrices, currentPriceHistory)
 	return &newHistoryPrices, nil
+}
+
+func (uc *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) error {
+	payload := struct {
+		CommodityID string `json:"CommodityID"`
+		RegionID    string `json:"RegionID"`
+	}{
+		CommodityID: commodityID.String(),
+		RegionID:    regionID.String(),
+	}
+
+	err := uc.publisher.PublishJSON(ctx, "report-queue", payload)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+	return nil
 }

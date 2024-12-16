@@ -40,7 +40,14 @@ func (r *PriceHistoryRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID)
 
 func (r *PriceHistoryRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.PriceHistory, error) {
 	priceHistories := []domain.PriceHistory{}
-	err := r.db.WithContext(ctx).Where("commodity_id = ? AND region_id = ?", commodityID, regionID).Find(&priceHistories).Error
+	err := r.db.WithContext(ctx).Preload("Commodity", func(db *gorm.DB) *gorm.DB {
+		return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
+	}).
+		Preload("Region", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
+		}).
+		Preload("Region.Province").
+		Preload("Region.City").Where("commodity_id = ? AND region_id = ?", commodityID, regionID).Find(&priceHistories).Error
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -548,7 +547,6 @@ func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
 
 		var response responsePriceHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
-		log.Println(response.Errors)
 		assert.NoError(t, err)
 		assert.NotNil(t, response.Errors)
 		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")

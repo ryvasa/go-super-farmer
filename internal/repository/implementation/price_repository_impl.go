@@ -144,7 +144,15 @@ func (r *PriceRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID)
 
 func (r *PriceRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*domain.Price, error) {
 	var price domain.Price
-	err := r.db.WithContext(ctx).Model(&price).
+	err := r.db.WithContext(ctx).
+		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
+		}).
+		Preload("Region", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
+		}).
+		Preload("Region.Province").
+		Preload("Region.City").
 		Where("prices.commodity_id = ? AND prices.region_id = ?", commodityID, regionID).
 		First(&price).Error
 	if err != nil {

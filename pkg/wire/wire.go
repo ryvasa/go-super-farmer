@@ -5,10 +5,11 @@ package wire
 
 import (
 	"github.com/google/wire"
-	"github.com/ryvasa/go-super-farmer/cmd/app"
+	"github.com/ryvasa/go-super-farmer/cmd/api/app"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
+	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
@@ -76,6 +77,10 @@ var handlerSet = wire.NewSet(
 	handler_implementation.NewHarvestHandler,
 )
 
+var rabbitMQSet = wire.NewSet(
+	rabbitmq.NewPublisher,
+)
+
 func InitializeApp() (*app.App, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -83,6 +88,7 @@ func InitializeApp() (*app.App, error) {
 		route.NewRouter,
 		app.NewApp,
 		database.NewPostgres,
+		rabbitMQSet,
 		tokenSet,
 		utilSet,
 		repositorySet,
