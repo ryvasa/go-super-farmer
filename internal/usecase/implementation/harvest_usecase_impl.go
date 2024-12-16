@@ -2,7 +2,6 @@ package usecase_implementation
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,8 +47,6 @@ func (h *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harvest
 	harvest.Unit = req.Unit
 	harvest.HarvestDate = parseDate
 	harvest.ID = uuid.New()
-
-	log.Println(harvest, "hahahah")
 
 	err = h.harvestRepo.Create(ctx, &harvest)
 	if err != nil {

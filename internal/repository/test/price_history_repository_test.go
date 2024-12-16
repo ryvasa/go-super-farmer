@@ -27,6 +27,8 @@ type PriceHistoryIDs struct {
 type PriceHistoryMockRows struct {
 	PriceHistory *sqlmock.Rows
 	Notfound     *sqlmock.Rows
+	Commodity    *sqlmock.Rows
+	Region       *sqlmock.Rows
 }
 
 type PriceHistoryMocDomain struct {
@@ -54,6 +56,11 @@ func PriceHistoryRepositorySetup(t *testing.T) (*sql.DB, sqlmock.Sqlmock, reposi
 			AddRow(priceHistoryID, commodityID, regionID, float64(100), time.Now(), time.Now()),
 
 		Notfound: sqlmock.NewRows([]string{"id", "commodity_id", "region_id", "price", "created_at", "updated_at"}),
+
+		Commodity: sqlmock.NewRows([]string{"id", "name", "code", "duration"}).
+			AddRow(commodityID, "commodity name", "commodity code", time.Now()),
+		Region: sqlmock.NewRows([]string{"id", "name"}).
+			AddRow(regionID, "region name"),
 	}
 
 	domains := PriceHistoryMocDomain{
@@ -175,10 +182,16 @@ func TestPriceHistoryRepository_FindByCommodityIDAndRegionID(t *testing.T) {
 
 	defer db.Close()
 
-	expectedSQL := `SELECT * FROM "price_histories" WHERE (commodity_id = $1 AND region_id = $2) AND "price_histories"."deleted_at" IS NULL`
+	expectedSQL1 := `SELECT * FROM "price_histories" WHERE (commodity_id = $1 AND region_id = $2) AND "price_histories"."deleted_at" IS NULL`
+
+	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1`
+
+	expectedSQL3 := `SELECT "regions"."id","regions"."province_id","regions"."city_id" FROM "regions" WHERE "regions"."id" = $1`
 
 	t.Run("should return price history when find by commodity id and region id successfully", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnRows(rows.PriceHistory)
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL1)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnRows(rows.PriceHistory)
+
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL2)).WithArgs(ids.CommodityID).WillReturnRows(rows.Commodity)
 
 		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
 		assert.Nil(t, err)
@@ -192,7 +205,7 @@ func TestPriceHistoryRepository_FindByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when find by commodity id and region id failed", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnError(errors.New("database error"))
+		mock.ExpectQuery(regexp.QuoteMeta(expectedSQL1)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnError(errors.New("database error"))
 
 		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
 		assert.Nil(t, result)

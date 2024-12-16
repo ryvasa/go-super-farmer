@@ -1,7 +1,11 @@
 package handler_implementation
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -171,4 +175,53 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndRegionID(c *gin.Conte
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, priceHistory)
+}
+
+func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.Context) {
+	commodityID, err := uuid.Parse(c.Param("commodity_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	regionID, err := uuid.Parse(c.Param("region_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+
+	// Generate request ID
+	requestID := fmt.Sprintf("%s_%s", commodityID, regionID)
+
+	// Trigger Excel generation melalui RabbitMQ
+	err = h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+
+	// Tunggu beberapa detik untuk Excel generation
+	time.Sleep(2 * time.Second)
+
+	// Cek apakah file sudah tersedia
+	filePath, exists := utils.GetFilePath(requestID)
+	if !exists {
+		utils.ErrorResponse(c, utils.NewInternalError("File not ready yet"))
+		return
+	}
+
+	// Set header untuk download
+	fileName := filepath.Base(filePath)
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+	c.Header("Content-Type", "application/octet-stream")
+
+	// Kirim file
+	c.File(filePath)
+
+	// Cleanup
+	defer func() {
+		os.Remove(filePath)
+		utils.RemoveFilePath(requestID)
+	}()
 }

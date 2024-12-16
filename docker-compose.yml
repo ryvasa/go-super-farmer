@@ -1,0 +1,39 @@
+version: "3"
+services:
+  rabbitmq:
+    image: "rabbitmq:4.0.0-beta.6-management-alpine"
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "rabbitmq_data:/data"
+
+  postgres:
+    image: postgres:latest
+    container_name: postgresql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=go_super_farmer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - redis-network
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
+
+networks:
+  redis-network:
+    driver: bridge

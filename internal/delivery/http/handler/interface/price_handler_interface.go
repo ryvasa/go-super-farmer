@@ -15,4 +15,5 @@ type PriceHandler interface {
 	RestorePrice(c *gin.Context)
 	GetPriceByCommodityIDAndRegionID(c *gin.Context)
 	GetPricesHistoryByCommodityIDAndRegionID(c *gin.Context)
+	DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.Context)
 }
