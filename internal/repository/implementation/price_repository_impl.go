@@ -2,19 +2,24 @@ package repository_implementation
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"gorm.io/gorm"
 )
 
 type PriceRepositoryImpl struct {
-	db *gorm.DB
+	db    *gorm.DB
+	cache cache.Cache
 }
 
-func NewPriceRepository(db *gorm.DB) repository_interface.PriceRepository {
-	return &PriceRepositoryImpl{db}
+func NewPriceRepository(db *gorm.DB, cache cache.Cache) repository_interface.PriceRepository {
+	return &PriceRepositoryImpl{db, cache}
 }
 
 func (r *PriceRepositoryImpl) Create(ctx context.Context, price *domain.Price) error {
@@ -44,7 +49,19 @@ func (r *PriceRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Price, err
 
 func (r *PriceRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.Price, error) {
 	var price domain.Price
-	err := r.db.WithContext(ctx).
+
+	cacheKey := fmt.Sprintf("price_%s", id)
+	cachedPriceHistory, err := r.cache.Get(ctx, cacheKey)
+	if err == nil && cachedPriceHistory != nil {
+		var price domain.Price
+		err := json.Unmarshal(cachedPriceHistory, &price)
+		if err != nil {
+			return nil, err
+		}
+		return &price, nil
+	}
+
+	err = r.db.WithContext(ctx).
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
@@ -57,6 +74,10 @@ func (r *PriceRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*doma
 	if err != nil {
 		return nil, err
 	}
+
+	userJSON, _ := json.Marshal(price)
+	r.cache.Set(ctx, cacheKey, userJSON, 1*time.Minute)
+
 	return &price, nil
 }
 

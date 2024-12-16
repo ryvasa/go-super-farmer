@@ -13,6 +13,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
+	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	"github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
@@ -52,8 +53,10 @@ func InitializeApp() (*app.App, error) {
 	landCommodityRepository := repository_implementation.NewLandCommodityRepository(db)
 	landCommodityUsecase := usecase_implementation.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
 	landCommodityHandler := handler_implementation.NewLandCommodityHandler(landCommodityUsecase)
-	priceRepository := repository_implementation.NewPriceRepository(db)
-	priceHistoryRepository := repository_implementation.NewPriceHistoryRepository(db)
+	client := database.NewRedisClient(envEnv)
+	cacheCache := cache.NewRedisCache(client)
+	priceRepository := repository_implementation.NewPriceRepository(db, cacheCache)
+	priceHistoryRepository := repository_implementation.NewPriceHistoryRepository(db, cacheCache)
 	regionRepository := repository_implementation.NewRegionRepository(db)
 	publisher, err := rabbitmq.NewPublisher(envEnv)
 	if err != nil {
@@ -99,3 +102,7 @@ var usecaseSet = wire.NewSet(usecase_implementation.NewRoleUsecase, usecase_impl
 var handlerSet = wire.NewSet(handler_implementation.NewRoleHandler, handler_implementation.NewUserHandler, handler_implementation.NewLandHandler, handler_implementation.NewAuthHandler, handler_implementation.NewCommodityHandler, handler_implementation.NewLandCommodityHandler, handler_implementation.NewPriceHandler, handler_implementation.NewProvinceHandler, handler_implementation.NewCityHandler, handler_implementation.NewRegionHandler, handler_implementation.NewDemandHandler, handler_implementation.NewSupplyHandler, handler_implementation.NewHarvestHandler)
 
 var rabbitMQSet = wire.NewSet(rabbitmq.NewPublisher)
+
+var cacheSet = wire.NewSet(cache.NewRedisCache)
+
+var databaseSet = wire.NewSet(database.NewPostgres, database.NewRedisClient)

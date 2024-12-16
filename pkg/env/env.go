@@ -27,6 +27,11 @@ type Env struct {
 		Password string
 		Port     string
 	}
+	Redis struct {
+		Host     string
+		Port     string
+		Password string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -56,6 +61,11 @@ func LoadEnv() (*Env, error) {
 	env.RabbitMQ.User = os.Getenv("RABBITMQ_USER")
 	env.RabbitMQ.Password = os.Getenv("RABBITMQ_PASSWORD")
 	env.RabbitMQ.Port = os.Getenv("RABBITMQ_PORT")
+
+	// Redis
+	env.Redis.Host = os.Getenv("REDIS_HOST")
+	env.Redis.Port = os.Getenv("REDIS_PORT")
+	env.Redis.Password = os.Getenv("REDIS_PASSWORD")
 
 	return env, nil
 }
