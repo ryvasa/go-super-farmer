@@ -1,10 +1,7 @@
 package handler_implementation
 
 import (
-	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -178,50 +175,45 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndRegionID(c *gin.Conte
 }
 
 func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.Context) {
+
+	priceParams := &dto.PriceParamsDTO{}
+
+	startDateStr := c.Query("start_date")
+	if startDateStr != "" {
+		startDate, err := time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		priceParams.StartDate = startDate
+	}
+	endDatestr := c.Query("end_date")
+	if endDatestr != "" {
+		endDate, err := time.Parse("2006-01-02", endDatestr)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		priceParams.EndDate = endDate
+	}
+
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	priceParams.CommodityID = commodityID
 	regionID, err := uuid.Parse(c.Param("region_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	priceParams.RegionID = regionID
 
-	// Generate request ID
-	requestID := fmt.Sprintf("%s_%s", commodityID, regionID)
-
-	// Trigger Excel generation melalui RabbitMQ
-	err = h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	err = h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, priceParams)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
 
-	// Tunggu beberapa detik untuk Excel generation
-	time.Sleep(2 * time.Second)
-
-	// Cek apakah file sudah tersedia
-	filePath, exists := utils.GetFilePath(requestID)
-	if !exists {
-		utils.ErrorResponse(c, utils.NewInternalError("File not ready yet"))
-		return
-	}
-
-	// Set header untuk download
-	fileName := filepath.Base(filePath)
-	c.Header("Content-Description", "File Transfer")
-	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
-	c.Header("Content-Type", "application/octet-stream")
-
-	// Kirim file
-	c.File(filePath)
-
-	// Cleanup
-	defer func() {
-		os.Remove(filePath)
-		utils.RemoveFilePath(requestID)
-	}()
 }

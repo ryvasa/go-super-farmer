@@ -7,6 +7,7 @@ import (
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -14,10 +15,11 @@ type AuthUsecaseImpl struct {
 	userRepo repository_interface.UserRepository
 	token    token.Token
 	hash     utils.Hasher
+	rabbitMQ messages.RabbitMQ
 }
 
-func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher) usecase_interface.AuthUsecase {
-	return &AuthUsecaseImpl{userRepo, token, hash}
+func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher, rabbitMQ messages.RabbitMQ) usecase_interface.AuthUsecase {
+	return &AuthUsecaseImpl{userRepo, token, hash, rabbitMQ}
 }
 
 func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error) {
@@ -40,4 +42,16 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.Aut
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return utils.AuthDtoFormat(user, token), nil
+}
+func (u *AuthUsecaseImpl) VerifyEmail(ctx context.Context, req *dto.AuthVerifyEmailDTO) error {
+	if err := utils.ValidateStruct(req); len(err) > 0 {
+		return utils.NewValidationError(err)
+	}
+
+	err := u.rabbitMQ.PublishJSON(ctx, "verify-email-exchange", "verify-email", req)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+
+	return nil
 }
