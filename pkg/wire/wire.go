@@ -9,13 +9,13 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
 	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -79,7 +79,7 @@ var handlerSet = wire.NewSet(
 )
 
 var rabbitMQSet = wire.NewSet(
-	rabbitmq.NewPublisher,
+	messages.NewRabbitMQ,
 )
 
 var cacheSet = wire.NewSet(

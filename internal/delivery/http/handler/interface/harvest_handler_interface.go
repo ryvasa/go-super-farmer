@@ -15,4 +15,5 @@ type HarvestHandler interface {
 	RestoreHarvest(c *gin.Context)
 	GetAllDeletedHarvest(c *gin.Context)
 	GetHarvestDeletedByID(c *gin.Context)
+	DownloadHarvestByLandCommodityID(c *gin.Context)
 }

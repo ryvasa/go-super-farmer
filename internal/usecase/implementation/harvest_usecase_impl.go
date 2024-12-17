@@ -9,6 +9,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -16,10 +17,11 @@ type HarvestUsecaseImpl struct {
 	harvestRepo       repository_interface.HarvestRepository
 	regionRepo        repository_interface.RegionRepository
 	landCommodityRepo repository_interface.LandCommodityRepository
+	rabbitMQ          messages.RabbitMQ
 }
 
-func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, regionRepo repository_interface.RegionRepository, landCommodityRepo repository_interface.LandCommodityRepository) usecase_interface.HarvestUsecase {
-	return &HarvestUsecaseImpl{harvestRepo, regionRepo, landCommodityRepo}
+func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, regionRepo repository_interface.RegionRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ) usecase_interface.HarvestUsecase {
+	return &HarvestUsecaseImpl{harvestRepo, regionRepo, landCommodityRepo, rabbitMQ}
 }
 
 func (h *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
@@ -185,4 +187,26 @@ func (h *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid.
 		return nil, utils.NewNotFoundError("deleted harvest not found")
 	}
 	return harvest, nil
+}
+
+func (h *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, landCommodityID uuid.UUID) error {
+
+	type HarvestMessage struct {
+		LandCommodityID uuid.UUID `json:"LandCommodityID"`
+		StartDate       time.Time `json:"StartDate"`
+		EndDate         time.Time `json:"EndDate"`
+	}
+
+	msg := HarvestMessage{
+		LandCommodityID: landCommodityID,
+		StartDate:       time.Now(),
+		EndDate:         time.Now(),
+	}
+
+	err := h.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+
+	return nil
 }

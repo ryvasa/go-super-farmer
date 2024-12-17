@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -37,4 +39,11 @@ type PriceResponseDTO struct {
 			Name string `json:"name"`
 		} `json:"city"`
 	} `json:"region"`
+}
+
+type PriceParamsDTO struct {
+	CommodityID uuid.UUID `json:"commodity_id" validate:"required"`
+	RegionID    uuid.UUID `json:"region_id" validate:"required"`
+	StartDate   time.Time `json:"start_date" validate:"required"`
+	EndDate     time.Time `json:"end_date" validate:"required"`
 }
