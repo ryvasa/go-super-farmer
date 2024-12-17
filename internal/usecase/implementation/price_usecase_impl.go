@@ -2,13 +2,14 @@ package usecase_implementation
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/delivery/rabbitmq"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -17,11 +18,11 @@ type PriceUsecaseImpl struct {
 	priceHistoryRepo repository_interface.PriceHistoryRepository
 	regionRepo       repository_interface.RegionRepository
 	commodityRepo    repository_interface.CommodityRepository
-	publisher        rabbitmq.Publisher
+	rabbitMQ         messages.RabbitMQ
 }
 
-func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, regionRepo repository_interface.RegionRepository, commodityRepo repository_interface.CommodityRepository, publisher rabbitmq.Publisher) usecase_interface.PriceUsecase {
-	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, regionRepo, commodityRepo, publisher}
+func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, regionRepo repository_interface.RegionRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ) usecase_interface.PriceUsecase {
+	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, regionRepo, commodityRepo, rabbitMQ}
 }
 
 func (uc *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error) {
@@ -187,16 +188,20 @@ func (uc *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.
 	return &newHistoryPrices, nil
 }
 
-func (uc *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) error {
-	payload := struct {
-		CommodityID string `json:"CommodityID"`
-		RegionID    string `json:"RegionID"`
-	}{
-		CommodityID: commodityID.String(),
-		RegionID:    regionID.String(),
+func (uc *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) error {
+	type Message struct {
+		CommodityID uuid.UUID `json:"CommodityID"`
+		RegionID    uuid.UUID `json:"RegionID"`
+		StartDate   time.Time `json:"StartDate"`
+		EndDate     time.Time `json:"EndDate"`
 	}
-
-	err := uc.publisher.PublishJSON(ctx, "report-queue", payload)
+	msg := Message{
+		CommodityID: params.CommodityID,
+		RegionID:    params.RegionID,
+		StartDate:   params.StartDate,
+		EndDate:     params.EndDate,
+	}
+	err := uc.rabbitMQ.PublishJSON(ctx, "report-exchange", "price-history", msg)
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}

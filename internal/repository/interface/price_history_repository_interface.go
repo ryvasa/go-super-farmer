@@ -9,7 +9,6 @@ import (
 
 type PriceHistoryRepository interface {
 	Create(ctx context.Context, priceHistory *domain.PriceHistory) error
-	FindAll(ctx context.Context) (*[]domain.PriceHistory, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.PriceHistory, error)
 	FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.PriceHistory, error)
 }

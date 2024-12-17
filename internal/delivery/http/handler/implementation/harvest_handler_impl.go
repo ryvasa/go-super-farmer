@@ -183,3 +183,16 @@ func (h *HarvestHandlerImpl) GetHarvestDeletedByID(c *gin.Context) {
 	}
 	utils.SuccessResponse(c, http.StatusOK, harvest)
 }
+
+func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	err = h.uc.DownloadHarvestByLandCommodityID(c, id)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+}

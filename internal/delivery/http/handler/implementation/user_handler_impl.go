@@ -12,11 +12,12 @@ import (
 )
 
 type UserHandlerImpl struct {
-	uc usecase_interface.UserUsecase
+	uc     usecase_interface.UserUsecase
+	ucAuth usecase_interface.AuthUsecase
 }
 
-func NewUserHandler(uc usecase_interface.UserUsecase) handler_interface.UserHandler {
-	return &UserHandlerImpl{uc: uc}
+func NewUserHandler(uc usecase_interface.UserUsecase, ucAuth usecase_interface.AuthUsecase) handler_interface.UserHandler {
+	return &UserHandlerImpl{uc, ucAuth}
 }
 
 func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
@@ -26,6 +27,13 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 		return
 	}
 	createdUser, err := h.uc.Register(c, &req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	err = h.ucAuth.VerifyEmail(c, &dto.AuthVerifyEmailDTO{
+		Email: createdUser.Email,
+	})
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

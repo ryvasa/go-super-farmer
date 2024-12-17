@@ -9,3 +9,7 @@ type AuthResponseDTO struct {
 	User  *UserResponseDTO `json:"user"`
 	Token string           `json:"token"`
 }
+
+type AuthVerifyEmailDTO struct {
+	Email string `json:"email" validate:"required,email,min=3,max=255"`
+}
