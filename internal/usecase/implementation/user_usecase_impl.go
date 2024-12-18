@@ -2,10 +2,14 @@ package usecase_implementation
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
+	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
@@ -13,12 +17,13 @@ import (
 )
 
 type UserUsecaseImpl struct {
-	repo repository_interface.UserRepository
-	hash utils.Hasher
+	repo  repository_interface.UserRepository
+	hash  utils.Hasher
+	cache cache.Cache
 }
 
-func NewUserUsecase(repo repository_interface.UserRepository, hash utils.Hasher) usecase_interface.UserUsecase {
-	return &UserUsecaseImpl{repo, hash}
+func NewUserUsecase(repo repository_interface.UserRepository, hash utils.Hasher, cache cache.Cache) usecase_interface.UserUsecase {
+	return &UserUsecaseImpl{repo, hash, cache}
 }
 
 func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
@@ -56,24 +61,42 @@ func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.
 	return utils.UserDtoFormat(user), nil
 }
 
-func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.PaginationDTO) (*[]dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, params *dto.PaginationDTO) ([]*dto.UserResponseDTO, error) {
+	key := fmt.Sprintf("users_%s_start_%s_end_%s", params.UserName, params.StartDate, params.EndDate)
+	cached, err := uc.cache.Get(ctx, key)
+	if err == nil && cached != nil {
+		users := []*dto.UserResponseDTO{}
+
+		err := json.Unmarshal(cached, &users)
+		if err != nil {
+			return nil, err
+		}
+		return users, nil
+	}
 	paginationParams := pagination.PaginationParams{
-		Limit:     queryParams.Limit,
-		Page:      queryParams.Page,
-		Sort:      queryParams.Sort,
-		UserName:  queryParams.UserName,
-		StartDate: queryParams.StartDate,
-		EndDate:   queryParams.EndDate,
+		Limit:     params.Limit,
+		Page:      params.Page,
+		Sort:      params.Sort,
+		UserName:  params.UserName,
+		StartDate: params.StartDate,
+		EndDate:   params.EndDate,
 	}
 	users, err := uc.repo.FindAll(ctx, &paginationParams)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	usersDto := make([]dto.UserResponseDTO, 0)
-	for _, user := range *users {
-		usersDto = append(usersDto, *utils.UserDtoFormat(&user))
+	usersDto := make([]*dto.UserResponseDTO, 0)
+	for _, user := range users {
+		usersDto = append(usersDto, utils.UserDtoFormat(user))
 	}
-	return &usersDto, nil
+
+	usersJSON, err := json.Marshal(usersDto)
+	if err != nil {
+		return nil, err
+	}
+	uc.cache.Set(ctx, key, usersJSON, 1*time.Minute)
+
+	return usersDto, nil
 }
 
 func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {

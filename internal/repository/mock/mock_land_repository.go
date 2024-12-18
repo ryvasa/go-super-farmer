@@ -65,10 +65,10 @@ func (mr *MockLandRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.Ca
 }
 
 // FindAll mocks base method.
-func (m *MockLandRepository) FindAll(ctx context.Context) (*[]domain.Land, error) {
+func (m *MockLandRepository) FindAll(ctx context.Context) ([]*domain.Land, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.Land)
+	ret0, _ := ret[0].([]*domain.Land)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -95,10 +95,10 @@ func (mr *MockLandRepositoryMockRecorder) FindByID(ctx, id interface{}) *gomock.
 }
 
 // FindByUserID mocks base method.
-func (m *MockLandRepository) FindByUserID(ctx context.Context, id uuid.UUID) (*[]domain.Land, error) {
+func (m *MockLandRepository) FindByUserID(ctx context.Context, id uuid.UUID) ([]*domain.Land, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByUserID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Land)
+	ret0, _ := ret[0].([]*domain.Land)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

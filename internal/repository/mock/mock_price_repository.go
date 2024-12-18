@@ -65,10 +65,10 @@ func (mr *MockPriceRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.C
 }
 
 // FindAll mocks base method.
-func (m *MockPriceRepository) FindAll(ctx context.Context) (*[]domain.Price, error) {
+func (m *MockPriceRepository) FindAll(ctx context.Context) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,10 +80,10 @@ func (mr *MockPriceRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Call
 }
 
 // FindByCommodityID mocks base method.
-func (m *MockPriceRepository) FindByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Price, error) {
+func (m *MockPriceRepository) FindByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityID", ctx, commodityID)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -125,10 +125,10 @@ func (mr *MockPriceRepositoryMockRecorder) FindByID(ctx, id interface{}) *gomock
 }
 
 // FindByRegionID mocks base method.
-func (m *MockPriceRepository) FindByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Price, error) {
+func (m *MockPriceRepository) FindByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByRegionID", ctx, regionID)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

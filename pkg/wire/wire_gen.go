@@ -12,11 +12,13 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
 	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	"github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -36,11 +38,11 @@ func InitializeApp() (*app.App, error) {
 	roleRepository := repository_implementation.NewRoleRepository(db)
 	roleUsecase := usecase_implementation.NewRoleUsecase(roleRepository)
 	roleHandler := handler_implementation.NewRoleHandler(roleUsecase)
+	userRepository := repository_implementation.NewUserRepository(db)
+	hasher := utils.NewHasher()
 	client := database.NewRedisClient(envEnv)
 	cacheCache := cache.NewRedisCache(client)
-	userRepository := repository_implementation.NewUserRepository(db, cacheCache)
-	hasher := utils.NewHasher()
-	userUsecase := usecase_implementation.NewUserUsecase(userRepository, hasher)
+	userUsecase := usecase_implementation.NewUserUsecase(userRepository, hasher, cacheCache)
 	tokenToken := token.NewToken(envEnv)
 	rabbitMQ, err := messages.NewRabbitMQ(envEnv)
 	if err != nil {
@@ -53,16 +55,18 @@ func InitializeApp() (*app.App, error) {
 	authUtil := utils.NewAuthUtil()
 	landHandler := handler_implementation.NewLandHandler(landUsecase, authUtil)
 	authHandler := handler_implementation.NewAuthHandler(authUsecase)
-	commodityRepository := repository_implementation.NewCommodityRepository(db, cacheCache)
-	commodityUsecase := usecase_implementation.NewCommodityUsecase(commodityRepository)
+	commodityRepository := repository_implementation.NewCommodityRepository(db)
+	commodityUsecase := usecase_implementation.NewCommodityUsecase(commodityRepository, cacheCache)
 	commodityHandler := handler_implementation.NewCommodityHandler(commodityUsecase)
-	landCommodityRepository := repository_implementation.NewLandCommodityRepository(db, cacheCache)
-	landCommodityUsecase := usecase_implementation.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository)
+	landCommodityRepository := repository_implementation.NewLandCommodityRepository(db)
+	landCommodityUsecase := usecase_implementation.NewLandCommodityUsecase(landCommodityRepository, landRepository, commodityRepository, cacheCache)
 	landCommodityHandler := handler_implementation.NewLandCommodityHandler(landCommodityUsecase)
-	priceRepository := repository_implementation.NewPriceRepository(db, cacheCache)
-	priceHistoryRepository := repository_implementation.NewPriceHistoryRepository(db, cacheCache)
+	baseRepository := repository.NewBaseRepository(db)
+	priceRepository := repository_implementation.NewPriceRepository(baseRepository)
+	priceHistoryRepository := repository_implementation.NewPriceHistoryRepository(baseRepository)
 	regionRepository := repository_implementation.NewRegionRepository(db)
-	priceUsecase := usecase_implementation.NewPriceUsecase(priceRepository, priceHistoryRepository, regionRepository, commodityRepository, rabbitMQ)
+	transactionManager := transaction.NewTransactionManager(db)
+	priceUsecase := usecase_implementation.NewPriceUsecase(priceRepository, priceHistoryRepository, regionRepository, commodityRepository, rabbitMQ, transactionManager, cacheCache)
 	priceHandler := handler_implementation.NewPriceHandler(priceUsecase)
 	provinceRepository := repository_implementation.NewProvinceRepository(db)
 	provinceUsecase := usecase_implementation.NewProvinceUsecase(provinceRepository)
@@ -72,16 +76,16 @@ func InitializeApp() (*app.App, error) {
 	cityHandler := handler_implementation.NewCityHandler(cityUsecase)
 	regionUsecase := usecase_implementation.NewRegionUsecase(regionRepository, cityRepository, provinceRepository)
 	regionHandler := handler_implementation.NewRegionHandler(regionUsecase)
-	demandRepository := repository_implementation.NewDemandRepository(db)
-	demandHistoryRepository := repository_implementation.NewDemandHistoryRepository(db)
-	demandUsecase := usecase_implementation.NewDemandUsecase(demandRepository, demandHistoryRepository, commodityRepository, regionRepository)
+	demandRepository := repository_implementation.NewDemandRepository(baseRepository)
+	demandHistoryRepository := repository_implementation.NewDemandHistoryRepository(baseRepository)
+	demandUsecase := usecase_implementation.NewDemandUsecase(demandRepository, demandHistoryRepository, commodityRepository, regionRepository, transactionManager)
 	demandHandler := handler_implementation.NewDemandHandler(demandUsecase)
-	supplyRepository := repository_implementation.NewSupplyRepository(db)
-	supplyHistoryRepository := repository_implementation.NewSupplyHistoryRepository(db)
-	supplyUsecase := usecase_implementation.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository)
+	supplyRepository := repository_implementation.NewSupplyRepository(baseRepository)
+	supplyHistoryRepository := repository_implementation.NewSupplyHistoryRepository(baseRepository)
+	supplyUsecase := usecase_implementation.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository, transactionManager)
 	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
-	harvestRepository := repository_implementation.NewHarvestRepository(db, cacheCache)
-	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository, rabbitMQ)
+	harvestRepository := repository_implementation.NewHarvestRepository(db)
+	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository, rabbitMQ, cacheCache)
 	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
 	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler, harvestHandler)
 	engine := route.NewRouter(handlers)
@@ -95,7 +99,7 @@ var tokenSet = wire.NewSet(token.NewToken)
 
 var utilSet = wire.NewSet(utils.NewAuthUtil, utils.NewHasher)
 
-var repositorySet = wire.NewSet(repository_implementation.NewRoleRepository, repository_implementation.NewUserRepository, repository_implementation.NewLandRepository, repository_implementation.NewCommodityRepository, repository_implementation.NewLandCommodityRepository, repository_implementation.NewPriceRepository, repository_implementation.NewProvinceRepository, repository_implementation.NewCityRepository, repository_implementation.NewRegionRepository, repository_implementation.NewPriceHistoryRepository, repository_implementation.NewDemandRepository, repository_implementation.NewSupplyRepository, repository_implementation.NewDemandHistoryRepository, repository_implementation.NewSupplyHistoryRepository, repository_implementation.NewHarvestRepository)
+var repositorySet = wire.NewSet(repository.NewBaseRepository, repository_implementation.NewRoleRepository, repository_implementation.NewUserRepository, repository_implementation.NewLandRepository, repository_implementation.NewCommodityRepository, repository_implementation.NewLandCommodityRepository, repository_implementation.NewPriceRepository, repository_implementation.NewProvinceRepository, repository_implementation.NewCityRepository, repository_implementation.NewRegionRepository, repository_implementation.NewPriceHistoryRepository, repository_implementation.NewDemandRepository, repository_implementation.NewSupplyRepository, repository_implementation.NewDemandHistoryRepository, repository_implementation.NewSupplyHistoryRepository, repository_implementation.NewHarvestRepository)
 
 var usecaseSet = wire.NewSet(usecase_implementation.NewRoleUsecase, usecase_implementation.NewUserUsecase, usecase_implementation.NewLandUsecase, usecase_implementation.NewAuthUsecase, usecase_implementation.NewCommodityUsecase, usecase_implementation.NewLandCommodityUsecase, usecase_implementation.NewPriceUsecase, usecase_implementation.NewProvinceUsecase, usecase_implementation.NewCityUsecase, usecase_implementation.NewRegionUsecase, usecase_implementation.NewDemandUsecase, usecase_implementation.NewSupplyUsecase, usecase_implementation.NewHarvestUsecase)
 
@@ -106,3 +110,5 @@ var rabbitMQSet = wire.NewSet(messages.NewRabbitMQ)
 var cacheSet = wire.NewSet(cache.NewRedisCache)
 
 var databaseSet = wire.NewSet(database.NewPostgres, database.NewRedisClient)
+
+var txManagerSet = wire.NewSet(transaction.NewTransactionManager)

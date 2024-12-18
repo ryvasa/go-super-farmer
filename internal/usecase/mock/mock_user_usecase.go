@@ -51,10 +51,10 @@ func (mr *MockUserUsecaseMockRecorder) DeleteUser(ctx, id interface{}) *gomock.C
 }
 
 // GetAllUsers mocks base method.
-func (m *MockUserUsecase) GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error) {
+func (m *MockUserUsecase) GetAllUsers(ctx context.Context) ([]*dto.UserResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllUsers", ctx)
-	ret0, _ := ret[0].(*[]dto.UserResponseDTO)
+	ret0, _ := ret[0].([]*dto.UserResponseDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -2,25 +2,20 @@ package repository_implementation
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
 	"gorm.io/gorm"
 )
 
 type UserRepositoryImpl struct {
-	db    *gorm.DB
-	cache cache.Cache
+	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB, cache cache.Cache) repository_interface.UserRepository {
-	return &UserRepositoryImpl{db, cache}
+func NewUserRepository(db *gorm.DB) repository_interface.UserRepository {
+	return &UserRepositoryImpl{db}
 }
 
 func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) error {
@@ -28,16 +23,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) erro
 }
 func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
-	key := fmt.Sprintf("user_%s", id)
-	cached, err := r.cache.Get(ctx, key)
-	if err == nil && cached != nil {
-		err := json.Unmarshal(cached, &user)
-		if err != nil {
-			return nil, err
-		}
-		return &user, nil
-	}
-	err = r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
 	}).
@@ -45,26 +31,13 @@ func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domai
 	if err != nil {
 		return nil, err
 	}
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		return nil, err
-	}
-	r.cache.Set(ctx, key, userJSON, 4*time.Minute)
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) (*[]domain.User, error) {
-	var users []domain.User
-	key := fmt.Sprintf("users_%s_start_%s_end_%s", params.UserName, params.StartDate, params.EndDate)
-	cached, err := r.cache.Get(ctx, key)
-	if err == nil && cached != nil {
-		err := json.Unmarshal(cached, &users)
-		if err != nil {
-			return nil, err
-		}
-		return &users, nil
-	}
-	err = r.db.WithContext(ctx).
+func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) ([]*domain.User, error) {
+	var users []*domain.User
+
+	err := r.db.WithContext(ctx).
 		Scopes(pagination.Paginate(users, params, r.db, "name")).
 		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
@@ -74,12 +47,7 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *pagination.Pag
 	if err != nil {
 		return nil, err
 	}
-	usersJSON, err := json.Marshal(users)
-	if err != nil {
-		return nil, err
-	}
-	r.cache.Set(ctx, key, usersJSON, 1*time.Minute)
-	return &users, nil
+	return users, nil
 }
 
 func (r *UserRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {

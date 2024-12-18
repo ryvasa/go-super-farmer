@@ -28,7 +28,7 @@ func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	role.ID = int64(len(*roles) + 1)
+	role.ID = int64(len(roles) + 1)
 	role.Name = req.Name
 
 	err = u.repo.Create(ctx, &role)
@@ -44,7 +44,7 @@ func (u *RoleUsecaseImpl) CreateRole(ctx context.Context, req *dto.RoleCreateDTO
 	return createdRole, nil
 }
 
-func (u *RoleUsecaseImpl) GetAllRoles(ctx context.Context) (*[]domain.Role, error) {
+func (u *RoleUsecaseImpl) GetAllRoles(ctx context.Context) ([]*domain.Role, error) {
 	roles, err := u.repo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

@@ -53,10 +53,10 @@ func (mr *MockRegionUsecaseMockRecorder) CreateRegion(ctx, req interface{}) *gom
 }
 
 // GetAllRegions mocks base method.
-func (m *MockRegionUsecase) GetAllRegions(ctx context.Context) (*[]domain.Region, error) {
+func (m *MockRegionUsecase) GetAllRegions(ctx context.Context) ([]*domain.Region, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllRegions", ctx)
-	ret0, _ := ret[0].(*[]domain.Region)
+	ret0, _ := ret[0].([]*domain.Region)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

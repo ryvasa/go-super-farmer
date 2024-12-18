@@ -40,7 +40,7 @@ func (uc *CityUsecaseImpl) CreateCity(ctx context.Context, req *dto.CityCreateDT
 	return createdCity, nil
 }
 
-func (uc *CityUsecaseImpl) GetAllCities(ctx context.Context) (*[]domain.City, error) {
+func (uc *CityUsecaseImpl) GetAllCities(ctx context.Context) ([]*domain.City, error) {
 	cities, err := uc.repo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

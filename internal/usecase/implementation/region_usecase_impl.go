@@ -53,7 +53,7 @@ func (uc *RegionUsecaseImpl) CreateRegion(ctx context.Context, req *dto.RegionCr
 	return createdRegion, nil
 }
 
-func (uc *RegionUsecaseImpl) GetAllRegions(ctx context.Context) (*[]domain.Region, error) {
+func (uc *RegionUsecaseImpl) GetAllRegions(ctx context.Context) ([]*domain.Region, error) {
 	regions, err := uc.regionRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

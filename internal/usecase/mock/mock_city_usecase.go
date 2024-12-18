@@ -66,10 +66,10 @@ func (mr *MockCityUsecaseMockRecorder) DeleteCity(ctx, id interface{}) *gomock.C
 }
 
 // GetAllCities mocks base method.
-func (m *MockCityUsecase) GetAllCities(ctx context.Context) (*[]domain.City, error) {
+func (m *MockCityUsecase) GetAllCities(ctx context.Context) ([]*domain.City, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllCities", ctx)
-	ret0, _ := ret[0].(*[]domain.City)
+	ret0, _ := ret[0].([]*domain.City)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
