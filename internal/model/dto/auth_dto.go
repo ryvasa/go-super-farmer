@@ -10,6 +10,11 @@ type AuthResponseDTO struct {
 	Token string           `json:"token"`
 }
 
-type AuthVerifyEmailDTO struct {
+type AuthSendDTO struct {
 	Email string `json:"email" validate:"required,email,min=3,max=255"`
+}
+
+type AuthVerifyDTO struct {
+	Email string `json:"email" validate:"required,email,min=3,max=255"`
+	OTP   string `json:"otp" validate:"required,min=6,max=6"`
 }

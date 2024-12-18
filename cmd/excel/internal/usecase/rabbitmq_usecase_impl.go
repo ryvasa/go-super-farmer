@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -63,7 +62,6 @@ func (u *RabbitMQUsecaseImpl) HandleHarvestMessage(msgBody []byte) error {
 	if err := json.Unmarshal(msgBody, &msg); err != nil {
 		return err
 	}
-	log.Println("ahi")
 
 	// Ambil data dari repository
 	results, err := u.reportRepo.GetHarvestReport(msg.StartDate, msg.EndDate, msg.LandCommodityID)
@@ -75,8 +73,6 @@ func (u *RabbitMQUsecaseImpl) HandleHarvestMessage(msgBody []byte) error {
 	if err := u.excelService.CreateHarvestReport(results, results[0].LandCommodity.Commodity.Name, results[0].Region.City.Name, results[0].LandCommodity.Land.User.Name, results[0].LandCommodity.ID, msg.StartDate, msg.EndDate); err != nil {
 		return err
 	}
-
-	log.Println(results)
 
 	return nil
 }

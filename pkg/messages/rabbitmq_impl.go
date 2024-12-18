@@ -47,19 +47,19 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 	}
 
 	err = ch.ExchangeDeclare(
-		"verify-email-exchange", // name
-		"direct",                // type
-		true,                    // durable
-		false,                   // auto-deleted
-		false,                   // internal
-		false,                   // no-wait
-		nil,                     // arguments
+		"mail-exchange", // name
+		"direct",        // type
+		true,            // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	queues := []string{"price-history-queue", "harvest-queue", "verify-email-queue"}
+	queues := []string{"price-history-queue", "harvest-queue", "mail-queue"}
 	for _, queueName := range queues {
 		_, err = ch.QueueDeclare(
 			queueName,
@@ -97,9 +97,9 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 	}
 
 	err = ch.QueueBind(
-		"verify-email-queue",    // queue name
-		"verify-email",          // routing key
-		"verify-email-exchange", // exchange
+		"mail-queue",    // queue name
+		"verify-email",  // routing key
+		"mail-exchange", // exchange
 		false,
 		nil,
 	)

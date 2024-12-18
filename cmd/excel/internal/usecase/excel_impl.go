@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -150,7 +150,7 @@ func (e *ExcelImpl) CreatePriceHistoryReport(results []domain.PriceHistory, comm
 		return fmt.Errorf("error saving excel file: %v", err)
 	}
 
-	log.Printf("Excel file created successfully: %s", fileName)
+	logrus.Log.WithField("Excel file created successfully:", fileName)
 	return nil
 }
 
@@ -289,6 +289,6 @@ func (e *ExcelImpl) CreateHarvestReport(results []domain.Harvest, commodityName,
 		return fmt.Errorf("error saving excel file: %v", err)
 	}
 
-	log.Printf("Excel file created successfully: %s", fileName)
+	logrus.Log.WithField("Excel file created successfully:", fileName)
 	return nil
 }
