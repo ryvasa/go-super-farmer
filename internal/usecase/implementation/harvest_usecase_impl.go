@@ -210,7 +210,7 @@ func (uc *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid
 	return harvest, nil
 }
 
-func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, landCommodityID uuid.UUID) error {
+func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) error {
 
 	type HarvestMessage struct {
 		LandCommodityID uuid.UUID `json:"LandCommodityID"`
@@ -219,9 +219,9 @@ func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Conte
 	}
 
 	msg := HarvestMessage{
-		LandCommodityID: landCommodityID,
-		StartDate:       time.Now(),
-		EndDate:         time.Now(),
+		LandCommodityID: harvestParams.LandCommodityID,
+		StartDate:       harvestParams.StartDate,
+		EndDate:         harvestParams.EndDate,
 	}
 
 	err := uc.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)

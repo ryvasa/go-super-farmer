@@ -16,4 +16,5 @@ type HarvestHandler interface {
 	GetAllDeletedHarvest(c *gin.Context)
 	GetHarvestDeletedByID(c *gin.Context)
 	DownloadHarvestByLandCommodityID(c *gin.Context)
+	GetHarvestExcelFile(c *gin.Context)
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/xuri/excelize/v2"
 )
@@ -15,7 +16,7 @@ func NewExcelImpl() ExcelInterface {
 	return &ExcelImpl{}
 }
 
-func (e *ExcelImpl) CreatePriceHistoryReport(results []domain.PriceHistory, commodityName, regionName string) error {
+func (e *ExcelImpl) CreatePriceHistoryReport(results []domain.PriceHistory, commodityName, regionName string, commodityID, regionID uuid.UUID, startDate, endDate time.Time) error {
 	// Buat file Excel baru
 	f := excelize.NewFile()
 
@@ -137,9 +138,11 @@ func (e *ExcelImpl) CreatePriceHistoryReport(results []domain.PriceHistory, comm
 	}
 
 	// Buat nama file dengan timestamp
-	fileName := fmt.Sprintf("./public/reports/price_history_%s_%s_%s.xlsx",
-		commodityName,
-		regionName,
+	fileName := fmt.Sprintf("./public/reports/price_history_%s_%s_%s_%s_%s.xlsx",
+		commodityID,
+		regionID,
+		startDate.Format("2006-01-02"),
+		endDate.Format("2006-01-02"),
 		time.Now().Format("20060102_150405"))
 
 	// Simpan file
@@ -151,7 +154,7 @@ func (e *ExcelImpl) CreatePriceHistoryReport(results []domain.PriceHistory, comm
 	return nil
 }
 
-func (e *ExcelImpl) CreateHarvestReport(results []domain.Harvest, commodityName, regionName, farmerName string) error {
+func (e *ExcelImpl) CreateHarvestReport(results []domain.Harvest, commodityName, regionName, farmerName string, commodityID uuid.UUID, startDate, endDate time.Time) error {
 	// Buat file Excel baru
 	f := excelize.NewFile()
 
@@ -275,9 +278,10 @@ func (e *ExcelImpl) CreateHarvestReport(results []domain.Harvest, commodityName,
 	}
 
 	// Buat nama file dengan timestamp
-	fileName := fmt.Sprintf("./public/reports/harvest_%s_%s_%s.xlsx",
-		commodityName,
-		regionName,
+	fileName := fmt.Sprintf("./public/reports/harvests_%s_%s_%s_%s.xlsx",
+		commodityID,
+		startDate.Format("2006-01-02"),
+		endDate.Format("2006-01-02"),
 		time.Now().Format("20060102_150405"))
 
 	// Simpan file

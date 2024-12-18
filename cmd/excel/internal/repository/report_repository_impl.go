@@ -18,7 +18,8 @@ func NewReportRepositoryImpl(db *gorm.DB) ReportRepository {
 
 func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commodityID, regionID uuid.UUID) ([]domain.PriceHistory, error) {
 	var results []domain.PriceHistory
-
+	startOfDay := start.UTC()
+	endOfDay := end.Add(24 * time.Hour).Add(-time.Second)
 	// Query current price
 	var currentPrice domain.Price
 	err := r.db.
@@ -30,7 +31,7 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 		}).
 		Preload("Region.Province").
 		Preload("Region.City").
-		Where("prices.commodity_id = ? AND prices.region_id = ?", commodityID, regionID).
+		Where("prices.commodity_id = ? AND prices.region_id = ? AND prices.created_at BETWEEN ? AND ?", commodityID, regionID, startOfDay, endOfDay).
 		First(&currentPrice).Error
 	if err != nil {
 		return nil, err
@@ -43,7 +44,7 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 		RegionID:    currentPrice.RegionID,
 		Price:       currentPrice.Price,
 		Unit:        currentPrice.Unit,
-		CreatedAt:   currentPrice.CreatedAt,
+		CreatedAt:   time.Now(),
 		Commodity:   currentPrice.Commodity,
 		Region:      currentPrice.Region,
 	})
@@ -55,15 +56,14 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 		Joins("JOIN commodities ON price_histories.commodity_id = commodities.id").
 		Joins("JOIN regions ON price_histories.region_id = regions.id").
 		Joins("JOIN cities ON regions.city_id = cities.id").
-		Where("price_histories.commodity_id = ? AND price_histories.region_id = ? AND price_histories.deleted_at IS NULL",
-			commodityID, regionID).
+		Where("price_histories.commodity_id = ? AND price_histories.region_id = ? AND price_histories.deleted_at IS NULL AND price_histories.created_at BETWEEN ? AND ?",
+			commodityID, regionID, startOfDay, endOfDay).
 		Order("price_histories.created_at DESC").
 		Find(&histories).Error
 	if err != nil {
 		return nil, err
 	}
 
-	// Gabungkan hasil
 	results = append(results, histories...)
 
 	return results, nil
@@ -71,6 +71,8 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 
 func (r *ReportRepositoryImpl) GetHarvestReport(start, end time.Time, landCommodityID uuid.UUID) ([]domain.Harvest, error) {
 	var results []domain.Harvest
+	startOfDay := start.UTC()
+	endOfDay := end.Add(24 * time.Hour).Add(-time.Second)
 	err := r.db.
 		Where("land_commodity_id = ? AND deleted_at IS NULL", landCommodityID).
 		Preload("LandCommodity").
@@ -81,6 +83,7 @@ func (r *ReportRepositoryImpl) GetHarvestReport(start, end time.Time, landCommod
 		Preload("Region.Province").
 		Preload("Region.City").
 		Order("harvests.created_at DESC").
+		Where("harvests.created_at BETWEEN ? AND ?", startOfDay, endOfDay).
 		Find(&results).Error
 
 	if err != nil {

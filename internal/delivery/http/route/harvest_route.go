@@ -27,4 +27,5 @@ func (r *HarvestRoute) Register(public, protected *gin.RouterGroup) {
 	protected.GET("/harvests/deleted", r.handler.GetAllDeletedHarvest)
 	protected.GET("/harvests/deleted/:id", r.handler.GetHarvestDeletedByID)
 	public.GET("/harvests/land_commodity/:id/download", r.handler.DownloadHarvestByLandCommodityID)
+	public.GET("/harvests/land_commodity/:id/download/file", r.handler.GetHarvestExcelFile)
 }
