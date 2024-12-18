@@ -15,4 +15,6 @@ func NewAuthRoute(handler handler_interface.AuthHandler) *AuthRoute {
 
 func (r *AuthRoute) Register(public, protected *gin.RouterGroup) {
 	public.POST("/auth/login", r.handler.Login)
+	public.POST("/auth/send", r.handler.SendOTP)
+	public.POST("/auth/verify", r.handler.VerifyOTP)
 }

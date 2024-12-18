@@ -48,7 +48,7 @@ func InitializeApp() (*app.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher, rabbitMQ)
+	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher, rabbitMQ, cacheCache)
 	userHandler := handler_implementation.NewUserHandler(userUsecase, authUsecase)
 	landRepository := repository_implementation.NewLandRepository(db)
 	landUsecase := usecase_implementation.NewLandUsecase(landRepository, userRepository)

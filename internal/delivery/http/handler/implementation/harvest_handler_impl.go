@@ -2,7 +2,6 @@ package handler_implementation
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -235,7 +234,6 @@ func (h *HarvestHandlerImpl) GetHarvestExcelFile(c *gin.Context) {
 	endDatestr := c.Query("end_date")
 	// Get the latest excel file
 	filePath := fmt.Sprintf("./public/reports/harvests_%s_%s_%s_*.xlsx", id, startDateStr, endDatestr)
-	log.Println(filePath, "hahahhahahah")
 	matches, err := filepath.Glob(filePath)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewInternalError("Error finding report file"))

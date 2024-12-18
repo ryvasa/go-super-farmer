@@ -1,18 +1,17 @@
 package main
 
 import (
-	"log"
-
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/wire"
 )
 
 func main() {
 	app, err := wire.InitializeApp()
 	if err != nil {
-		log.Fatalf("failed to initialize app: %v", err)
+		logrus.Log.Fatal("failed to initialize app", err)
 	}
 
 	if err := app.Start(); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+		logrus.Log.Fatal("failed to initialize app", err)
 	}
 }

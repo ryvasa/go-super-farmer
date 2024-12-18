@@ -1,10 +1,9 @@
 package app
 
 import (
-	"log"
-
 	"github.com/ryvasa/go-super-farmer/cmd/excel/internal/handler"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"gorm.io/gorm"
 )
@@ -25,7 +24,7 @@ func NewApp(
 	defer rabbitMQ.Close()
 	err := handler.ConsumerHandler()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Log.Fatal("failed to start consumer handler", err)
 	}
 	return &ExcelApp{
 		Env:      env,

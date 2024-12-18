@@ -32,6 +32,14 @@ type Env struct {
 		Port     string
 		Password string
 	}
+	SMTP struct {
+		Host string
+		Port string
+	}
+	Email struct {
+		From     string
+		Password string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -66,6 +74,14 @@ func LoadEnv() (*Env, error) {
 	env.Redis.Host = os.Getenv("REDIS_HOST")
 	env.Redis.Port = os.Getenv("REDIS_PORT")
 	env.Redis.Password = os.Getenv("REDIS_PASSWORD")
+
+	// SMTP
+	env.SMTP.Host = os.Getenv("SMTP_HOST")
+	env.SMTP.Port = os.Getenv("SMTP_PORT")
+
+	// Email
+	env.Email.From = os.Getenv("EMAIL_FROM")
+	env.Email.Password = os.Getenv("EMAIL_PASSWORD")
 
 	return env, nil
 }

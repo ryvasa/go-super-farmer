@@ -31,7 +31,7 @@ func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	err = h.ucAuth.VerifyEmail(c, &dto.AuthVerifyEmailDTO{
+	err = h.ucAuth.SendOTP(c, &dto.AuthSendDTO{
 		Email: createdUser.Email,
 	})
 	if err != nil {
