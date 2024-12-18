@@ -10,6 +10,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
 	"gorm.io/gorm"
 )
 
@@ -52,9 +53,9 @@ func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domai
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error) {
+func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) (*[]domain.User, error) {
 	var users []domain.User
-	key := "users"
+	key := fmt.Sprintf("users_%s_start_%s_end_%s", params.UserName, params.StartDate, params.EndDate)
 	cached, err := r.cache.Get(ctx, key)
 	if err == nil && cached != nil {
 		err := json.Unmarshal(cached, &users)
@@ -63,9 +64,12 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error
 		}
 		return &users, nil
 	}
-	err = r.db.WithContext(ctx).Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
+	err = r.db.WithContext(ctx).
+		Scopes(pagination.Paginate(users, params, r.db, "name")).
+		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
-	}).Find(&users).Error
+	}).
+		Find(&users).Error
 
 	if err != nil {
 		return nil, err
@@ -74,7 +78,7 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context) (*[]domain.User, error
 	if err != nil {
 		return nil, err
 	}
-	r.cache.Set(ctx, key, usersJSON, 4*time.Minute)
+	r.cache.Set(ctx, key, usersJSON, 1*time.Minute)
 	return &users, nil
 }
 

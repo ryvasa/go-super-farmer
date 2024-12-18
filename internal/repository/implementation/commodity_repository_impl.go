@@ -10,6 +10,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
 	"gorm.io/gorm"
 )
 
@@ -52,9 +53,10 @@ func (r *CommodityRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &commodity, nil
 }
 
-func (r *CommodityRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Commodity, error) {
+func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) (*[]domain.Commodity, error) {
 	var commodities []domain.Commodity
-	key := fmt.Sprintf("commodity_%s", "all")
+	key := fmt.Sprintf("commodity_%s_start_%s_end_%s", params.CommodityName, params.StartDate, params.EndDate)
+
 	cached, err := r.cache.Get(ctx, key)
 	if err == nil && cached != nil {
 		err := json.Unmarshal(cached, &commodities)
@@ -64,7 +66,9 @@ func (r *CommodityRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Commod
 		return &commodities, nil
 	}
 
-	if err := r.db.WithContext(ctx).Find(&commodities).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Scopes(pagination.Paginate(commodities, params, r.db, "name")).
+		Find(&commodities).Error; err != nil {
 		return nil, err
 	}
 

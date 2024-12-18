@@ -8,6 +8,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -43,8 +44,16 @@ func (c *CommodityUsecaseImpl) CreateCommodity(ctx context.Context, req *dto.Com
 	return createdCommodity, nil
 }
 
-func (c *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context) (*[]domain.Commodity, error) {
-	commodities, err := c.commodityRepository.FindAll(ctx)
+func (c *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context, queryParams *dto.PaginationDTO) (*[]domain.Commodity, error) {
+	params := &pagination.PaginationParams{
+		Limit:         queryParams.Limit,
+		Page:          queryParams.Page,
+		Sort:          queryParams.Sort,
+		CommodityName: queryParams.CommodityName,
+		StartDate:     queryParams.StartDate,
+		EndDate:       queryParams.EndDate,
+	}
+	commodities, err := c.commodityRepository.FindAll(ctx, params)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
