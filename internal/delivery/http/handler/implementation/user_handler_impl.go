@@ -56,7 +56,12 @@ func (h *UserHandlerImpl) GetOneUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) GetAllUsers(c *gin.Context) {
-	users, err := h.uc.GetAllUsers(c)
+	pagination, err := utils.GetPaginationParams(c)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	users, err := h.uc.GetAllUsers(c, pagination)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

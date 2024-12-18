@@ -10,7 +10,7 @@ import (
 type Commodity struct {
 	ID          uuid.UUID      `gorm:"primary_key;"`
 	Name        string         `gorm:"size:100; not null; type:varchar(100);uniqueIndex" validate:"min=5"`
-	Description string         `gorm:"size:255; not null; type:varchar(255);uniqueIndex" validate:"min=5"`
+	Description string         `gorm:"size:255; not null; type:varchar(255)" validate:"min=5"`
 	Code        string         `gorm:"size:100; not null; type:varchar(100);uniqueIndex" validate:"min=5"`
 	Duration    time.Time      `gorm:"not null"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`

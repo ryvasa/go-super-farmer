@@ -8,6 +8,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -55,8 +56,16 @@ func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.
 	return utils.UserDtoFormat(user), nil
 }
 
-func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error) {
-	users, err := uc.repo.FindAll(ctx)
+func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.PaginationDTO) (*[]dto.UserResponseDTO, error) {
+	paginationParams := pagination.PaginationParams{
+		Limit:     queryParams.Limit,
+		Page:      queryParams.Page,
+		Sort:      queryParams.Sort,
+		UserName:  queryParams.UserName,
+		StartDate: queryParams.StartDate,
+		EndDate:   queryParams.EndDate,
+	}
+	users, err := uc.repo.FindAll(ctx, &paginationParams)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
