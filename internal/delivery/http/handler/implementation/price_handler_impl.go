@@ -1,7 +1,9 @@
 package handler_implementation
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -215,5 +217,52 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.
 		utils.ErrorResponse(c, err)
 		return
 	}
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"message": "Report generation in progress. Please check back in a few moments.",
+		"download_url": fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
+			commodityID, regionID, priceParams.StartDate.Format("2006-01-02"), priceParams.EndDate.Format("2006-01-02")),
+	})
 
+}
+
+func (h *PriceHandlerImpl) GetPriceHistoryExcelFile(c *gin.Context) {
+	commodityID, err := uuid.Parse(c.Param("commodity_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+
+	regionID, err := uuid.Parse(c.Param("region_id"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+
+	startDateStr := c.Query("start_date")
+	endDatestr := c.Query("end_date")
+
+	// Get the latest excel file
+	filePath := fmt.Sprintf("./public/reports/price_history_%s_%s_%s_%s_*.xlsx", commodityID, regionID, startDateStr, endDatestr)
+	matches, err := filepath.Glob(filePath)
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewInternalError("Error finding report file"))
+		return
+	}
+
+	if len(matches) == 0 {
+		utils.ErrorResponse(c, utils.NewNotFoundError("Report file not found"))
+		return
+	}
+
+	// Get the latest file (assuming filename contains timestamp)
+	latestFile := matches[len(matches)-1]
+
+	// Set headers for file download
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(latestFile)))
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+	// Serve the file
+	c.File(latestFile)
 }

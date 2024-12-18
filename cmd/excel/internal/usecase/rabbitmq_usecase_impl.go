@@ -51,7 +51,7 @@ func (u *RabbitMQUsecaseImpl) HandlePriceHistoryMessage(msgBody []byte) error {
 	}
 
 	// Generate excel menggunakan usecase
-	if err := u.excelService.CreatePriceHistoryReport(results, results[0].Commodity.Name, results[0].Region.City.Name); err != nil {
+	if err := u.excelService.CreatePriceHistoryReport(results, results[0].Commodity.Name, results[0].Region.City.Name, results[0].Commodity.ID, results[0].Region.ID, msg.StartDate, msg.EndDate); err != nil {
 		return err
 	}
 
@@ -72,7 +72,7 @@ func (u *RabbitMQUsecaseImpl) HandleHarvestMessage(msgBody []byte) error {
 	}
 
 	// Generate excel menggunakan usecase
-	if err := u.excelService.CreateHarvestReport(results, results[0].LandCommodity.Commodity.Name, results[0].Region.City.Name, results[0].LandCommodity.Land.User.Name); err != nil {
+	if err := u.excelService.CreateHarvestReport(results, results[0].LandCommodity.Commodity.Name, results[0].Region.City.Name, results[0].LandCommodity.Land.User.Name, results[0].LandCommodity.ID, msg.StartDate, msg.EndDate); err != nil {
 		return err
 	}
 
