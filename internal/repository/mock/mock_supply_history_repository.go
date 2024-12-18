@@ -51,10 +51,10 @@ func (mr *MockSupplyHistoryRepositoryMockRecorder) Create(ctx, supply interface{
 }
 
 // FindAll mocks base method.
-func (m *MockSupplyHistoryRepository) FindAll(ctx context.Context) (*[]domain.SupplyHistory, error) {
+func (m *MockSupplyHistoryRepository) FindAll(ctx context.Context) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +66,10 @@ func (mr *MockSupplyHistoryRepositoryMockRecorder) FindAll(ctx interface{}) *gom
 }
 
 // FindByCommodityID mocks base method.
-func (m *MockSupplyHistoryRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.SupplyHistory, error) {
+func (m *MockSupplyHistoryRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +81,10 @@ func (mr *MockSupplyHistoryRepositoryMockRecorder) FindByCommodityID(ctx, id int
 }
 
 // FindByCommodityIDAndRegionID mocks base method.
-func (m *MockSupplyHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.SupplyHistory, error) {
+func (m *MockSupplyHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityIDAndRegionID", ctx, commodityID, regionID)
-	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,10 +111,10 @@ func (mr *MockSupplyHistoryRepositoryMockRecorder) FindByID(ctx, id interface{})
 }
 
 // FindByRegionID mocks base method.
-func (m *MockSupplyHistoryRepository) FindByRegionID(ctx context.Context, id uuid.UUID) (*[]domain.SupplyHistory, error) {
+func (m *MockSupplyHistoryRepository) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByRegionID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

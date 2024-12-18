@@ -67,10 +67,10 @@ func (mr *MockDemandUsecaseMockRecorder) DeleteDemand(ctx, id interface{}) *gomo
 }
 
 // GetAllDemands mocks base method.
-func (m *MockDemandUsecase) GetAllDemands(ctx context.Context) (*[]domain.Demand, error) {
+func (m *MockDemandUsecase) GetAllDemands(ctx context.Context) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllDemands", ctx)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockDemandUsecaseMockRecorder) GetDemandByID(ctx, id interface{}) *gom
 }
 
 // GetDemandHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockDemandUsecase) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.DemandHistory, error) {
+func (m *MockDemandUsecase) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.DemandHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDemandHistoryByCommodityIDAndRegionID", ctx, commodityID, regionID)
-	ret0, _ := ret[0].(*[]domain.DemandHistory)
+	ret0, _ := ret[0].([]*domain.DemandHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockDemandUsecaseMockRecorder) GetDemandHistoryByCommodityIDAndRegionI
 }
 
 // GetDemandsByCommodityID mocks base method.
-func (m *MockDemandUsecase) GetDemandsByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Demand, error) {
+func (m *MockDemandUsecase) GetDemandsByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDemandsByCommodityID", ctx, commodityID)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +127,10 @@ func (mr *MockDemandUsecaseMockRecorder) GetDemandsByCommodityID(ctx, commodityI
 }
 
 // GetDemandsByRegionID mocks base method.
-func (m *MockDemandUsecase) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Demand, error) {
+func (m *MockDemandUsecase) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDemandsByRegionID", ctx, regionID)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

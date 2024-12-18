@@ -67,10 +67,10 @@ func (mr *MockPriceUsecaseMockRecorder) DeletePrice(ctx, id interface{}) *gomock
 }
 
 // GetAllPrices mocks base method.
-func (m *MockPriceUsecase) GetAllPrices(ctx context.Context) (*[]domain.Price, error) {
+func (m *MockPriceUsecase) GetAllPrices(ctx context.Context) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllPrices", ctx)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockPriceUsecaseMockRecorder) GetPriceByID(ctx, id interface{}) *gomoc
 }
 
 // GetPriceHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockPriceUsecase) GetPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.PriceHistory, error) {
+func (m *MockPriceUsecase) GetPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.PriceHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPriceHistoryByCommodityIDAndRegionID", ctx, commodityID, regionID)
-	ret0, _ := ret[0].(*[]domain.PriceHistory)
+	ret0, _ := ret[0].([]*domain.PriceHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +127,10 @@ func (mr *MockPriceUsecaseMockRecorder) GetPriceHistoryByCommodityIDAndRegionID(
 }
 
 // GetPricesByCommodityID mocks base method.
-func (m *MockPriceUsecase) GetPricesByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Price, error) {
+func (m *MockPriceUsecase) GetPricesByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPricesByCommodityID", ctx, commodityID)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -142,10 +142,10 @@ func (mr *MockPriceUsecaseMockRecorder) GetPricesByCommodityID(ctx, commodityID 
 }
 
 // GetPricesByRegionID mocks base method.
-func (m *MockPriceUsecase) GetPricesByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Price, error) {
+func (m *MockPriceUsecase) GetPricesByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPricesByRegionID", ctx, regionID)
-	ret0, _ := ret[0].(*[]domain.Price)
+	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

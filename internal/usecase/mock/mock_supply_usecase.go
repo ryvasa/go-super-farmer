@@ -67,10 +67,10 @@ func (mr *MockSupplyUsecaseMockRecorder) DeleteSupply(ctx, id interface{}) *gomo
 }
 
 // GetAllSupply mocks base method.
-func (m *MockSupplyUsecase) GetAllSupply(ctx context.Context) (*[]domain.Supply, error) {
+func (m *MockSupplyUsecase) GetAllSupply(ctx context.Context) ([]*domain.Supply, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllSupply", ctx)
-	ret0, _ := ret[0].(*[]domain.Supply)
+	ret0, _ := ret[0].([]*domain.Supply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockSupplyUsecaseMockRecorder) GetAllSupply(ctx interface{}) *gomock.C
 }
 
 // GetSupplyByCommodityID mocks base method.
-func (m *MockSupplyUsecase) GetSupplyByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Supply, error) {
+func (m *MockSupplyUsecase) GetSupplyByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Supply, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSupplyByCommodityID", ctx, commodityID)
-	ret0, _ := ret[0].(*[]domain.Supply)
+	ret0, _ := ret[0].([]*domain.Supply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockSupplyUsecaseMockRecorder) GetSupplyByID(ctx, id interface{}) *gom
 }
 
 // GetSupplyByRegionID mocks base method.
-func (m *MockSupplyUsecase) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Supply, error) {
+func (m *MockSupplyUsecase) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Supply, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSupplyByRegionID", ctx, regionID)
-	ret0, _ := ret[0].(*[]domain.Supply)
+	ret0, _ := ret[0].([]*domain.Supply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +127,10 @@ func (mr *MockSupplyUsecaseMockRecorder) GetSupplyByRegionID(ctx, regionID inter
 }
 
 // GetSupplyHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockSupplyUsecase) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.SupplyHistory, error) {
+func (m *MockSupplyUsecase) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSupplyHistoryByCommodityIDAndRegionID", ctx, commodityID, regionID)
-	ret0, _ := ret[0].(*[]domain.SupplyHistory)
+	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

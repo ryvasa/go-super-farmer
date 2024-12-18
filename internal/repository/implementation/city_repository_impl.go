@@ -29,12 +29,12 @@ func (r *CityRepositoryImpl) FindByID(ctx context.Context, id int64) (*domain.Ci
 	return &city, nil
 }
 
-func (r *CityRepositoryImpl) FindAll(ctx context.Context) (*[]domain.City, error) {
-	var cities []domain.City
+func (r *CityRepositoryImpl) FindAll(ctx context.Context) ([]*domain.City, error) {
+	var cities []*domain.City
 	if err := r.db.WithContext(ctx).Find(&cities).Error; err != nil {
 		return nil, err
 	}
-	return &cities, nil
+	return cities, nil
 }
 
 func (r *CityRepositoryImpl) Update(ctx context.Context, id int64, city *domain.City) error {

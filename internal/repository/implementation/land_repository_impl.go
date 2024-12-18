@@ -34,20 +34,20 @@ func (r *LandRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domai
 	return &land, nil
 }
 
-func (r *LandRepositoryImpl) FindByUserID(ctx context.Context, id uuid.UUID) (*[]domain.Land, error) {
-	var lands []domain.Land
+func (r *LandRepositoryImpl) FindByUserID(ctx context.Context, id uuid.UUID) ([]*domain.Land, error) {
+	var lands []*domain.Land
 	if err := r.db.WithContext(ctx).Where("user_id = ?", id).Find(&lands).Error; err != nil {
 		return nil, err
 	}
-	return &lands, nil
+	return lands, nil
 }
 
-func (r *LandRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Land, error) {
-	var lands []domain.Land
+func (r *LandRepositoryImpl) FindAll(ctx context.Context) ([]*domain.Land, error) {
+	var lands []*domain.Land
 	if err := r.db.WithContext(ctx).Find(&lands).Error; err != nil {
 		return nil, err
 	}
-	return &lands, nil
+	return lands, nil
 }
 
 func (r *LandRepositoryImpl) Update(ctx context.Context, id uuid.UUID, land *domain.Land) error {

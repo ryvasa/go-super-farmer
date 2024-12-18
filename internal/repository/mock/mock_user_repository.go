@@ -65,10 +65,10 @@ func (mr *MockUserRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.Ca
 }
 
 // FindAll mocks base method.
-func (m *MockUserRepository) FindAll(ctx context.Context) (*[]domain.User, error) {
+func (m *MockUserRepository) FindAll(ctx context.Context) ([]*domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.User)
+	ret0, _ := ret[0].([]*domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

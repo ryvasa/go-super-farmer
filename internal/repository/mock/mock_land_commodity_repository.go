@@ -65,10 +65,10 @@ func (mr *MockLandCommodityRepositoryMockRecorder) Delete(ctx, id interface{}) *
 }
 
 // FindAll mocks base method.
-func (m *MockLandCommodityRepository) FindAll(ctx context.Context) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityRepository) FindAll(ctx context.Context) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,10 +80,10 @@ func (mr *MockLandCommodityRepositoryMockRecorder) FindAll(ctx interface{}) *gom
 }
 
 // FindByCommodityID mocks base method.
-func (m *MockLandCommodityRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -110,10 +110,10 @@ func (mr *MockLandCommodityRepositoryMockRecorder) FindByID(ctx, id interface{})
 }
 
 // FindByLandID mocks base method.
-func (m *MockLandCommodityRepository) FindByLandID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityRepository) FindByLandID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByLandID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

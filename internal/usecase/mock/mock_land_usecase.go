@@ -67,10 +67,10 @@ func (mr *MockLandUsecaseMockRecorder) DeleteLand(ctx, id interface{}) *gomock.C
 }
 
 // GetAllLands mocks base method.
-func (m *MockLandUsecase) GetAllLands(ctx context.Context) (*[]domain.Land, error) {
+func (m *MockLandUsecase) GetAllLands(ctx context.Context) ([]*domain.Land, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllLands", ctx)
-	ret0, _ := ret[0].(*[]domain.Land)
+	ret0, _ := ret[0].([]*domain.Land)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockLandUsecaseMockRecorder) GetLandByID(ctx, id interface{}) *gomock.
 }
 
 // GetLandByUserID mocks base method.
-func (m *MockLandUsecase) GetLandByUserID(ctx context.Context, userID uuid.UUID) (*[]domain.Land, error) {
+func (m *MockLandUsecase) GetLandByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.Land, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLandByUserID", ctx, userID)
-	ret0, _ := ret[0].(*[]domain.Land)
+	ret0, _ := ret[0].([]*domain.Land)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -67,10 +67,10 @@ func (mr *MockLandCommodityUsecaseMockRecorder) DeleteLandCommodity(ctx, id inte
 }
 
 // GetAllLandCommodity mocks base method.
-func (m *MockLandCommodityUsecase) GetAllLandCommodity(ctx context.Context) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityUsecase) GetAllLandCommodity(ctx context.Context) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllLandCommodity", ctx)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockLandCommodityUsecaseMockRecorder) GetAllLandCommodity(ctx interfac
 }
 
 // GetLandCommodityByCommodityID mocks base method.
-func (m *MockLandCommodityUsecase) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityUsecase) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLandCommodityByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockLandCommodityUsecaseMockRecorder) GetLandCommodityByID(ctx, id int
 }
 
 // GetLandCommodityByLandID mocks base method.
-func (m *MockLandCommodityUsecase) GetLandCommodityByLandID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (m *MockLandCommodityUsecase) GetLandCommodityByLandID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLandCommodityByLandID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.LandCommodity)
+	ret0, _ := ret[0].([]*domain.LandCommodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

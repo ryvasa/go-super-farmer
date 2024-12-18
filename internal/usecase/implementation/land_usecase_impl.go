@@ -52,7 +52,7 @@ func (u *LandUsecaseImpl) GetLandByID(ctx context.Context, id uuid.UUID) (*domai
 	return land, nil
 }
 
-func (u *LandUsecaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID) (*[]domain.Land, error) {
+func (u *LandUsecaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.Land, error) {
 	_, err := u.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("user not found")
@@ -64,7 +64,7 @@ func (u *LandUsecaseImpl) GetLandByUserID(ctx context.Context, userID uuid.UUID)
 	return land, nil
 }
 
-func (u *LandUsecaseImpl) GetAllLands(ctx context.Context) (*[]domain.Land, error) {
+func (u *LandUsecaseImpl) GetAllLands(ctx context.Context) ([]*domain.Land, error) {
 	lands, err := u.landRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

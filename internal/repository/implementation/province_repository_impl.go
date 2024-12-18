@@ -29,12 +29,12 @@ func (r *ProvinceRepositoryImpl) FindByID(ctx context.Context, id int64) (*domai
 	return &province, nil
 }
 
-func (r *ProvinceRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Province, error) {
-	var provinces []domain.Province
+func (r *ProvinceRepositoryImpl) FindAll(ctx context.Context) ([]*domain.Province, error) {
+	var provinces []*domain.Province
 	if err := r.db.WithContext(ctx).Find(&provinces).Error; err != nil {
 		return nil, err
 	}
-	return &provinces, nil
+	return provinces, nil
 }
 
 func (r *ProvinceRepositoryImpl) Update(ctx context.Context, id int64, province *domain.Province) error {

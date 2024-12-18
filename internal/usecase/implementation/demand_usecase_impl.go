@@ -8,6 +8,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -16,14 +18,16 @@ type DemandUsecaseImpl struct {
 	demandHistoryRepo repository_interface.DemandHistoryRepository
 	commodityRepo     repository_interface.CommodityRepository
 	regionRepo        repository_interface.RegionRepository
+	txManager         transaction.TransactionManager
 }
 
-func NewDemandUsecase(demandRepo repository_interface.DemandRepository, demandHistoryRepo repository_interface.DemandHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository) usecase_interface.DemandUsecase {
+func NewDemandUsecase(demandRepo repository_interface.DemandRepository, demandHistoryRepo repository_interface.DemandHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository, txManager transaction.TransactionManager) usecase_interface.DemandUsecase {
 	return &DemandUsecaseImpl{
-		demandRepo:        demandRepo,
-		demandHistoryRepo: demandHistoryRepo,
-		commodityRepo:     commodityRepo,
-		regionRepo:        regionRepo,
+		demandRepo,
+		demandHistoryRepo,
+		commodityRepo,
+		regionRepo,
+		txManager,
 	}
 }
 
@@ -58,7 +62,7 @@ func (u *DemandUsecaseImpl) CreateDemand(ctx context.Context, req *dto.DemandCre
 	return createdDemand, nil
 }
 
-func (u *DemandUsecaseImpl) GetAllDemands(ctx context.Context) (*[]domain.Demand, error) {
+func (u *DemandUsecaseImpl) GetAllDemands(ctx context.Context) ([]*domain.Demand, error) {
 	demands, err := u.demandRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -73,7 +77,7 @@ func (u *DemandUsecaseImpl) GetDemandByID(ctx context.Context, id uuid.UUID) (*d
 	return demand, nil
 }
 
-func (u *DemandUsecaseImpl) GetDemandsByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Demand, error) {
+func (u *DemandUsecaseImpl) GetDemandsByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Demand, error) {
 	_, err := u.commodityRepo.FindByID(ctx, commodityID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("commodity not found")
@@ -86,7 +90,7 @@ func (u *DemandUsecaseImpl) GetDemandsByCommodityID(ctx context.Context, commodi
 	return demands, nil
 }
 
-func (u *DemandUsecaseImpl) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Demand, error) {
+func (u *DemandUsecaseImpl) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Demand, error) {
 	_, err := u.regionRepo.FindByID(ctx, regionID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("region not found")
@@ -103,38 +107,50 @@ func (u *DemandUsecaseImpl) UpdateDemand(ctx context.Context, id uuid.UUID, req 
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, utils.NewValidationError(err)
 	}
-	demand, err := u.demandRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, utils.NewNotFoundError("demand not found")
-	}
+	res := &domain.Demand{}
+	err := u.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		logrus.Log.Info("starting demand update transaction")
+		demand, err := u.demandRepo.FindByID(txCtx, id)
+		if err != nil {
+			logrus.Log.Error(err, "failed to find demand")
+			return utils.NewNotFoundError(err.Error())
+		}
+		historyDemand := domain.DemandHistory{
+			ID:          uuid.New(),
+			CommodityID: demand.CommodityID,
+			Commodity:   demand.Commodity,
+			RegionID:    demand.RegionID,
+			Region:      demand.Region,
+			Quantity:    demand.Quantity,
+			Unit:        demand.Unit,
+		}
+		err = u.demandHistoryRepo.Create(txCtx, &historyDemand)
+		if err != nil {
+			logrus.Log.Error(err, "failed to create demand history")
+			return err
+		}
+		logrus.Log.Info("demand history created")
 
-	demandHistory := &domain.DemandHistory{
-		ID:          uuid.New(),
-		CommodityID: demand.CommodityID,
-		Commodity:   demand.Commodity,
-		RegionID:    demand.RegionID,
-		Region:      demand.Region,
-		Quantity:    demand.Quantity,
-	}
-
-	err = u.demandHistoryRepo.Create(ctx, demandHistory)
+		demand.Quantity = req.Quantity
+		err = u.demandRepo.Update(txCtx, id, demand)
+		if err != nil {
+			logrus.Log.Error(err, "failed to update demand")
+			return err
+		}
+		updatedDemand, err := u.demandRepo.FindByID(txCtx, id)
+		if err != nil {
+			logrus.Log.Error(err, "failed to find demand")
+			return err
+		}
+		logrus.Log.Info("demand updated")
+		res = updatedDemand
+		return nil
+	})
+	logrus.Log.Info("demand update transaction completed")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-
-	demand.Quantity = req.Quantity
-	err = u.demandRepo.Update(ctx, id, demand)
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	updatedDemand, err := u.demandRepo.FindByID(ctx, id)
-
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	return updatedDemand, nil
+	return res, nil
 }
 
 func (u *DemandUsecaseImpl) DeleteDemand(ctx context.Context, id uuid.UUID) error {
@@ -149,7 +165,7 @@ func (u *DemandUsecaseImpl) DeleteDemand(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.DemandHistory, error) {
+func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) ([]*domain.DemandHistory, error) {
 	demands, err := u.demandHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -159,7 +175,7 @@ func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	currentDemand := domain.DemandHistory{
+	currentDemand := &domain.DemandHistory{
 		ID:          demand.ID,
 		CommodityID: demand.CommodityID,
 		Commodity:   demand.Commodity,
@@ -172,6 +188,6 @@ func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context
 		DeletedAt:   demand.DeletedAt,
 	}
 
-	allDemandHistory := append(*demands, currentDemand)
-	return &allDemandHistory, nil
+	allDemandHistory := append(demands, currentDemand)
+	return allDemandHistory, nil
 }

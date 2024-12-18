@@ -8,6 +8,8 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -16,14 +18,16 @@ type SupplyUsecaseImpl struct {
 	supplyHistoryRepo repository_interface.SupplyHistoryRepository
 	commodityRepo     repository_interface.CommodityRepository
 	regionRepo        repository_interface.RegionRepository
+	txManager         transaction.TransactionManager
 }
 
-func NewSupplyUsecase(supplyRepo repository_interface.SupplyRepository, supplyHistoryRepo repository_interface.SupplyHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository) usecase_interface.SupplyUsecase {
+func NewSupplyUsecase(supplyRepo repository_interface.SupplyRepository, supplyHistoryRepo repository_interface.SupplyHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository, txManager transaction.TransactionManager) usecase_interface.SupplyUsecase {
 	return &SupplyUsecaseImpl{
-		supplyRepo:        supplyRepo,
-		supplyHistoryRepo: supplyHistoryRepo,
-		commodityRepo:     commodityRepo,
-		regionRepo:        regionRepo,
+		supplyRepo,
+		supplyHistoryRepo,
+		commodityRepo,
+		regionRepo,
+		txManager,
 	}
 }
 func (u *SupplyUsecaseImpl) CreateSupply(ctx context.Context, req *dto.SupplyCreateDTO) (*domain.Supply, error) {
@@ -59,7 +63,7 @@ func (u *SupplyUsecaseImpl) CreateSupply(ctx context.Context, req *dto.SupplyCre
 	return createdSupply, nil
 }
 
-func (u *SupplyUsecaseImpl) GetAllSupply(ctx context.Context) (*[]domain.Supply, error) {
+func (u *SupplyUsecaseImpl) GetAllSupply(ctx context.Context) ([]*domain.Supply, error) {
 	supplies, err := u.supplyRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -75,7 +79,7 @@ func (u *SupplyUsecaseImpl) GetSupplyByID(ctx context.Context, id uuid.UUID) (*d
 	return supply, nil
 }
 
-func (u *SupplyUsecaseImpl) GetSupplyByCommodityID(ctx context.Context, commodityID uuid.UUID) (*[]domain.Supply, error) {
+func (u *SupplyUsecaseImpl) GetSupplyByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Supply, error) {
 	supplies, err := u.supplyRepo.FindByCommodityID(ctx, commodityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -83,7 +87,7 @@ func (u *SupplyUsecaseImpl) GetSupplyByCommodityID(ctx context.Context, commodit
 	return supplies, nil
 }
 
-func (u *SupplyUsecaseImpl) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) (*[]domain.Supply, error) {
+func (u *SupplyUsecaseImpl) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Supply, error) {
 	supplies, err := u.supplyRepo.FindByRegionID(ctx, regionID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -95,38 +99,51 @@ func (u *SupplyUsecaseImpl) UpdateSupply(ctx context.Context, id uuid.UUID, req 
 	if err := utils.ValidateStruct(req); err != nil {
 		return nil, utils.NewValidationError(err)
 	}
-	supply, err := u.supplyRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, utils.NewNotFoundError("supply not found")
-	}
+	res := &domain.Supply{}
+	err := u.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		logrus.Log.Info("starting supply update transaction")
+		supply, err := u.supplyRepo.FindByID(txCtx, id)
+		if err != nil {
+			logrus.Log.Error(err, "failed to find supply")
+			return utils.NewNotFoundError(err.Error())
+		}
+		historySupply := domain.SupplyHistory{
+			ID:          uuid.New(),
+			CommodityID: supply.CommodityID,
+			Commodity:   supply.Commodity,
+			RegionID:    supply.RegionID,
+			Region:      supply.Region,
+			Quantity:    supply.Quantity,
+			Unit:        supply.Unit,
+		}
+		err = u.supplyHistoryRepo.Create(txCtx, &historySupply)
+		if err != nil {
+			logrus.Log.Error(err, "failed to create supply history")
+			return err
+		}
+		logrus.Log.Info("supply history created")
+		supply.Quantity = req.Quantity
+		err = u.supplyRepo.Update(txCtx, id, supply)
+		if err != nil {
+			logrus.Log.Error(err, "failed to update supply")
+			return err
+		}
+		updatedSupply, err := u.supplyRepo.FindByID(txCtx, id)
+		if err != nil {
+			logrus.Log.Error(err, "failed to find supply")
+			return err
+		}
+		logrus.Log.Info("supply updated")
+		res = updatedSupply
+		return nil
+	})
+	logrus.Log.Info("supply update transaction completed")
 
-	supplyHistory := &domain.SupplyHistory{
-		ID:          uuid.New(),
-		CommodityID: supply.CommodityID,
-		Commodity:   supply.Commodity,
-		RegionID:    supply.RegionID,
-		Region:      supply.Region,
-		Quantity:    supply.Quantity,
-	}
-
-	err = u.supplyHistoryRepo.Create(ctx, supplyHistory)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	supply.Quantity = req.Quantity
-	err = u.supplyRepo.Update(ctx, id, supply)
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	updatedSupply, err := u.supplyRepo.FindByID(ctx, id)
-
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	return updatedSupply, nil
+	return res, nil
 }
 
 func (u *SupplyUsecaseImpl) DeleteSupply(ctx context.Context, id uuid.UUID) error {
@@ -141,7 +158,7 @@ func (u *SupplyUsecaseImpl) DeleteSupply(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*[]domain.SupplyHistory, error) {
+func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) ([]*domain.SupplyHistory, error) {
 	supplys, err := u.supplyHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -151,7 +168,7 @@ func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	currentSupply := domain.SupplyHistory{
+	currentSupply := &domain.SupplyHistory{
 		ID:          supply.ID,
 		CommodityID: supply.CommodityID,
 		Commodity:   supply.Commodity,
@@ -163,6 +180,6 @@ func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context
 		DeletedAt:   supply.DeletedAt,
 	}
 
-	allSupplyHistory := append(*supplys, currentSupply)
-	return &allSupplyHistory, nil
+	allSupplyHistory := append(supplys, currentSupply)
+	return allSupplyHistory, nil
 }

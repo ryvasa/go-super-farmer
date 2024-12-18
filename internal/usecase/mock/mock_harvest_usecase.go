@@ -67,10 +67,10 @@ func (mr *MockHarvestUsecaseMockRecorder) DeleteHarvest(ctx, id interface{}) *go
 }
 
 // GetAllDeletedHarvest mocks base method.
-func (m *MockHarvestUsecase) GetAllDeletedHarvest(ctx context.Context) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetAllDeletedHarvest(ctx context.Context) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllDeletedHarvest", ctx)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockHarvestUsecaseMockRecorder) GetAllDeletedHarvest(ctx interface{}) 
 }
 
 // GetAllHarvest mocks base method.
-func (m *MockHarvestUsecase) GetAllHarvest(ctx context.Context) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetAllHarvest(ctx context.Context) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllHarvest", ctx)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockHarvestUsecaseMockRecorder) GetAllHarvest(ctx interface{}) *gomock
 }
 
 // GetHarvestByCommodityID mocks base method.
-func (m *MockHarvestUsecase) GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHarvestByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -127,10 +127,10 @@ func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByID(ctx, id interface{}) *g
 }
 
 // GetHarvestByLandCommodityID mocks base method.
-func (m *MockHarvestUsecase) GetHarvestByLandCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetHarvestByLandCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHarvestByLandCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -142,10 +142,10 @@ func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByLandCommodityID(ctx, id in
 }
 
 // GetHarvestByLandID mocks base method.
-func (m *MockHarvestUsecase) GetHarvestByLandID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetHarvestByLandID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHarvestByLandID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -157,10 +157,10 @@ func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByLandID(ctx, id interface{}
 }
 
 // GetHarvestByRegionID mocks base method.
-func (m *MockHarvestUsecase) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestUsecase) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHarvestByRegionID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

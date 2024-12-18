@@ -65,10 +65,10 @@ func (mr *MockHarvestRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock
 }
 
 // FindAll mocks base method.
-func (m *MockHarvestRepository) FindAll(ctx context.Context) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindAll(ctx context.Context) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,10 +80,10 @@ func (mr *MockHarvestRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Ca
 }
 
 // FindAllDeleted mocks base method.
-func (m *MockHarvestRepository) FindAllDeleted(ctx context.Context) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindAllDeleted(ctx context.Context) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAllDeleted", ctx)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -95,10 +95,10 @@ func (mr *MockHarvestRepositoryMockRecorder) FindAllDeleted(ctx interface{}) *go
 }
 
 // FindByCommodityID mocks base method.
-func (m *MockHarvestRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -125,10 +125,10 @@ func (mr *MockHarvestRepositoryMockRecorder) FindByID(ctx, id interface{}) *gomo
 }
 
 // FindByLandCommodityID mocks base method.
-func (m *MockHarvestRepository) FindByLandCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindByLandCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByLandCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -140,10 +140,10 @@ func (mr *MockHarvestRepositoryMockRecorder) FindByLandCommodityID(ctx, id inter
 }
 
 // FindByLandID mocks base method.
-func (m *MockHarvestRepository) FindByLandID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindByLandID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByLandID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -155,10 +155,10 @@ func (mr *MockHarvestRepositoryMockRecorder) FindByLandID(ctx, id interface{}) *
 }
 
 // FindByRegionID mocks base method.
-func (m *MockHarvestRepository) FindByRegionID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
+func (m *MockHarvestRepository) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByRegionID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Harvest)
+	ret0, _ := ret[0].([]*domain.Harvest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
