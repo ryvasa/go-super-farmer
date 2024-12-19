@@ -17,3 +17,6 @@ type Commodity struct {
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
+
+type CommodityPagination struct {
+}

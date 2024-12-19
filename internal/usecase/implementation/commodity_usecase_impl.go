@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -46,41 +47,73 @@ func (uc *CommodityUsecaseImpl) CreateCommodity(ctx context.Context, req *dto.Co
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	return createdCommodity, nil
-}
-
-func (uc *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context, queryParams *dto.PaginationDTO) ([]domain.Commodity, error) {
-	var commodities []domain.Commodity
-	key := fmt.Sprintf("commodity_%s_start_%s_end_%s", queryParams.CommodityName, queryParams.StartDate, queryParams.EndDate)
-
-	cached, err := uc.cache.Get(ctx, key)
-	if err == nil && cached != nil {
-		err := json.Unmarshal(cached, &commodities)
-		if err != nil {
-			return nil, err
-		}
-		return commodities, nil
-	}
-	params := &pagination.PaginationParams{
-		Limit:         queryParams.Limit,
-		Page:          queryParams.Page,
-		Sort:          queryParams.Sort,
-		CommodityName: queryParams.CommodityName,
-		StartDate:     queryParams.StartDate,
-		EndDate:       queryParams.EndDate,
-	}
-	commodities, err = uc.commodityRepository.FindAll(ctx, params)
+	err = uc.cache.DeleteByPattern(ctx, "commodity")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	commoditiesJSON, err := json.Marshal(commodities)
-	if err != nil {
-		return nil, err
+
+	return createdCommodity, nil
+}
+func (uc *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context, queryParams *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
+	// Validasi pagination params
+	if err := queryParams.Validate(); err != nil {
+		return nil, utils.NewBadRequestError(err.Error())
 	}
 
-	uc.cache.Set(ctx, key, commoditiesJSON, 4*time.Minute)
+	// Cek cache
+	cacheKey := fmt.Sprintf("commodity_list_page_%d_limit_%d_%s",
+		queryParams.Page,
+		queryParams.Limit,
+		queryParams.Filter.CommodityName,
+	)
 
-	return commodities, nil
+	var response *dto.PaginationResponseDTO
+	cached, err := uc.cache.Get(ctx, cacheKey)
+	if err == nil && cached != nil {
+		err := json.Unmarshal(cached, &response)
+		if err != nil {
+			logrus.Log.Error("Error get from cache")
+			return nil, err
+		}
+		logrus.Log.Info("Cache hit")
+		return response, nil
+	}
+
+	// Get data dari repository
+	commodities, err := uc.commodityRepository.FindAll(ctx, queryParams)
+	if err != nil {
+		logrus.Log.Error("Error get from repository")
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	count, err := uc.commodityRepository.Count(ctx, &queryParams.Filter)
+	if err != nil {
+		logrus.Log.Error("Error get count from repository")
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	// Create response
+	response = &dto.PaginationResponseDTO{
+		TotalRows:  int64(count),
+		TotalPages: int(math.Ceil(float64(count) / float64(queryParams.Limit))),
+		Page:       queryParams.Page,
+		Limit:      queryParams.Limit,
+		Data:       commodities,
+	}
+
+	// Set cache
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		logrus.Log.Error("Error marshal response")
+		return nil, utils.NewInternalError(err.Error())
+	}
+	err = uc.cache.Set(ctx, cacheKey, responseJSON, 4*time.Minute)
+	if err != nil {
+		logrus.Log.Error("Error set cache")
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	return response, nil
 }
 
 func (uc *CommodityUsecaseImpl) GetCommodityById(ctx context.Context, id uuid.UUID) (*domain.Commodity, error) {
@@ -110,6 +143,11 @@ func (uc *CommodityUsecaseImpl) UpdateCommodity(ctx context.Context, id uuid.UUI
 		commodity.Description = *req.Description
 	}
 
+	err = uc.cache.DeleteByPattern(ctx, "commodity")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	err = uc.commodityRepository.Update(ctx, id, commodity)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -130,6 +168,11 @@ func (uc *CommodityUsecaseImpl) DeleteCommodity(ctx context.Context, id uuid.UUI
 	}
 
 	err = uc.commodityRepository.Delete(ctx, id)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+
+	err = uc.cache.DeleteByPattern(ctx, "commodity")
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
