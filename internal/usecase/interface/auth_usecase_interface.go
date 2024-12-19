@@ -8,5 +8,6 @@ import (
 
 type AuthUsecase interface {
 	Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error)
-	VerifyEmail(ctx context.Context, req *dto.AuthVerifyEmailDTO) error
+	SendOTP(ctx context.Context, req *dto.AuthSendDTO) error
+	VerifyOTP(ctx context.Context, req *dto.AuthVerifyDTO) error
 }

@@ -2,6 +2,8 @@ package usecase_implementation
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,6 +11,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -18,22 +21,23 @@ type HarvestUsecaseImpl struct {
 	regionRepo        repository_interface.RegionRepository
 	landCommodityRepo repository_interface.LandCommodityRepository
 	rabbitMQ          messages.RabbitMQ
+	cache             cache.Cache
 }
 
-func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, regionRepo repository_interface.RegionRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ) usecase_interface.HarvestUsecase {
-	return &HarvestUsecaseImpl{harvestRepo, regionRepo, landCommodityRepo, rabbitMQ}
+func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, regionRepo repository_interface.RegionRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache) usecase_interface.HarvestUsecase {
+	return &HarvestUsecaseImpl{harvestRepo, regionRepo, landCommodityRepo, rabbitMQ, cache}
 }
 
-func (h *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
+func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
 	harvest := domain.Harvest{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
-	region, err := h.regionRepo.FindByID(ctx, req.RegionID)
+	region, err := uc.regionRepo.FindByID(ctx, req.RegionID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("region not found")
 	}
-	commodityLand, err := h.landCommodityRepo.FindByID(ctx, req.LandCommodityID)
+	commodityLand, err := uc.landCommodityRepo.FindByID(ctx, req.LandCommodityID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("land commodity not found")
 	}
@@ -50,12 +54,17 @@ func (h *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harvest
 	harvest.HarvestDate = parseDate
 	harvest.ID = uuid.New()
 
-	err = h.harvestRepo.Create(ctx, &harvest)
+	err = uc.harvestRepo.Create(ctx, &harvest)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	createdHarvest, err := h.harvestRepo.FindByID(ctx, harvest.ID)
+	createdHarvest, err := uc.harvestRepo.FindByID(ctx, harvest.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -63,59 +72,79 @@ func (h *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harvest
 	return createdHarvest, nil
 }
 
-func (h *HarvestUsecaseImpl) GetAllHarvest(ctx context.Context) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindAll(ctx)
+func (uc *HarvestUsecaseImpl) GetAllHarvest(ctx context.Context) ([]*domain.Harvest, error) {
+	var harvests []*domain.Harvest
+	key := fmt.Sprintf("harvest_%s", "all")
+	cached, err := uc.cache.Get(ctx, key)
+	if err == nil && cached != nil {
+		err := json.Unmarshal(cached, &harvests)
+		if err != nil {
+			return nil, err
+		}
+		return harvests, nil
+	}
+	harvests, err = uc.harvestRepo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+
+	harvestsJSON, err := json.Marshal(harvests)
+	if err != nil {
+		return nil, err
+	}
+	err = uc.cache.Set(ctx, key, harvestsJSON, 4*time.Minute)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestByID(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
-	harvest, err := h.harvestRepo.FindByID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByID(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
+	harvest, err := uc.harvestRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("harvest not found")
 	}
 	return harvest, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindByCommodityID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindByCommodityID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestByLandID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindByLandID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByLandID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindByLandID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestByLandCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindByLandCommodityID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByLandCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindByLandCommodityID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindByRegionID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindByRegionID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) UpdateHarvest(ctx context.Context, id uuid.UUID, req *dto.HarvestUpdateDTO) (*domain.Harvest, error) {
+func (uc *HarvestUsecaseImpl) UpdateHarvest(ctx context.Context, id uuid.UUID, req *dto.HarvestUpdateDTO) (*domain.Harvest, error) {
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
-	harvest, err := h.harvestRepo.FindByID(ctx, id)
+	harvest, err := uc.harvestRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("harvest not found")
 	}
@@ -131,41 +160,54 @@ func (h *HarvestUsecaseImpl) UpdateHarvest(ctx context.Context, id uuid.UUID, re
 	harvest.Quantity = req.Quantity
 	harvest.Unit = req.Unit
 
-	err = h.harvestRepo.Update(ctx, id, harvest)
+	err = uc.harvestRepo.Update(ctx, id, harvest)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	updatedHarvest, err := h.harvestRepo.FindByID(ctx, id)
+	updatedHarvest, err := uc.harvestRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return updatedHarvest, nil
 }
 
-func (h *HarvestUsecaseImpl) DeleteHarvest(ctx context.Context, id uuid.UUID) error {
-	_, err := h.harvestRepo.FindByID(ctx, id)
+func (uc *HarvestUsecaseImpl) DeleteHarvest(ctx context.Context, id uuid.UUID) error {
+	_, err := uc.harvestRepo.FindByID(ctx, id)
 	if err != nil {
 		return utils.NewNotFoundError("harvest not found")
 	}
-	err = h.harvestRepo.Delete(ctx, id)
+	err = uc.harvestRepo.Delete(ctx, id)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
 	return nil
 }
 
-func (h *HarvestUsecaseImpl) RestoreHarvest(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
-	_, err := h.harvestRepo.FindDeletedByID(ctx, id)
+func (uc *HarvestUsecaseImpl) RestoreHarvest(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
+	_, err := uc.harvestRepo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("deleted harvest not found")
 	}
-	err = h.harvestRepo.Restore(ctx, id)
+	err = uc.harvestRepo.Restore(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	restoredHarvest, err := h.harvestRepo.FindByID(ctx, id)
+	restoredHarvest, err := uc.harvestRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -173,23 +215,23 @@ func (h *HarvestUsecaseImpl) RestoreHarvest(ctx context.Context, id uuid.UUID) (
 	return restoredHarvest, nil
 }
 
-func (h *HarvestUsecaseImpl) GetAllDeletedHarvest(ctx context.Context) (*[]domain.Harvest, error) {
-	harvests, err := h.harvestRepo.FindAllDeleted(ctx)
+func (uc *HarvestUsecaseImpl) GetAllDeletedHarvest(ctx context.Context) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindAllDeleted(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return harvests, nil
 }
 
-func (h *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
-	harvest, err := h.harvestRepo.FindDeletedByID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Harvest, error) {
+	harvest, err := uc.harvestRepo.FindDeletedByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError("deleted harvest not found")
 	}
 	return harvest, nil
 }
 
-func (h *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, landCommodityID uuid.UUID) error {
+func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) error {
 
 	type HarvestMessage struct {
 		LandCommodityID uuid.UUID `json:"LandCommodityID"`
@@ -198,12 +240,12 @@ func (h *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Contex
 	}
 
 	msg := HarvestMessage{
-		LandCommodityID: landCommodityID,
-		StartDate:       time.Now(),
-		EndDate:         time.Now(),
+		LandCommodityID: harvestParams.LandCommodityID,
+		StartDate:       harvestParams.StartDate,
+		EndDate:         harvestParams.EndDate,
 	}
 
-	err := h.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)
+	err := uc.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}

@@ -2,24 +2,21 @@ package repository_implementation
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/utils"
 	"gorm.io/gorm"
 )
 
 type CommodityRepositoryImpl struct {
-	db    *gorm.DB
-	cache cache.Cache
+	db *gorm.DB
 }
 
-func NewCommodityRepository(db *gorm.DB, cache cache.Cache) repository_interface.CommodityRepository {
-	return &CommodityRepositoryImpl{db, cache}
+func NewCommodityRepository(db *gorm.DB) repository_interface.CommodityRepository {
+	return &CommodityRepositoryImpl{db}
 }
 
 func (r *CommodityRepositoryImpl) Create(ctx context.Context, commodity *domain.Commodity) error {
@@ -28,54 +25,28 @@ func (r *CommodityRepositoryImpl) Create(ctx context.Context, commodity *domain.
 
 func (r *CommodityRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.Commodity, error) {
 	var commodity domain.Commodity
-	key := fmt.Sprintf("commodity_%s", id)
-	cached, err := r.cache.Get(ctx, key)
-	if err == nil && cached != nil {
-		err := json.Unmarshal(cached, &commodity)
-		if err != nil {
-			return nil, err
-		}
-		return &commodity, nil
-	}
-	err = r.db.WithContext(ctx).First(&commodity, id).Error
+	err := r.db.WithContext(ctx).First(&commodity, id).Error
 	if err != nil {
 		return nil, err
 	}
-
-	commodityJSON, err := json.Marshal(commodity)
-	if err != nil {
-		return nil, err
-	}
-
-	r.cache.Set(ctx, key, commodityJSON, 4*time.Minute)
-
 	return &commodity, nil
 }
 
-func (r *CommodityRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Commodity, error) {
+func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]domain.Commodity, error) {
 	var commodities []domain.Commodity
-	key := fmt.Sprintf("commodity_%s", "all")
-	cached, err := r.cache.Get(ctx, key)
-	if err == nil && cached != nil {
-		err := json.Unmarshal(cached, &commodities)
-		if err != nil {
-			return nil, err
-		}
-		return &commodities, nil
-	}
 
-	if err := r.db.WithContext(ctx).Find(&commodities).Error; err != nil {
-		return nil, err
-	}
+	err := r.db.WithContext(ctx).
+		Scopes(
+			utils.ApplyFilters(&params.Filter),
+			utils.GetPaginationScope(params),
+		).
+		Find(&commodities).Error
 
-	commoditiesJSON, err := json.Marshal(commodities)
 	if err != nil {
 		return nil, err
 	}
 
-	r.cache.Set(ctx, key, commoditiesJSON, 4*time.Minute)
-
-	return &commodities, nil
+	return commodities, nil
 }
 
 func (r *CommodityRepositoryImpl) Update(ctx context.Context, id uuid.UUID, commodity *domain.Commodity) error {
@@ -96,4 +67,14 @@ func (r *CommodityRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.U
 		return nil, err
 	}
 	return &commodity, nil
+}
+
+func (r *CommodityRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&domain.Commodity{}).
+		Scopes(
+			utils.ApplyFilters(filter),
+		).Count(&count).Error
+	return count, err
 }

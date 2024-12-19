@@ -31,22 +31,22 @@ func (r *RegionRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*dom
 	return &region, nil
 }
 
-func (r *RegionRepositoryImpl) FindAll(ctx context.Context) (*[]domain.Region, error) {
-	var regions []domain.Region
+func (r *RegionRepositoryImpl) FindAll(ctx context.Context) ([]*domain.Region, error) {
+	var regions []*domain.Region
 	err := r.db.WithContext(ctx).Find(&regions).Error
 	if err != nil {
 		return nil, err
 	}
-	return &regions, nil
+	return regions, nil
 }
 
-func (r *RegionRepositoryImpl) FindByProvinceID(ctx context.Context, id int64) (*[]domain.Region, error) {
-	var regions []domain.Region
+func (r *RegionRepositoryImpl) FindByProvinceID(ctx context.Context, id int64) ([]*domain.Region, error) {
+	var regions []*domain.Region
 	err := r.db.WithContext(ctx).Where("province_id = ?", id).Find(&regions).Error
 	if err != nil {
 		return nil, err
 	}
-	return &regions, nil
+	return regions, nil
 }
 
 func (r *RegionRepositoryImpl) Update(ctx context.Context, id uuid.UUID, region *domain.Region) error {

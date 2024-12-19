@@ -65,10 +65,10 @@ func (mr *MockDemandRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.
 }
 
 // FindAll mocks base method.
-func (m *MockDemandRepository) FindAll(ctx context.Context) (*[]domain.Demand, error) {
+func (m *MockDemandRepository) FindAll(ctx context.Context) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,10 +80,10 @@ func (mr *MockDemandRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Cal
 }
 
 // FindByCommodityID mocks base method.
-func (m *MockDemandRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.Demand, error) {
+func (m *MockDemandRepository) FindByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -125,10 +125,10 @@ func (mr *MockDemandRepositoryMockRecorder) FindByID(ctx, id interface{}) *gomoc
 }
 
 // FindByRegionID mocks base method.
-func (m *MockDemandRepository) FindByRegionID(ctx context.Context, id uuid.UUID) (*[]domain.Demand, error) {
+func (m *MockDemandRepository) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Demand, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByRegionID", ctx, id)
-	ret0, _ := ret[0].(*[]domain.Demand)
+	ret0, _ := ret[0].([]*domain.Demand)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

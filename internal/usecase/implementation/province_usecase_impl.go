@@ -39,7 +39,7 @@ func (uc *ProvinceUsecaseImpl) CreateProvince(ctx context.Context, req *dto.Prov
 	return createdProvince, nil
 }
 
-func (uc *ProvinceUsecaseImpl) GetAllProvinces(ctx context.Context) (*[]domain.Province, error) {
+func (uc *ProvinceUsecaseImpl) GetAllProvinces(ctx context.Context) ([]*domain.Province, error) {
 	provinces, err := uc.repo.FindAll(ctx)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

@@ -51,10 +51,10 @@ func (mr *MockPriceHistoryRepositoryMockRecorder) Create(ctx, priceHistory inter
 }
 
 // FindAll mocks base method.
-func (m *MockPriceHistoryRepository) FindAll(ctx context.Context) (*[]domain.PriceHistory, error) {
+func (m *MockPriceHistoryRepository) FindAll(ctx context.Context) ([]*domain.PriceHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.PriceHistory)
+	ret0, _ := ret[0].([]*domain.PriceHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +66,10 @@ func (mr *MockPriceHistoryRepositoryMockRecorder) FindAll(ctx interface{}) *gomo
 }
 
 // FindByCommodityIDAndRegionID mocks base method.
-func (m *MockPriceHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*[]domain.PriceHistory, error) {
+func (m *MockPriceHistoryRepository) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.PriceHistory, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByCommodityIDAndRegionID", ctx, commodityID, regionID)
-	ret0, _ := ret[0].(*[]domain.PriceHistory)
+	ret0, _ := ret[0].([]*domain.PriceHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

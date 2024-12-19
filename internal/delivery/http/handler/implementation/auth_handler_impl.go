@@ -31,3 +31,31 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	}
 	utils.SuccessResponse(c, http.StatusOK, auth)
 }
+
+func (h *AuthHandlerImpl) SendOTP(c *gin.Context) {
+	var req dto.AuthSendDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	err := h.uc.SendOTP(c, &req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, nil)
+}
+
+func (h *AuthHandlerImpl) VerifyOTP(c *gin.Context) {
+	var req dto.AuthVerifyDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	err := h.uc.VerifyOTP(c, &req)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, nil)
+}

@@ -25,4 +25,5 @@ func (r *PriceRoute) Register(public, protected *gin.RouterGroup) {
 	public.GET("/prices/current/commodity/:commodity_id/region/:region_id", r.handler.GetPriceByCommodityIDAndRegionID)
 	public.GET("/prices/history/commodity/:commodity_id/region/:region_id", r.handler.GetPricesHistoryByCommodityIDAndRegionID)
 	public.GET("/prices/history/commodity/:commodity_id/region/:region_id/download", r.handler.DownloadPricesHistoryByCommodityIDAndRegionID)
+	public.GET("/prices/history/commodity/:commodity_id/region/:region_id/download/file", r.handler.GetPriceHistoryExcelFile)
 }

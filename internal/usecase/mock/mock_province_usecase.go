@@ -66,10 +66,10 @@ func (mr *MockProvinceUsecaseMockRecorder) DeleteProvince(ctx, id interface{}) *
 }
 
 // GetAllProvinces mocks base method.
-func (m *MockProvinceUsecase) GetAllProvinces(ctx context.Context) (*[]domain.Province, error) {
+func (m *MockProvinceUsecase) GetAllProvinces(ctx context.Context) ([]*domain.Province, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllProvinces", ctx)
-	ret0, _ := ret[0].(*[]domain.Province)
+	ret0, _ := ret[0].([]*domain.Province)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -2,12 +2,16 @@ package usecase_implementation
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -15,10 +19,11 @@ type LandCommodityUsecaseImpl struct {
 	landCommodityRepo repository_interface.LandCommodityRepository
 	landRepo          repository_interface.LandRepository
 	commodityRepo     repository_interface.CommodityRepository
+	cache             cache.Cache
 }
 
-func NewLandCommodityUsecase(landCommodityRepo repository_interface.LandCommodityRepository, landRepo repository_interface.LandRepository, commodityRepo repository_interface.CommodityRepository) usecase_interface.LandCommodityUsecase {
-	return &LandCommodityUsecaseImpl{landCommodityRepo, landRepo, commodityRepo}
+func NewLandCommodityUsecase(landCommodityRepo repository_interface.LandCommodityRepository, landRepo repository_interface.LandRepository, commodityRepo repository_interface.CommodityRepository, cache cache.Cache) usecase_interface.LandCommodityUsecase {
+	return &LandCommodityUsecaseImpl{landCommodityRepo, landRepo, commodityRepo, cache}
 }
 
 func (u *LandCommodityUsecaseImpl) CreateLandCommodity(ctx context.Context, req *dto.LandCommodityCreateDTO) (*domain.LandCommodity, error) {
@@ -71,7 +76,7 @@ func (u *LandCommodityUsecaseImpl) GetLandCommodityByID(ctx context.Context, id 
 	return landCommodity, nil
 }
 
-func (u *LandCommodityUsecaseImpl) GetLandCommodityByLandID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (u *LandCommodityUsecaseImpl) GetLandCommodityByLandID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	landsCommodities, err := u.landCommodityRepo.FindByLandID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
@@ -79,15 +84,36 @@ func (u *LandCommodityUsecaseImpl) GetLandCommodityByLandID(ctx context.Context,
 	return landsCommodities, nil
 }
 
-func (u *LandCommodityUsecaseImpl) GetAllLandCommodity(ctx context.Context) (*[]domain.LandCommodity, error) {
-	landCommodity, err := u.landCommodityRepo.FindAll(ctx)
+func (u *LandCommodityUsecaseImpl) GetAllLandCommodity(ctx context.Context) ([]*domain.LandCommodity, error) {
+	landCommodities := []*domain.LandCommodity{}
+	key := fmt.Sprintf("land_commodity_%s", "all")
+	cached, err := u.cache.Get(ctx, key)
+	if err == nil && cached != nil {
+		err := json.Unmarshal(cached, &landCommodities)
+		if err != nil {
+			return nil, err
+		}
+		return landCommodities, nil
+	}
+	landCommodities, err = u.landCommodityRepo.FindAll(ctx)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+
+	}
+
+	landComJSON, err := json.Marshal(landCommodities)
+	if err != nil {
+		return nil, err
+	}
+	err = u.cache.Set(ctx, key, landComJSON, 4*time.Minute)
+
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	return landCommodity, nil
+	return landCommodities, nil
 }
 
-func (u *LandCommodityUsecaseImpl) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) (*[]domain.LandCommodity, error) {
+func (u *LandCommodityUsecaseImpl) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	landCommodities, err := u.landCommodityRepo.FindByCommodityID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())

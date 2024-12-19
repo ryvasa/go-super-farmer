@@ -50,10 +50,10 @@ func (mr *MockRoleRepositoryMockRecorder) Create(ctx, role interface{}) *gomock.
 }
 
 // FindAll mocks base method.
-func (m *MockRoleRepository) FindAll(ctx context.Context) (*[]domain.Role, error) {
+func (m *MockRoleRepository) FindAll(ctx context.Context) ([]*domain.Role, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx)
-	ret0, _ := ret[0].(*[]domain.Role)
+	ret0, _ := ret[0].([]*domain.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

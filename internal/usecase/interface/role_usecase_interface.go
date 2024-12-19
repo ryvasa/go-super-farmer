@@ -9,5 +9,5 @@ import (
 
 type RoleUsecase interface {
 	CreateRole(ctx context.Context, role *dto.RoleCreateDTO) (*domain.Role, error)
-	GetAllRoles(ctx context.Context) (*[]domain.Role, error)
+	GetAllRoles(ctx context.Context) ([]*domain.Role, error)
 }

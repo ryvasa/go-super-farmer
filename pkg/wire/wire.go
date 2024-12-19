@@ -9,11 +9,13 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
+	"github.com/ryvasa/go-super-farmer/internal/repository"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -29,6 +31,7 @@ var utilSet = wire.NewSet(
 )
 
 var repositorySet = wire.NewSet(
+	repository.NewBaseRepository,
 	repository_implementation.NewRoleRepository,
 	repository_implementation.NewUserRepository,
 	repository_implementation.NewLandRepository,
@@ -91,6 +94,10 @@ var databaseSet = wire.NewSet(
 	database.NewRedisClient,
 )
 
+var txManagerSet = wire.NewSet(
+	transaction.NewTransactionManager,
+)
+
 func InitializeApp() (*app.App, error) {
 	wire.Build(
 		env.LoadEnv,
@@ -105,6 +112,7 @@ func InitializeApp() (*app.App, error) {
 		usecaseSet,
 		handlerSet,
 		cacheSet,
+		txManagerSet,
 	)
 	return nil, nil
 }

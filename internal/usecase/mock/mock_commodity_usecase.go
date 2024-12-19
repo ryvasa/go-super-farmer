@@ -67,10 +67,10 @@ func (mr *MockCommodityUsecaseMockRecorder) DeleteCommodity(ctx, id interface{})
 }
 
 // GetAllCommodities mocks base method.
-func (m *MockCommodityUsecase) GetAllCommodities(ctx context.Context) (*[]domain.Commodity, error) {
+func (m *MockCommodityUsecase) GetAllCommodities(ctx context.Context) ([]*domain.Commodity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllCommodities", ctx)
-	ret0, _ := ret[0].(*[]domain.Commodity)
+	ret0, _ := ret[0].([]*domain.Commodity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

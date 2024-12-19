@@ -2,22 +2,29 @@ package usecase_implementation
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type UserUsecaseImpl struct {
-	repo repository_interface.UserRepository
-	hash utils.Hasher
+	repo  repository_interface.UserRepository
+	hash  utils.Hasher
+	cache cache.Cache
 }
 
-func NewUserUsecase(repo repository_interface.UserRepository, hash utils.Hasher) usecase_interface.UserUsecase {
-	return &UserUsecaseImpl{repo, hash}
+func NewUserUsecase(repo repository_interface.UserRepository, hash utils.Hasher, cache cache.Cache) usecase_interface.UserUsecase {
+	return &UserUsecaseImpl{repo, hash, cache}
 }
 
 func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO) (*dto.UserResponseDTO, error) {
@@ -44,6 +51,11 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 		return nil, utils.NewInternalError(err.Error())
 	}
 
+	err = uc.cache.DeleteByPattern(ctx, "user")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return utils.UserDtoFormat(createdUser), nil
 }
 
@@ -55,16 +67,65 @@ func (uc *UserUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.
 	return utils.UserDtoFormat(user), nil
 }
 
-func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context) (*[]dto.UserResponseDTO, error) {
-	users, err := uc.repo.FindAll(ctx)
+func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
+	if err := queryParams.Validate(); err != nil {
+		return nil, utils.NewBadRequestError(err.Error())
+	}
+
+	cacheKey := fmt.Sprintf("user_list_page_%d_limit_%d_%s",
+		queryParams.Page,
+		queryParams.Limit,
+		queryParams.Filter.UserName,
+	)
+	var response *dto.PaginationResponseDTO
+	cached, err := uc.cache.Get(ctx, cacheKey)
+	if err == nil && cached != nil {
+		err := json.Unmarshal(cached, &response)
+		if err != nil {
+			logrus.Log.Errorf("Error: %v", err)
+			return nil, err
+		}
+		logrus.Log.Info("Cache hit")
+
+		return response, nil
+	}
+
+	users, err := uc.repo.FindAll(ctx, queryParams)
+	if err != nil {
+		logrus.Log.Errorf("Error: %v", err)
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	count, err := uc.repo.Count(ctx, &queryParams.Filter)
+	if err != nil {
+		logrus.Log.Errorf("Error: %v", err)
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	usersDto := make([]*dto.UserResponseDTO, 0)
+	for _, user := range users {
+		usersDto = append(usersDto, utils.UserDtoFormat(user))
+	}
+
+	// Create response
+	response = &dto.PaginationResponseDTO{
+		TotalRows:  int64(count),
+		TotalPages: int(math.Ceil(float64(count) / float64(queryParams.Limit))),
+		Page:       queryParams.Page,
+		Limit:      queryParams.Limit,
+		Data:       usersDto,
+	}
+
+	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	usersDto := make([]dto.UserResponseDTO, 0)
-	for _, user := range *users {
-		usersDto = append(usersDto, *utils.UserDtoFormat(&user))
+	err = uc.cache.Set(ctx, cacheKey, responseJSON, 4*time.Minute)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
 	}
-	return &usersDto, nil
+
+	return response, nil
 }
 
 func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
@@ -97,6 +158,12 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dt
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+
+	err = uc.cache.DeleteByPattern(ctx, "user")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return utils.UserDtoFormat(updatedUser), nil
 }
 
@@ -109,6 +176,12 @@ func (uc *UserUsecaseImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
+
+	err = uc.cache.DeleteByPattern(ctx, "user")
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+
 	return nil
 }
 
@@ -125,5 +198,11 @@ func (uc *UserUsecaseImpl) RestoreUser(ctx context.Context, id uuid.UUID) (*dto.
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+
+	err = uc.cache.DeleteByPattern(ctx, "user")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return utils.UserDtoFormat(restoredUser), err
 }

@@ -52,10 +52,10 @@ func (mr *MockRoleUsecaseMockRecorder) CreateRole(ctx, role interface{}) *gomock
 }
 
 // GetAllRoles mocks base method.
-func (m *MockRoleUsecase) GetAllRoles(ctx context.Context) (*[]domain.Role, error) {
+func (m *MockRoleUsecase) GetAllRoles(ctx context.Context) ([]*domain.Role, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllRoles", ctx)
-	ret0, _ := ret[0].(*[]domain.Role)
+	ret0, _ := ret[0].([]*domain.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
