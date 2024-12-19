@@ -36,15 +36,16 @@ func (h *CommodityHandlerImpl) CreateCommodity(c *gin.Context) {
 func (h *CommodityHandlerImpl) GetAllCommodities(c *gin.Context) {
 	pagination, err := utils.GetPaginationParams(c)
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	commodities, err := h.uc.GetAllCommodities(c, pagination)
+	response, err := h.uc.GetAllCommodities(c, pagination)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, commodities)
+
+	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
 func (h *CommodityHandlerImpl) GetCommodityById(c *gin.Context) {

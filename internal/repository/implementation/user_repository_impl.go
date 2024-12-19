@@ -5,8 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
+	"github.com/ryvasa/go-super-farmer/utils"
 	"gorm.io/gorm"
 )
 
@@ -34,11 +35,14 @@ func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domai
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) ([]*domain.User, error) {
+func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]*domain.User, error) {
 	var users []*domain.User
 
 	err := r.db.WithContext(ctx).
-		Scopes(pagination.Paginate(users, params, r.db, "name")).
+		Scopes(
+			utils.ApplyFilters(&params.Filter),
+			utils.GetPaginationScope(params),
+		).
 		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "name")
 	}).
@@ -81,4 +85,18 @@ func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*do
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&domain.User{}).
+		Scopes(
+			utils.ApplyFilters(filter),
+		).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

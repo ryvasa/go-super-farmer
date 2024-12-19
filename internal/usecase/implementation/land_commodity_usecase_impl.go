@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -105,8 +105,11 @@ func (u *LandCommodityUsecaseImpl) GetAllLandCommodity(ctx context.Context) ([]*
 	if err != nil {
 		return nil, err
 	}
-	u.cache.Set(ctx, key, landComJSON, 4*time.Minute)
+	err = u.cache.Set(ctx, key, landComJSON, 4*time.Minute)
 
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 	return landCommodities, nil
 }
 

@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
@@ -57,6 +57,11 @@ func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreate
 	}
 
 	createdPrice, err := u.priceRepo.FindByID(ctx, price.ID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	err = u.cache.DeleteByPattern(ctx, "price")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -172,6 +177,11 @@ func (u *PriceUsecaseImpl) UpdatePrice(ctx context.Context, id uuid.UUID, req *d
 
 	logrus.Log.Info("price update transaction completed")
 
+	err = u.cache.DeleteByPattern(ctx, "price")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return &price, nil
 }
 
@@ -184,6 +194,12 @@ func (u *PriceUsecaseImpl) DeletePrice(ctx context.Context, id uuid.UUID) error 
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
+
+	err = u.cache.DeleteByPattern(ctx, "price")
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+
 	return nil
 }
 
@@ -200,6 +216,12 @@ func (u *PriceUsecaseImpl) RestorePrice(ctx context.Context, id uuid.UUID) (*dom
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+
+	err = u.cache.DeleteByPattern(ctx, "price")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return restoredPrice, nil
 }
 
@@ -244,8 +266,14 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 	}
 	newHistoryPrices := append(historyPrices, currentPriceHistory)
 
-	userJSON, _ := json.Marshal(newHistoryPrices)
-	u.cache.Set(ctx, cacheKey, userJSON, 1*time.Minute)
+	userJSON, err := json.Marshal(newHistoryPrices)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	err = u.cache.Set(ctx, cacheKey, userJSON, 1*time.Minute)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 	return newHistoryPrices, nil
 }
 

@@ -32,3 +32,17 @@ func (r *redisCache) Set(ctx context.Context, key string, value []byte, expirati
 func (r *redisCache) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }
+
+func (r *redisCache) DeleteByPattern(ctx context.Context, pattern string) error {
+	iter := r.client.Scan(ctx, 0, pattern+"*", 0).Iterator()
+	for iter.Next(ctx) {
+		err := r.client.Del(ctx, iter.Val()).Err()
+		if err != nil {
+			return err
+		}
+	}
+	if err := iter.Err(); err != nil {
+		return err
+	}
+	return nil
+}

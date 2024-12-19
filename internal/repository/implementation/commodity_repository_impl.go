@@ -5,8 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/pagination"
+	"github.com/ryvasa/go-super-farmer/utils"
 	"gorm.io/gorm"
 )
 
@@ -31,12 +32,17 @@ func (r *CommodityRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &commodity, nil
 }
 
-func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *pagination.PaginationParams) ([]domain.Commodity, error) {
+func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]domain.Commodity, error) {
 	var commodities []domain.Commodity
 
-	if err := r.db.WithContext(ctx).
-		Scopes(pagination.Paginate(commodities, params, r.db, "name")).
-		Find(&commodities).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Scopes(
+			utils.ApplyFilters(&params.Filter),
+			utils.GetPaginationScope(params),
+		).
+		Find(&commodities).Error
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -61,4 +67,14 @@ func (r *CommodityRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.U
 		return nil, err
 	}
 	return &commodity, nil
+}
+
+func (r *CommodityRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&domain.Commodity{}).
+		Scopes(
+			utils.ApplyFilters(filter),
+		).Count(&count).Error
+	return count, err
 }

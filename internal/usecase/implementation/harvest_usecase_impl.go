@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -64,6 +64,11 @@ func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harves
 		return nil, utils.NewInternalError(err.Error())
 	}
 
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
 	return createdHarvest, nil
 }
 
@@ -87,7 +92,10 @@ func (uc *HarvestUsecaseImpl) GetAllHarvest(ctx context.Context) ([]*domain.Harv
 	if err != nil {
 		return nil, err
 	}
-	uc.cache.Set(ctx, key, harvestsJSON, 4*time.Minute)
+	err = uc.cache.Set(ctx, key, harvestsJSON, 4*time.Minute)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 
 	return harvests, nil
 }
@@ -161,6 +169,10 @@ func (uc *HarvestUsecaseImpl) UpdateHarvest(ctx context.Context, id uuid.UUID, r
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 	return updatedHarvest, nil
 }
 
@@ -170,6 +182,10 @@ func (uc *HarvestUsecaseImpl) DeleteHarvest(ctx context.Context, id uuid.UUID) e
 		return utils.NewNotFoundError("harvest not found")
 	}
 	err = uc.harvestRepo.Delete(ctx, id)
+	if err != nil {
+		return utils.NewInternalError(err.Error())
+	}
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return utils.NewInternalError(err.Error())
 	}
@@ -187,6 +203,11 @@ func (uc *HarvestUsecaseImpl) RestoreHarvest(ctx context.Context, id uuid.UUID) 
 	}
 
 	restoredHarvest, err := uc.harvestRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	err = uc.cache.DeleteByPattern(ctx, "harvest")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
