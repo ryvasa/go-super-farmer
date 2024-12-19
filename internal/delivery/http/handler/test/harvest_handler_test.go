@@ -15,7 +15,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +30,7 @@ type responseHarvestHandler struct {
 
 type HarvestHandlerMocks struct {
 	Harvest        *domain.Harvest
-	Harvests       *[]domain.Harvest
+	Harvests       []*domain.Harvest
 	UpdatedHarvest *domain.Harvest
 }
 
@@ -42,10 +42,10 @@ type HarvestHandlerIDs struct {
 	CommodityID     uuid.UUID
 }
 
-func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHandler, *mock.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks) {
+func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHandler, *mock_usecase.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockHarvestUsecase(ctrl)
+	uc := mock_usecase.NewMockHarvestUsecase(ctrl)
 	h := handler_implementation.NewHarvestHandler(uc)
 	r := gin.Default()
 
@@ -75,7 +75,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 			Unit:            unit,
 			HarvestDate:     harvestDate,
 		},
-		Harvests: &[]domain.Harvest{
+		Harvests: []*domain.Harvest{
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
@@ -177,7 +177,7 @@ func TestHarvestHandler_GetAllHarvest(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().GetAllHarvest(gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
@@ -275,7 +275,7 @@ func TestHarvestHandler_GetHarvestByCommodityID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestHarvestHandler_GetHarvestByLandID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -371,7 +371,7 @@ func TestHarvestHandler_GetHarvestByLandCommodityID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -419,7 +419,7 @@ func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -685,7 +685,7 @@ func TestHarvestHandler_GetAllDeletedHarvest(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().GetAllDeletedHarvest(gomock.Any()).Return(nil, utils.NewInternalError("Internal error")).Times(1)

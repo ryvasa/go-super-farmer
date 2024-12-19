@@ -32,8 +32,8 @@ func (r *CommodityRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*
 	return &commodity, nil
 }
 
-func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]domain.Commodity, error) {
-	var commodities []domain.Commodity
+func (r *CommodityRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]*domain.Commodity, error) {
+	var commodities []*domain.Commodity
 
 	err := r.db.WithContext(ctx).
 		Scopes(

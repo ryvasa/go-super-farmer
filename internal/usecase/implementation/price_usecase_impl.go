@@ -18,6 +18,13 @@ import (
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
+type Message struct {
+	CommodityID uuid.UUID `json:"CommodityID"`
+	RegionID    uuid.UUID `json:"RegionID"`
+	StartDate   time.Time `json:"StartDate"`
+	EndDate     time.Time `json:"EndDate"`
+}
+
 type PriceUsecaseImpl struct {
 	priceRepo        repository_interface.PriceRepository
 	priceHistoryRepo repository_interface.PriceHistoryRepository
@@ -90,7 +97,10 @@ func (u *PriceUsecaseImpl) GetAllPrices(ctx context.Context) ([]*domain.Price, e
 	if err != nil {
 		return nil, err
 	}
-	u.cache.Set(ctx, key, pricesJSON, 1*time.Minute)
+	err = u.cache.Set(ctx, key, pricesJSON, 4*time.Minute)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 
 	return prices, nil
 }
@@ -270,7 +280,7 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	err = u.cache.Set(ctx, cacheKey, userJSON, 1*time.Minute)
+	err = u.cache.Set(ctx, cacheKey, userJSON, 4*time.Minute)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -278,12 +288,6 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 }
 
 func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) error {
-	type Message struct {
-		CommodityID uuid.UUID `json:"CommodityID"`
-		RegionID    uuid.UUID `json:"RegionID"`
-		StartDate   time.Time `json:"StartDate"`
-		EndDate     time.Time `json:"EndDate"`
-	}
 	msg := Message{
 		CommodityID: params.CommodityID,
 		RegionID:    params.RegionID,

@@ -24,7 +24,7 @@ type ProvinceIDs struct {
 
 type ProvinceMocks struct {
 	Province        *domain.Province
-	Provinces       *[]domain.Province
+	Provinces       []*domain.Province
 	UpdatedProvince *domain.Province
 }
 
@@ -45,7 +45,7 @@ func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *Province
 			ID:   provinceID,
 			Name: "test province",
 		},
-		Provinces: &[]domain.Province{
+		Provinces: []*domain.Province{
 			{
 				ID:   provinceID,
 				Name: "test province",
@@ -78,7 +78,7 @@ func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *Province
 	return ids, mocks, dto, repo, uc, ctx
 }
 
-func TestCreateProvince(t *testing.T) {
+func TestProvinceUsecase_CreateProvince(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := ProvinceUsecaseUtils(t)
 
 	t.Run("should create province successfully", func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestCreateProvince(t *testing.T) {
 	})
 }
 
-func TestGetAllProvinces(t *testing.T) {
+func TestProvinceUsecase_GetAllProvinces(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := ProvinceUsecaseUtils(t)
 
 	t.Run("should return all provinces", func(t *testing.T) {
@@ -135,8 +135,8 @@ func TestGetAllProvinces(t *testing.T) {
 		resp, err := uc.GetAllProvinces(ctx)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(*resp))
-		assert.Equal(t, (*mocks.Provinces)[0].Name, (*resp)[0].Name)
+		assert.Equal(t, 1, len(resp))
+		assert.Equal(t, (mocks.Provinces)[0].Name, (resp)[0].Name)
 	})
 
 	t.Run("should return error internal error", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestGetAllProvinces(t *testing.T) {
 	})
 }
 
-func TestGetProvinceById(t *testing.T) {
+func TestProvinceUsecase_GetProvinceById(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := ProvinceUsecaseUtils(t)
 
 	t.Run("shpuld return province successfully", func(t *testing.T) {
@@ -174,7 +174,7 @@ func TestGetProvinceById(t *testing.T) {
 	})
 }
 
-func TestUpdateProvince(t *testing.T) {
+func TestProvinceUsecase_UpdateProvince(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := ProvinceUsecaseUtils(t)
 	t.Run("should update province successfully", func(t *testing.T) {
 		repo.Province.EXPECT().FindByID(ctx, ids.ProvinceID).Return(mocks.Province, nil).Times(1)
@@ -243,7 +243,7 @@ func TestUpdateProvince(t *testing.T) {
 	})
 }
 
-func TestDeleteProvince(t *testing.T) {
+func TestProvinceUsecase_DeleteProvince(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := ProvinceUsecaseUtils(t)
 
 	t.Run("should delete province successfully", func(t *testing.T) {

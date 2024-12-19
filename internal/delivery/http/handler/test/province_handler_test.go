@@ -13,7 +13,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +36,7 @@ type responseProvincesHandler struct {
 
 type ProvinceHandlerMocks struct {
 	Province        *domain.Province
-	Provinces       *[]domain.Province
+	Provinces       []*domain.Province
 	UpdatedProvince *domain.Province
 }
 type ProvinceHandlerIDs struct {
@@ -44,10 +44,10 @@ type ProvinceHandlerIDs struct {
 	ProvinceIDstr string
 }
 
-func ProvinceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.ProvinceHandler, *mock.MockProvinceUsecase, ProvinceHandlerIDs, ProvinceHandlerMocks) {
+func ProvinceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.ProvinceHandler, *mock_usecase.MockProvinceUsecase, ProvinceHandlerIDs, ProvinceHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockProvinceUsecase(ctrl)
+	uc := mock_usecase.NewMockProvinceUsecase(ctrl)
 	h := handler_implementation.NewProvinceHandler(uc)
 	r := gin.Default()
 
@@ -61,7 +61,7 @@ func ProvinceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.Province
 			ID:   ids.ProvinceID,
 			Name: "Province",
 		},
-		Provinces: &[]domain.Province{
+		Provinces: []*domain.Province{
 			{
 				ID:   ids.ProvinceID,
 				Name: "Province",
@@ -148,7 +148,7 @@ func TestProvinceHandler_GetAllProvinces(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Provinces))
+		assert.Len(t, response.Data, len(mocks.Provinces))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 

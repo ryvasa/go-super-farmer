@@ -13,7 +13,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,18 +36,18 @@ type responseRolesHandler struct {
 
 type RoleHandlerMocks struct {
 	Role  *domain.Role
-	Roles *[]domain.Role
+	Roles []*domain.Role
 }
 
 type RoleHandlerIDs struct {
 	RoleID int64
 }
 
-func RoleHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.RoleHandler, *mock.MockRoleUsecase, RoleHandlerIDs, RoleHandlerMocks) {
+func RoleHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.RoleHandler, *mock_usecase.MockRoleUsecase, RoleHandlerIDs, RoleHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	uc := mock.NewMockRoleUsecase(ctrl)
+	uc := mock_usecase.NewMockRoleUsecase(ctrl)
 	r := gin.Default()
 	h := handler_implementation.NewRoleHandler(uc)
 
@@ -61,7 +61,7 @@ func RoleHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.RoleHandler,
 			ID:   roleID,
 			Name: "Admin",
 		},
-		Roles: &[]domain.Role{
+		Roles: []*domain.Role{
 			{
 				ID:   roleID,
 				Name: "Admin",
@@ -151,8 +151,8 @@ func TestGetAllRoles(t *testing.T) {
 		var response responseRolesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, len(*mocks.Roles), len(response.Data))
-		assert.Equal(t, (*mocks.Roles)[0].Name, response.Data[0].Name)
+		assert.Equal(t, len(mocks.Roles), len(response.Data))
+		assert.Equal(t, (mocks.Roles)[0].Name, response.Data[0].Name)
 	})
 
 	t.Run("should return error when usecase error", func(t *testing.T) {

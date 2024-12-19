@@ -83,10 +83,24 @@ func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.Pag
 		err := json.Unmarshal(cached, &response)
 		if err != nil {
 			logrus.Log.Errorf("Error: %v", err)
-			return nil, err
+			return nil, utils.NewInternalError("invalid data")
 		}
-		logrus.Log.Info("Cache hit")
 
+		// Convert data back to []*dto.UserResponseDTO
+		if data, ok := response.Data.([]interface{}); ok {
+			users := make([]*dto.UserResponseDTO, len(data))
+			for i, item := range data {
+				if userMap, ok := item.(map[string]interface{}); ok {
+					userJSON, _ := json.Marshal(userMap)
+					var user dto.UserResponseDTO
+					json.Unmarshal(userJSON, &user)
+					users[i] = &user
+				}
+			}
+			response.Data = users
+		}
+
+		logrus.Log.Info("Cache hit")
 		return response, nil
 	}
 

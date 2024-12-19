@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -11,6 +12,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +22,7 @@ type SupplyRepoMock struct {
 	SupplyHistory *mock.MockSupplyHistoryRepository
 	Commodity     *mock.MockCommodityRepository
 	Region        *mock.MockRegionRepository
+	TxManager     *mock_pkg.MockTransactionManager
 }
 
 type SupplyIDs struct {
@@ -31,11 +34,11 @@ type SupplyIDs struct {
 
 type SupplyDomainMocks struct {
 	Supply         *domain.Supply
-	Supplys        *[]domain.Supply
+	Supplys        []*domain.Supply
 	UpdatedSupply  *domain.Supply
 	Commodity      *domain.Commodity
 	Region         *domain.Region
-	SupplyHistorys *[]domain.SupplyHistory
+	SupplyHistorys []*domain.SupplyHistory
 }
 
 type SupplyDTOMocks struct {
@@ -63,7 +66,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 			RegionID:    regionID,
 			Quantity:    10,
 		},
-		Supplys: &[]domain.Supply{
+		Supplys: []*domain.Supply{
 			{
 				ID:          supplyID,
 				CommodityID: commodityID,
@@ -83,7 +86,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 		Region: &domain.Region{
 			ID: regionID,
 		},
-		SupplyHistorys: &[]domain.SupplyHistory{
+		SupplyHistorys: []*domain.SupplyHistory{
 			{
 				ID:          supplyHstoryID,
 				CommodityID: commodityID,
@@ -111,8 +114,9 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 	commodityRepo := mock.NewMockCommodityRepository(ctrl)
 	supplyRepo := mock.NewMockSupplyRepository(ctrl)
 	supplyHistoryRepo := mock.NewMockSupplyHistoryRepository(ctrl)
+	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 
-	uc := usecase_implementation.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, regionRepo)
+	uc := usecase_implementation.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, regionRepo, txRepo)
 	ctx := context.Background()
 
 	repo := &SupplyRepoMock{
@@ -120,6 +124,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 		Region:        regionRepo,
 		Commodity:     commodityRepo,
 		SupplyHistory: supplyHistoryRepo,
+		TxManager:     txRepo,
 	}
 
 	return ids, domains, dtos, repo, uc, ctx
@@ -207,8 +212,8 @@ func TestSupplyRepository_GetAllSupply(t *testing.T) {
 		resp, err := uc.GetAllSupply(ctx)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Supplys), len(*resp))
-		assert.Equal(t, (*domains.Supplys)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Supplys), len(resp))
+		assert.Equal(t, (domains.Supplys)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get all supplys fails", func(t *testing.T) {
@@ -256,8 +261,8 @@ func TestSupplyRepository_GetSupplyByCommodityID(t *testing.T) {
 		resp, err := uc.GetSupplyByCommodityID(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Supplys), len(*resp))
-		assert.Equal(t, (*domains.Supplys)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Supplys), len(resp))
+		assert.Equal(t, (domains.Supplys)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get supplys by commodity id fails", func(t *testing.T) {
@@ -284,8 +289,8 @@ func TestSupplyRepository_GetSupplyByRegionID(t *testing.T) {
 		resp, err := uc.GetSupplyByRegionID(ctx, ids.RegionID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Supplys), len(*resp))
-		assert.Equal(t, (*domains.Supplys)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Supplys), len(resp))
+		assert.Equal(t, (domains.Supplys)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get supplys by region id fails", func(t *testing.T) {
@@ -305,27 +310,99 @@ func TestSupplyRepository_UpdateSupply(t *testing.T) {
 	ids, domains, dtos, repo, uc, ctx := SupplyUsecaseSetup(t)
 
 	t.Run("should update supply successfully", func(t *testing.T) {
-		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 
-		repo.Supply.EXPECT().FindByID(ctx, ids.SupplyID).Return(domains.Supply, nil).Times(1)
+		// Setup mock untuk operasi dalam transaction
+		repo.Supply.EXPECT().
+			FindByID(ctx, ids.SupplyID).
+			Return(domains.Supply, nil)
 
-		repo.SupplyHistory.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.SupplyHistory) error {
-			p.ID = ids.SupplyHistoryID
-			return nil
-		}).Times(1)
+		repo.SupplyHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, history *domain.SupplyHistory) error {
+				history.ID = ids.SupplyHistoryID
+				return nil
+			})
 
-		repo.Supply.EXPECT().Update(ctx, ids.SupplyID, gomock.Any()).DoAndReturn(func(ctx context.Context, id uuid.UUID, p *domain.Supply) error {
-			p.Quantity = float64(20)
-			return nil
-		}).Times(1)
+		repo.Supply.EXPECT().
+			Update(ctx, ids.SupplyID, gomock.Any()).
+			Return(nil)
 
-		repo.Supply.EXPECT().FindByID(ctx, ids.SupplyID).Return(domains.UpdatedSupply, nil).Times(1)
+		repo.Supply.EXPECT().
+			FindByID(ctx, ids.SupplyID).
+			Return(domains.UpdatedSupply, nil)
 
+		// Execute
 		resp, err := uc.UpdateSupply(ctx, ids.SupplyID, dtos.Update)
 
+		// Assert
 		assert.NoError(t, err)
+		assert.NotNil(t, resp)
 		assert.Equal(t, ids.SupplyID, resp.ID)
 		assert.Equal(t, float64(20), resp.Quantity)
+	})
+
+	t.Run("should rollback transaction when create history fails", func(t *testing.T) {
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				err := fn(ctx)
+				return err
+			})
+
+		// Setup mock untuk operasi dalam transaction
+		repo.Supply.EXPECT().
+			FindByID(ctx, ids.SupplyID).
+			Return(domains.Supply, nil)
+
+		repo.SupplyHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			Return(fmt.Errorf("create history error"))
+
+		// Execute
+		resp, err := uc.UpdateSupply(ctx, ids.SupplyID, dtos.Update)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "create history error")
+	})
+
+	t.Run("should rollback transaction when update supply fails", func(t *testing.T) {
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				err := fn(ctx)
+				return err
+			})
+
+		// Setup mock untuk operasi dalam transaction
+		repo.Supply.EXPECT().
+			FindByID(ctx, ids.SupplyID).
+			Return(domains.Supply, nil)
+
+		repo.SupplyHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			Return(nil)
+
+		repo.Supply.EXPECT().
+			Update(ctx, ids.SupplyID, gomock.Any()).
+			Return(fmt.Errorf("update supply error"))
+
+		// Execute
+		resp, err := uc.UpdateSupply(ctx, ids.SupplyID, dtos.Update)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "update supply error")
 	})
 
 	t.Run("should return error when validation fails", func(t *testing.T) {
@@ -340,6 +417,11 @@ func TestSupplyRepository_UpdateSupply(t *testing.T) {
 	})
 
 	t.Run("should return error when supply not found", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.Supply.EXPECT().FindByID(ctx, ids.SupplyID).Return(nil, utils.NewNotFoundError("supply not found")).Times(1)
 
 		resp, err := uc.UpdateSupply(ctx, ids.SupplyID, dtos.Update)
@@ -349,10 +431,19 @@ func TestSupplyRepository_UpdateSupply(t *testing.T) {
 		assert.EqualError(t, err, "supply not found")
 	})
 
-	t.Run("should return error when update supply fails", func(t *testing.T) {
+	t.Run("should return error when get updated supply fails", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.Supply.EXPECT().FindByID(ctx, ids.SupplyID).Return(domains.Supply, nil).Times(1)
 
-		repo.SupplyHistory.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+		repo.SupplyHistory.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
+
+		repo.Supply.EXPECT().Update(ctx, ids.SupplyID, gomock.Any()).Return(nil).Times(1)
+
+		repo.Supply.EXPECT().FindByID(ctx, ids.SupplyID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		resp, err := uc.UpdateSupply(ctx, ids.SupplyID, dtos.Update)
 
@@ -408,9 +499,9 @@ func TestSupplyUsecase_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
 		resp, err := uc.GetSupplyHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(*resp))
-		assert.Equal(t, (*domains.SupplyHistorys)[0].ID, (*resp)[0].ID)
-		assert.Equal(t, (*domains.SupplyHistorys)[0].Quantity, (*resp)[0].Quantity)
+		assert.Equal(t, 2, len(resp))
+		assert.Equal(t, (domains.SupplyHistorys)[0].ID, (resp)[0].ID)
+		assert.Equal(t, (domains.SupplyHistorys)[0].Quantity, (resp)[0].Quantity)
 	})
 
 	t.Run("should return error when get supply history fails", func(t *testing.T) {

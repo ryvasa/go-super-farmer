@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -51,6 +51,11 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.Aut
 func (u *AuthUsecaseImpl) SendOTP(ctx context.Context, req *dto.AuthSendDTO) error {
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return utils.NewValidationError(err)
+	}
+
+	_, err := u.userRepo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return utils.NewBadRequestError("user not found")
 	}
 
 	// Generate OTP

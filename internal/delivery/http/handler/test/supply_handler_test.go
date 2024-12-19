@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,9 +45,9 @@ type responseSupplyHistoryHandler struct {
 
 type SupplyHandlerDomainMocks struct {
 	Supply        *domain.Supply
-	Supplies      *[]domain.Supply
+	Supplies      []*domain.Supply
 	UpdatedSupply *domain.Supply
-	SupplyHistory *[]domain.SupplyHistory
+	SupplyHistory []*domain.SupplyHistory
 }
 
 type SupplyHandlerIDs struct {
@@ -56,10 +56,10 @@ type SupplyHandlerIDs struct {
 	RegionID    uuid.UUID
 }
 
-func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.SupplyHandler, *mock.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerDomainMocks) {
+func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.SupplyHandler, *mock_usecase.MockSupplyUsecase, SupplyHandlerIDs, SupplyHandlerDomainMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockSupplyUsecase(ctrl)
+	uc := mock_usecase.NewMockSupplyUsecase(ctrl)
 	h := handler_implementation.NewSupplyHandler(uc)
 	r := gin.Default()
 
@@ -79,7 +79,7 @@ func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.SupplyHand
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		Supplies: &[]domain.Supply{
+		Supplies: []*domain.Supply{
 			{
 				ID:          supplyID,
 				CommodityID: CommodityID,
@@ -91,7 +91,7 @@ func SupplyHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.SupplyHand
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		SupplyHistory: &[]domain.SupplyHistory{
+		SupplyHistory: []*domain.SupplyHistory{
 			{
 				ID:          supplyID,
 				CommodityID: CommodityID,
@@ -177,8 +177,8 @@ func TestSupplyHandler_GetAllSupply(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Supplies), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Supplies)[0].ID)
+		assert.Equal(t, len(mocks.Supplies), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Supplies)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -260,8 +260,8 @@ func TestSupplyHandler_GetSupplyByCommodityID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Supplies), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Supplies)[0].ID)
+		assert.Equal(t, len(mocks.Supplies), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Supplies)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -309,8 +309,8 @@ func TestSupplyHandler_GetSupplyByRegionID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Supplies), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Supplies)[0].ID)
+		assert.Equal(t, len(mocks.Supplies), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Supplies)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -478,8 +478,8 @@ func TestSupplyHandler_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.SupplyHistory), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.SupplyHistory)[0].ID)
+		assert.Equal(t, len(mocks.SupplyHistory), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.SupplyHistory)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
