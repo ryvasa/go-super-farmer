@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,10 +34,10 @@ type AuthHandlerIDs struct {
 	UserID uuid.UUID
 }
 
-func AuthHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.AuthHandler, *mock.MockAuthUsecase, AuthHandlerIDs, AuthHandlerMocks) {
+func AuthHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.AuthHandler, *mock_usecase.MockAuthUsecase, AuthHandlerIDs, AuthHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockAuthUsecase(ctrl)
+	uc := mock_usecase.NewMockAuthUsecase(ctrl)
 	h := handler_implementation.NewAuthHandler(uc)
 	r := gin.Default()
 

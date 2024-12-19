@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,9 +45,9 @@ type responseDemandHistoryHandler struct {
 
 type DemandHandlerDomainMocks struct {
 	Demand        *domain.Demand
-	Demands       *[]domain.Demand
+	Demands       []*domain.Demand
 	UpdatedDemand *domain.Demand
-	DemandHistory *[]domain.DemandHistory
+	DemandHistory []*domain.DemandHistory
 }
 
 type DemandHandlerIDs struct {
@@ -56,10 +56,10 @@ type DemandHandlerIDs struct {
 	RegionID    uuid.UUID
 }
 
-func DemandHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.DemandHandler, *mock.MockDemandUsecase, DemandHandlerIDs, DemandHandlerDomainMocks) {
+func DemandHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.DemandHandler, *mock_usecase.MockDemandUsecase, DemandHandlerIDs, DemandHandlerDomainMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockDemandUsecase(ctrl)
+	uc := mock_usecase.NewMockDemandUsecase(ctrl)
 	h := handler_implementation.NewDemandHandler(uc)
 	r := gin.Default()
 
@@ -79,7 +79,7 @@ func DemandHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.DemandHand
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		Demands: &[]domain.Demand{
+		Demands: []*domain.Demand{
 			{
 				ID:          demandID,
 				CommodityID: CommodityID,
@@ -91,7 +91,7 @@ func DemandHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.DemandHand
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		DemandHistory: &[]domain.DemandHistory{
+		DemandHistory: []*domain.DemandHistory{
 			{
 				ID:          demandID,
 				CommodityID: CommodityID,
@@ -177,8 +177,8 @@ func TestDemandHandler_GetAllDemands(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Demands), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Demands)[0].ID)
+		assert.Equal(t, len(mocks.Demands), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Demands)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -260,8 +260,8 @@ func TestDemandHandler_GetDemandsByCommodityID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Demands), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Demands)[0].ID)
+		assert.Equal(t, len(mocks.Demands), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Demands)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -309,8 +309,8 @@ func TestDemandHandler_GetDemandsByRegionID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Demands), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Demands)[0].ID)
+		assert.Equal(t, len(mocks.Demands), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Demands)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -478,8 +478,8 @@ func TestDemandHandler_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.DemandHistory), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.DemandHistory)[0].ID)
+		assert.Equal(t, len(mocks.DemandHistory), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.DemandHistory)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {

@@ -23,7 +23,7 @@ type RegionRepoMock struct {
 
 type RegionMocks struct {
 	Region        *domain.Region
-	Regions       *[]domain.Region
+	Regions       []*domain.Region
 	UpdatedRegion *domain.Region
 	City          *domain.City
 	Province      *domain.Province
@@ -56,7 +56,7 @@ func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks
 			CityID:     cityID,
 			ProvinceID: provinceID,
 		},
-		Regions: &[]domain.Region{
+		Regions: []*domain.Region{
 			{
 				ID:         regionID,
 				CityID:     cityID,
@@ -93,7 +93,7 @@ func RegionUsecaseUtils(t *testing.T) (*RegionIDs, *RegionMocks, *RegionDTOMocks
 	return ids, mocks, dtoMocks, regionRepoMock, uc, ctx
 }
 
-func TestCreateRegion(t *testing.T) {
+func TestRegionUsecase_CreateRegion(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := RegionUsecaseUtils(t)
 	t.Run("should create region successfully", func(t *testing.T) {
 
@@ -182,7 +182,7 @@ func TestCreateRegion(t *testing.T) {
 	})
 }
 
-func TestGetAllRegions(t *testing.T) {
+func TestRegionUsecase_GetAllRegions(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := RegionUsecaseUtils(t)
 	t.Run("should return all regions", func(t *testing.T) {
 		repo.Region.EXPECT().FindAll(ctx).Return(mocks.Regions, nil).Times(1)
@@ -191,10 +191,10 @@ func TestGetAllRegions(t *testing.T) {
 
 		assert.NotNil(t, res)
 		assert.NoError(t, err)
-		assert.Len(t, *res, len(*mocks.Regions))
-		assert.Equal(t, (*mocks.Regions)[0].ID, (*res)[0].ID)
-		assert.Equal(t, (*mocks.Regions)[0].CityID, (*res)[0].CityID)
-		assert.Equal(t, (*mocks.Regions)[0].ProvinceID, (*res)[0].ProvinceID)
+		assert.Len(t, res, len(mocks.Regions))
+		assert.Equal(t, (mocks.Regions)[0].ID, (res)[0].ID)
+		assert.Equal(t, (mocks.Regions)[0].CityID, (res)[0].CityID)
+		assert.Equal(t, (mocks.Regions)[0].ProvinceID, (res)[0].ProvinceID)
 	})
 
 	t.Run("should return error when get all regions", func(t *testing.T) {
@@ -206,7 +206,7 @@ func TestGetAllRegions(t *testing.T) {
 	})
 }
 
-func TestGetRegionByID(t *testing.T) {
+func TestRegionUsecase_GetRegionByID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := RegionUsecaseUtils(t)
 	t.Run("should return region by id success", func(t *testing.T) {
 		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(mocks.Region, nil).Times(1)

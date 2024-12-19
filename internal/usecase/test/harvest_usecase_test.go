@@ -2,6 +2,8 @@ package usecase_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +23,8 @@ type HarvestRepoMock struct {
 	Harvest       *mock.MockHarvestRepository
 	Region        *mock.MockRegionRepository
 	LandCommodity *mock.MockLandCommodityRepository
+	RabbitMQ      *mock_pkg.MockRabbitMQ
+	Cache         *mock_pkg.MockCache
 }
 
 type HarvestIDs struct {
@@ -32,7 +37,7 @@ type HarvestIDs struct {
 
 type HarvestDomainMock struct {
 	Harvest        *domain.Harvest
-	Harvests       *[]domain.Harvest
+	Harvests       []*domain.Harvest
 	UpdatedHarvest *domain.Harvest
 	Region         *domain.Region
 	LandCommodity  *domain.LandCommodity
@@ -68,7 +73,7 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 			Unit:            "kg",
 			HarvestDate:     date,
 		},
-		Harvests: &[]domain.Harvest{
+		Harvests: []*domain.Harvest{
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
@@ -113,11 +118,13 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 	regionRepo := mock.NewMockRegionRepository(ctrl)
 	landCommodityRepo := mock.NewMockLandCommodityRepository(ctrl)
 	harvestRepo := mock.NewMockHarvestRepository(ctrl)
+	rabbitMQ := mock_pkg.NewMockRabbitMQ(ctrl)
+	cache := mock_pkg.NewMockCache(ctrl)
 
-	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, regionRepo, landCommodityRepo)
+	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, regionRepo, landCommodityRepo, rabbitMQ, cache)
 	ctx := context.TODO()
 
-	repo := &HarvestRepoMock{Harvest: harvestRepo, Region: regionRepo, LandCommodity: landCommodityRepo}
+	repo := &HarvestRepoMock{Harvest: harvestRepo, Region: regionRepo, LandCommodity: landCommodityRepo, RabbitMQ: rabbitMQ, Cache: cache}
 
 	return ids, domains, dto, repo, uc, ctx
 }
@@ -126,9 +133,8 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	ids, domains, dtos, repo, uc, ctx := HarvestUsecaseSetup(t)
 
 	t.Run("should create harvest successfully", func(t *testing.T) {
-		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
-
 		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
 		repo.Harvest.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Harvest) error {
 			p.ID = ids.HarvestID
@@ -136,6 +142,8 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 		}).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(domains.Harvest, nil).Times(1)
+
+		repo.Cache.EXPECT().DeleteByPattern(ctx, "harvest").Return(nil).Times(1)
 
 		resp, err := uc.CreateHarvest(ctx, dtos.Create)
 
@@ -222,24 +230,64 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 func TestHarvestUsecase_GetAllHarvest(t *testing.T) {
 	_, domains, _, repo, uc, ctx := HarvestUsecaseSetup(t)
 
-	t.Run("should get all harvests successfully", func(t *testing.T) {
-		repo.Harvest.EXPECT().FindAll(ctx).Return(domains.Harvests, nil).Times(1)
+	key := fmt.Sprintf("harvest_%s", "all")
+	t.Run("should get all harvests successfully from repo", func(t *testing.T) {
+		// Setup expectations
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.Harvest.EXPECT().FindAll(ctx).Return(domains.Harvests, nil)
 
+		// Expect cache set to be called with any byte array and return nil
+		repo.Cache.EXPECT().
+			Set(ctx, key, gomock.Any(), 4*time.Minute).
+			Return(nil)
+
+		// Execute
 		resp, err := uc.GetAllHarvest(ctx)
 
+		// Assert
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get all harvests fails", func(t *testing.T) {
-		repo.Harvest.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.Harvest.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error"))
 
 		resp, err := uc.GetAllHarvest(ctx)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should return harvests from cache when cache hit", func(t *testing.T) {
+		// Setup cached data
+		cachedHarvests, err := json.Marshal(domains.Harvests)
+		assert.NoError(t, err)
+
+		// Expect cache get to return the cached data
+		repo.Cache.EXPECT().Get(ctx, key).Return(cachedHarvests, nil)
+
+		resp, err := uc.GetAllHarvest(ctx)
+
+		assert.NoError(t, err)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
+	})
+
+	t.Run("should return error when cache set fails", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.Harvest.EXPECT().FindAll(ctx).Return(domains.Harvests, nil)
+		repo.Cache.EXPECT().
+			Set(ctx, key, gomock.Any(), 4*time.Minute).
+			Return(fmt.Errorf("cache error"))
+
+		resp, err := uc.GetAllHarvest(ctx)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cache error")
 	})
 }
 
@@ -278,8 +326,8 @@ func TestHarvestUsecase_GetHarvestByCommodityID(t *testing.T) {
 		resp, err := uc.GetHarvestByCommodityID(ctx, ids.LandCommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get harvests by commodity id fails", func(t *testing.T) {
@@ -307,8 +355,8 @@ func TestHarvestUsecase_GetHarvestByLandID(t *testing.T) {
 		resp, err := uc.GetHarvestByCommodityID(ctx, ids.LandCommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get harvests by land id fails", func(t *testing.T) {
@@ -335,8 +383,8 @@ func TestHarvestUsecase_GetHarvestByLandCommodityID(t *testing.T) {
 		resp, err := uc.GetHarvestByLandCommodityID(ctx, ids.LandCommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get harvests by land commodity id fails", func(t *testing.T) {
@@ -363,8 +411,8 @@ func TestHarvestUsecase_GetHarvestByRegionID(t *testing.T) {
 		resp, err := uc.GetHarvestByRegionID(ctx, ids.RegionID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get harvests by region id fails", func(t *testing.T) {
@@ -394,6 +442,8 @@ func TestHarvestUsecase_UpdateHarvest(t *testing.T) {
 		}).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(domains.UpdatedHarvest, nil).Times(1)
+
+		repo.Cache.EXPECT().DeleteByPattern(ctx, "harvest").Return(nil).Times(1)
 
 		resp, err := uc.UpdateHarvest(ctx, ids.HarvestID, dtos.Update)
 
@@ -469,6 +519,8 @@ func TestHarvestUsecase_DeleteHarvest(t *testing.T) {
 
 		repo.Harvest.EXPECT().Delete(ctx, ids.HarvestID).Return(nil).Times(1)
 
+		repo.Cache.EXPECT().DeleteByPattern(ctx, "harvest").Return(nil).Times(1)
+
 		err := uc.DeleteHarvest(ctx, ids.HarvestID)
 
 		assert.NoError(t, err)
@@ -510,6 +562,8 @@ func TestHarvestUsecase_RestoreHarvest(t *testing.T) {
 		repo.Harvest.EXPECT().Restore(ctx, ids.HarvestID).Return(nil).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(domains.Harvest, nil).Times(1)
+
+		repo.Cache.EXPECT().DeleteByPattern(ctx, "harvest").Return(nil).Times(1)
 
 		resp, err := uc.RestoreHarvest(ctx, ids.HarvestID)
 
@@ -567,8 +621,8 @@ func TestHarvestUsecase_GetAllDeletedHarvest(t *testing.T) {
 		resp, err := uc.GetAllDeletedHarvest(ctx)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Harvests), len(*resp))
-		assert.Equal(t, (*domains.Harvests)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Harvests), len(resp))
+		assert.Equal(t, (domains.Harvests)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get all deleted harvests fails", func(t *testing.T) {

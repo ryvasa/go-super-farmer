@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	mockAuthUtil "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +38,7 @@ type responseLandsHandler struct {
 
 type LandHandlerMocks struct {
 	Land  *domain.Land
-	Lands *[]domain.Land
+	Lands []*domain.Land
 }
 
 type LandHandlerIDs struct {
@@ -46,10 +46,10 @@ type LandHandlerIDs struct {
 	UserID uuid.UUID
 }
 
-func LandHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.LandHandler, *mock.MockLandUsecase, *mockAuthUtil.MockAuthUtil, LandHandlerIDs, LandHandlerMocks) {
+func LandHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.LandHandler, *mock_usecase.MockLandUsecase, *mockAuthUtil.MockAuthUtil, LandHandlerIDs, LandHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockLandUsecase(ctrl)
+	uc := mock_usecase.NewMockLandUsecase(ctrl)
 	utils := mockAuthUtil.NewMockAuthUtil(ctrl)
 	h := handler_implementation.NewLandHandler(uc, utils)
 	r := gin.Default()
@@ -68,7 +68,7 @@ func LandHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.LandHandler,
 			LandArea:    float64(1000),
 			Certificate: "certificate",
 		},
-		Lands: &[]domain.Land{
+		Lands: []*domain.Land{
 			{
 				ID:          landID,
 				UserID:      ids.UserID,
@@ -220,7 +220,7 @@ func TestLandHandler_GetOneLandByUserID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Lands))
+		assert.Len(t, response.Data, len(mocks.Lands))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -268,7 +268,7 @@ func TestLandHandler_GetAllLands(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Lands))
+		assert.Len(t, response.Data, len(mocks.Lands))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 

@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +37,7 @@ type responseRegionsHandler struct {
 
 type RegionHandlerMocks struct {
 	Region  *domain.Region
-	Regions *[]domain.Region
+	Regions []*domain.Region
 }
 
 type RegionHandlerIDs struct {
@@ -46,10 +46,10 @@ type RegionHandlerIDs struct {
 	ProvinceID int64
 }
 
-func RegionHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.RegionHandler, *mock.MockRegionUsecase, RegionHandlerIDs, RegionHandlerMocks) {
+func RegionHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.RegionHandler, *mock_usecase.MockRegionUsecase, RegionHandlerIDs, RegionHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockRegionUsecase(ctrl)
+	uc := mock_usecase.NewMockRegionUsecase(ctrl)
 	h := handler_implementation.NewRegionHandler(uc)
 	r := gin.Default()
 
@@ -69,7 +69,7 @@ func RegionHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.RegionHand
 			CityID:     CityID,
 			ProvinceID: ProvinceID,
 		},
-		Regions: &[]domain.Region{
+		Regions: []*domain.Region{
 			{
 				ID:         regionID,
 				CityID:     CityID,
@@ -156,8 +156,8 @@ func TestRegionHandler_GetAllRegions(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Regions), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Regions)[0].ID)
+		assert.Equal(t, len(mocks.Regions), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Regions)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {

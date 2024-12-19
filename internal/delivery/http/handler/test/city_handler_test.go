@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +29,7 @@ type responseCityHandler struct {
 
 type CityHandlerMocks struct {
 	City   *domain.City
-	Cities *[]domain.City
+	Cities []*domain.City
 }
 type CityHandlerIDs struct {
 	CityID        int64
@@ -38,10 +38,10 @@ type CityHandlerIDs struct {
 	ProvinceIDstr string
 }
 
-func CityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.CityHandler, *mock.MockCityUsecase, CityHandlerIDs, CityHandlerMocks) {
+func CityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.CityHandler, *mock_usecase.MockCityUsecase, CityHandlerIDs, CityHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockCityUsecase(ctrl)
+	uc := mock_usecase.NewMockCityUsecase(ctrl)
 	h := handler_implementation.NewCityHandler(uc)
 	r := gin.Default()
 
@@ -63,7 +63,7 @@ func CityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.CityHandler,
 			Name:       "city",
 			ProvinceID: provinceID,
 		},
-		Cities: &[]domain.City{
+		Cities: []*domain.City{
 			{
 				ID:         cityID,
 				Name:       "city",
@@ -217,7 +217,7 @@ func TestCityHandler_GetAllCities(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Cities))
+		assert.Len(t, response.Data, len(mocks.Cities))
 	})
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().GetAllCities(gomock.Any()).Return(nil, utils.NewInternalError("Internal error")).Times(1)

@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,9 +37,9 @@ type responsePricesHandler struct {
 
 type PriceHandlerMocks struct {
 	Price        *domain.Price
-	Prices       *[]domain.Price
+	Prices       []*domain.Price
 	UpdatePrice  *domain.Price
-	PriceHistory *[]domain.PriceHistory
+	PriceHistory []*domain.PriceHistory
 }
 
 type PriceHandlerIDs struct {
@@ -48,10 +48,10 @@ type PriceHandlerIDs struct {
 	RegionID    uuid.UUID
 }
 
-func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandler, *mock.MockPriceUsecase, PriceHandlerIDs, PriceHandlerMocks) {
+func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandler, *mock_usecase.MockPriceUsecase, PriceHandlerIDs, PriceHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockPriceUsecase(ctrl)
+	uc := mock_usecase.NewMockPriceUsecase(ctrl)
 	h := handler_implementation.NewPriceHandler(uc)
 	r := gin.Default()
 
@@ -71,14 +71,14 @@ func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandle
 			CommodityID: CommodityID,
 			RegionID:    RegionID,
 		},
-		Prices: &[]domain.Price{
+		Prices: []*domain.Price{
 			{
 				ID:          priceID,
 				CommodityID: CommodityID,
 				RegionID:    RegionID,
 			},
 		},
-		PriceHistory: &[]domain.PriceHistory{
+		PriceHistory: []*domain.PriceHistory{
 			{
 				ID:          priceID,
 				CommodityID: CommodityID,
@@ -169,8 +169,8 @@ func TestPriceHandler_GetAllPrices(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Prices), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Prices)[0].ID)
+		assert.Equal(t, len(mocks.Prices), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Prices)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -252,8 +252,8 @@ func TestPriceHandler_GetPricesByCommodityID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Prices), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Prices)[0].ID)
+		assert.Equal(t, len(mocks.Prices), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Prices)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -301,8 +301,8 @@ func TestPriceHandler_GetPricesByRegionID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(*mocks.Prices), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (*mocks.Prices)[0].ID)
+		assert.Equal(t, len(mocks.Prices), len(response.Data))
+		assert.Equal(t, response.Data[0].ID, (mocks.Prices)[0].ID)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
