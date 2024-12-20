@@ -11,6 +11,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -177,7 +178,7 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndRegionID(c *gin.Conte
 }
 
 func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.Context) {
-
+	logrus.Log.Info("Downloading price history")
 	priceParams := &dto.PriceParamsDTO{}
 
 	startDateStr := c.Query("start_date")
@@ -212,16 +213,13 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.
 	}
 	priceParams.RegionID = regionID
 
-	err = h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, priceParams)
+	logrus.Log.Info("Calling download price history usecase")
+	response, err := h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, priceParams)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"message": "Report generation in progress. Please check back in a few moments.",
-		"download_url": fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
-			commodityID, regionID, priceParams.StartDate.Format("2006-01-02"), priceParams.EndDate.Format("2006-01-02")),
-	})
+	utils.SuccessResponse(c, http.StatusOK, response)
 
 }
 
@@ -231,38 +229,48 @@ func (h *PriceHandlerImpl) GetPriceHistoryExcelFile(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	logrus.Log.Info("Commodity ID is valid ")
 
 	regionID, err := uuid.Parse(c.Param("region_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	logrus.Log.Info("Region ID is  valid")
 
 	startDateStr := c.Query("start_date")
-	endDatestr := c.Query("end_date")
-
-	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/price_history_%s_%s_%s_%s_*.xlsx", commodityID, regionID, startDateStr, endDatestr)
-	matches, err := filepath.Glob(filePath)
+	startDate, err := time.Parse("2006-01-02", startDateStr)
 	if err != nil {
-		utils.ErrorResponse(c, utils.NewInternalError("Error finding report file"))
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	endDatestr := c.Query("end_date")
+	endDate, err := time.Parse("2006-01-02", endDatestr)
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 
-	if len(matches) == 0 {
-		utils.ErrorResponse(c, utils.NewNotFoundError("Report file not found"))
-		return
+	params := &dto.PriceParamsDTO{
+		CommodityID: commodityID,
+		RegionID:    regionID,
+		StartDate:   startDate,
+		EndDate:     endDate,
 	}
 
 	// Get the latest file (assuming filename contains timestamp)
-	latestFile := matches[len(matches)-1]
+	latestFile, err := h.uc.GetPriceExcelFile(c, params)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
 
 	// Set headers for file download
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(latestFile)))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(*latestFile)))
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 	// Serve the file
-	c.File(latestFile)
+	c.File(*latestFile)
 }

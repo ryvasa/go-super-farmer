@@ -14,7 +14,7 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +37,7 @@ type responseLandCommoditiesHandler struct {
 
 type LandCommodityHandlerMocks struct {
 	LandCommodity   *domain.LandCommodity
-	LandCommodities *[]domain.LandCommodity
+	LandCommodities []*domain.LandCommodity
 }
 
 type LandCommodityHandlerIDs struct {
@@ -46,10 +46,10 @@ type LandCommodityHandlerIDs struct {
 	LandID          uuid.UUID
 }
 
-func LandCommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.LandCommodityHandler, *mock.MockLandCommodityUsecase, LandCommodityHandlerIDs, LandCommodityHandlerMocks) {
+func LandCommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.LandCommodityHandler, *mock_usecase.MockLandCommodityUsecase, LandCommodityHandlerIDs, LandCommodityHandlerMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockLandCommodityUsecase(ctrl)
+	uc := mock_usecase.NewMockLandCommodityUsecase(ctrl)
 	h := handler_implementation.NewLandCommodityHandler(uc)
 	r := gin.Default()
 
@@ -63,7 +63,7 @@ func LandCommodityHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.Lan
 			LandID:      landID,
 			LandArea:    float64(100),
 		},
-		LandCommodities: &[]domain.LandCommodity{
+		LandCommodities: []*domain.LandCommodity{
 			{
 				ID:          landCommodityID,
 				CommodityID: commodityID,
@@ -197,7 +197,7 @@ func TestLandCommodityHandler_GetLandCommodityByLandID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.LandCommodities))
+		assert.Len(t, response.Data, len(mocks.LandCommodities))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -245,7 +245,7 @@ func TestLandCommodityHandler_GetAllLandCommodity(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.LandCommodities))
+		assert.Len(t, response.Data, len(mocks.LandCommodities))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -279,7 +279,7 @@ func TestLandCommodityHandler_GetLandCommodityByCommodityID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.LandCommodities))
+		assert.Len(t, response.Data, len(mocks.LandCommodities))
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 

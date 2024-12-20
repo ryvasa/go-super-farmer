@@ -24,7 +24,7 @@ type RoleIDs struct {
 
 type RoleMocks struct {
 	Role  *domain.Role
-	Roles *[]domain.Role
+	Roles []*domain.Role
 }
 
 type RoleDTOMock struct {
@@ -43,7 +43,7 @@ func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRe
 			ID:   roleID,
 			Name: "admin",
 		},
-		Roles: &[]domain.Role{
+		Roles: []*domain.Role{
 			{
 				ID:   roleID,
 				Name: "admin",
@@ -73,10 +73,10 @@ func RoleUsecaseUtils(t *testing.T) (*RoleIDs, *RoleMocks, *RoleDTOMock, *RoleRe
 	return ids, mocks, dto, repo, uc, ctx
 }
 
-func TestCreateRole(t *testing.T) {
+func TestRoleUsecase_CreateRole(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := RoleUsecaseUtils(t)
 	t.Run("should create role successfully", func(t *testing.T) {
-		repo.Role.EXPECT().FindAll(ctx).Return(&[]domain.Role{}, nil).Times(1)
+		repo.Role.EXPECT().FindAll(ctx).Return([]*domain.Role{}, nil).Times(1)
 		repo.Role.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
 		repo.Role.EXPECT().FindByID(ctx, ids.RoleID).Return(mocks.Role, nil).Times(1)
 
@@ -96,7 +96,7 @@ func TestCreateRole(t *testing.T) {
 	})
 
 	t.Run("Test CreateRole, error get created role", func(t *testing.T) {
-		repo.Role.EXPECT().FindAll(ctx).Return(&[]domain.Role{}, nil).Times(1)
+		repo.Role.EXPECT().FindAll(ctx).Return([]*domain.Role{}, nil).Times(1)
 		repo.Role.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
 		repo.Role.EXPECT().FindByID(ctx, ids.RoleID).Return(nil, errors.New("internal error")).Times(1)
 
@@ -108,7 +108,7 @@ func TestCreateRole(t *testing.T) {
 	})
 
 	t.Run("Test CreateRole, error get all roles", func(t *testing.T) {
-		repo.Role.EXPECT().FindAll(ctx).Return(&[]domain.Role{}, errors.New("internal error")).Times(1)
+		repo.Role.EXPECT().FindAll(ctx).Return([]*domain.Role{}, errors.New("internal error")).Times(1)
 
 		resp, err := uc.CreateRole(ctx, dtos.Create)
 
@@ -117,7 +117,7 @@ func TestCreateRole(t *testing.T) {
 	})
 
 	t.Run("Test CreateRole, error create role", func(t *testing.T) {
-		repo.Role.EXPECT().FindAll(ctx).Return(&[]domain.Role{}, nil).Times(1)
+		repo.Role.EXPECT().FindAll(ctx).Return([]*domain.Role{}, nil).Times(1)
 		repo.Role.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("internal error")).Times(1)
 
 		resp, err := uc.CreateRole(ctx, dtos.Create)
@@ -127,7 +127,7 @@ func TestCreateRole(t *testing.T) {
 	})
 }
 
-func TestGetAllRoles(t *testing.T) {
+func TestRoleUsecase_GetAllRoles(t *testing.T) {
 
 	_, mocks, _, repo, uc, ctx := RoleUsecaseUtils(t)
 
@@ -138,7 +138,7 @@ func TestGetAllRoles(t *testing.T) {
 		resp, err := uc.GetAllRoles(ctx)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, len(*mocks.Roles))
+		assert.Len(t, resp, len(mocks.Roles))
 	})
 
 	t.Run("Test GetAllRoles, database error", func(t *testing.T) {

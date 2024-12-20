@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -11,6 +12,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +22,7 @@ type DemandRepoMock struct {
 	DemandHistory *mock.MockDemandHistoryRepository
 	Commodity     *mock.MockCommodityRepository
 	Region        *mock.MockRegionRepository
+	TxManager     *mock_pkg.MockTransactionManager
 }
 
 type DemandIDs struct {
@@ -31,11 +34,11 @@ type DemandIDs struct {
 
 type DemandDomainMocks struct {
 	Demand         *domain.Demand
-	Demands        *[]domain.Demand
+	Demands        []*domain.Demand
 	UpdatedDemand  *domain.Demand
 	Commodity      *domain.Commodity
 	Region         *domain.Region
-	DemandHistorys *[]domain.DemandHistory
+	DemandHistorys []*domain.DemandHistory
 }
 
 type DemandDTOMocks struct {
@@ -63,7 +66,7 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 			RegionID:    regionID,
 			Quantity:    10,
 		},
-		Demands: &[]domain.Demand{
+		Demands: []*domain.Demand{
 			{
 				ID:          demandID,
 				CommodityID: commodityID,
@@ -83,7 +86,7 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 		Region: &domain.Region{
 			ID: regionID,
 		},
-		DemandHistorys: &[]domain.DemandHistory{
+		DemandHistorys: []*domain.DemandHistory{
 			{
 				ID:          demandHstoryID,
 				CommodityID: commodityID,
@@ -111,8 +114,9 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 	commodityRepo := mock.NewMockCommodityRepository(ctrl)
 	demandRepo := mock.NewMockDemandRepository(ctrl)
 	demandHistoryRepo := mock.NewMockDemandHistoryRepository(ctrl)
+	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 
-	uc := usecase_implementation.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, regionRepo)
+	uc := usecase_implementation.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, regionRepo, txRepo)
 	ctx := context.Background()
 
 	repo := &DemandRepoMock{
@@ -120,12 +124,13 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 		Region:        regionRepo,
 		Commodity:     commodityRepo,
 		DemandHistory: demandHistoryRepo,
+		TxManager:     txRepo,
 	}
 
 	return ids, domains, dtos, repo, uc, ctx
 }
 
-func TestDemandRepository_CreateDemand(t *testing.T) {
+func TestDemandUsecase_CreateDemand(t *testing.T) {
 	ids, domains, dtos, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should create demand successfully", func(t *testing.T) {
@@ -198,7 +203,7 @@ func TestDemandRepository_CreateDemand(t *testing.T) {
 	})
 }
 
-func TestDemandRepository_GetAllDemands(t *testing.T) {
+func TestDemandUsecase_GetAllDemands(t *testing.T) {
 	_, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should get all demands successfully", func(t *testing.T) {
@@ -207,8 +212,8 @@ func TestDemandRepository_GetAllDemands(t *testing.T) {
 		resp, err := uc.GetAllDemands(ctx)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Demands), len(*resp))
-		assert.Equal(t, (*domains.Demands)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Demands), len(resp))
+		assert.Equal(t, (domains.Demands)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get all demands fails", func(t *testing.T) {
@@ -222,7 +227,7 @@ func TestDemandRepository_GetAllDemands(t *testing.T) {
 	})
 }
 
-func TestDemandRepository_GetDemandByID(t *testing.T) {
+func TestDemandUsecase_GetDemandByID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should get demand by id successfully", func(t *testing.T) {
@@ -245,7 +250,7 @@ func TestDemandRepository_GetDemandByID(t *testing.T) {
 	})
 }
 
-func TestDemandRepository_GetDemandsByCommodityID(t *testing.T) {
+func TestDemandUsecase_GetDemandsByCommodityID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should get demands by commodity id successfully", func(t *testing.T) {
@@ -256,8 +261,8 @@ func TestDemandRepository_GetDemandsByCommodityID(t *testing.T) {
 		resp, err := uc.GetDemandsByCommodityID(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Demands), len(*resp))
-		assert.Equal(t, (*domains.Demands)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Demands), len(resp))
+		assert.Equal(t, (domains.Demands)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get demands by commodity id fails", func(t *testing.T) {
@@ -273,7 +278,7 @@ func TestDemandRepository_GetDemandsByCommodityID(t *testing.T) {
 	})
 }
 
-func TestDemandRepository_GetDemandsByRegionID(t *testing.T) {
+func TestDemandUsecase_GetDemandsByRegionID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should get demands by region id successfully", func(t *testing.T) {
@@ -284,8 +289,8 @@ func TestDemandRepository_GetDemandsByRegionID(t *testing.T) {
 		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, len(*domains.Demands), len(*resp))
-		assert.Equal(t, (*domains.Demands)[0].ID, (*resp)[0].ID)
+		assert.Equal(t, len(domains.Demands), len(resp))
+		assert.Equal(t, (domains.Demands)[0].ID, (resp)[0].ID)
 	})
 
 	t.Run("should return error when get demands by region id fails", func(t *testing.T) {
@@ -299,33 +304,115 @@ func TestDemandRepository_GetDemandsByRegionID(t *testing.T) {
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
+
+	t.Run("should return error when region not found", func(t *testing.T) {
+		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+
+		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "region not found")
+	})
 }
 
-func TestDemandRepository_UpdateDemand(t *testing.T) {
+func TestDemandUsecase_UpdateDemand(t *testing.T) {
 	ids, domains, dtos, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should update demand successfully", func(t *testing.T) {
-		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 
-		repo.Demand.EXPECT().FindByID(ctx, ids.DemandID).Return(domains.Demand, nil).Times(1)
+		// Setup mock untuk operasi dalam transaction
+		repo.Demand.EXPECT().
+			FindByID(ctx, ids.DemandID).
+			Return(domains.Demand, nil)
 
-		repo.DemandHistory.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.DemandHistory) error {
-			p.ID = ids.DemandHistoryID
-			return nil
-		}).Times(1)
+		repo.DemandHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, history *domain.DemandHistory) error {
+				history.ID = ids.DemandHistoryID
+				return nil
+			})
 
-		repo.Demand.EXPECT().Update(ctx, ids.DemandID, gomock.Any()).DoAndReturn(func(ctx context.Context, id uuid.UUID, p *domain.Demand) error {
-			p.Quantity = float64(20)
-			return nil
-		}).Times(1)
+		repo.Demand.EXPECT().
+			Update(ctx, ids.DemandID, gomock.Any()).
+			Return(nil)
 
-		repo.Demand.EXPECT().FindByID(ctx, ids.DemandID).Return(domains.UpdatedDemand, nil).Times(1)
+		repo.Demand.EXPECT().
+			FindByID(ctx, ids.DemandID).
+			Return(domains.UpdatedDemand, nil)
 
+		// Execute
 		resp, err := uc.UpdateDemand(ctx, ids.DemandID, dtos.Update)
 
+		// Assert
 		assert.NoError(t, err)
+		assert.NotNil(t, resp)
 		assert.Equal(t, ids.DemandID, resp.ID)
 		assert.Equal(t, float64(20), resp.Quantity)
+	})
+
+	t.Run("should rollback transaction when create history fails", func(t *testing.T) {
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				err := fn(ctx)
+				return err
+			})
+
+		// Setup mock untuk operasi dalam transaction
+		repo.Demand.EXPECT().
+			FindByID(ctx, ids.DemandID).
+			Return(domains.Demand, nil)
+
+		repo.DemandHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			Return(fmt.Errorf("create history error"))
+
+		// Execute
+		resp, err := uc.UpdateDemand(ctx, ids.DemandID, dtos.Update)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "create history error")
+	})
+
+	t.Run("should rollback transaction when update demand fails", func(t *testing.T) {
+		// Setup mock untuk WithTransaction
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				err := fn(ctx)
+				return err
+			})
+
+		// Setup mock untuk operasi dalam transaction
+		repo.Demand.EXPECT().
+			FindByID(ctx, ids.DemandID).
+			Return(domains.Demand, nil)
+
+		repo.DemandHistory.EXPECT().
+			Create(ctx, gomock.Any()).
+			Return(nil)
+
+		repo.Demand.EXPECT().
+			Update(ctx, ids.DemandID, gomock.Any()).
+			Return(fmt.Errorf("update demand error"))
+
+		// Execute
+		resp, err := uc.UpdateDemand(ctx, ids.DemandID, dtos.Update)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "update demand error")
 	})
 
 	t.Run("should return error when validation fails", func(t *testing.T) {
@@ -340,6 +427,11 @@ func TestDemandRepository_UpdateDemand(t *testing.T) {
 	})
 
 	t.Run("should return error when demand not found", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.Demand.EXPECT().FindByID(ctx, ids.DemandID).Return(nil, utils.NewNotFoundError("demand not found")).Times(1)
 
 		resp, err := uc.UpdateDemand(ctx, ids.DemandID, dtos.Update)
@@ -349,10 +441,19 @@ func TestDemandRepository_UpdateDemand(t *testing.T) {
 		assert.EqualError(t, err, "demand not found")
 	})
 
-	t.Run("should return error when update demand fails", func(t *testing.T) {
+	t.Run("should return error when get updated demand fails", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.Demand.EXPECT().FindByID(ctx, ids.DemandID).Return(domains.Demand, nil).Times(1)
 
-		repo.DemandHistory.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+		repo.DemandHistory.EXPECT().Create(ctx, gomock.Any()).Return(nil).Times(1)
+
+		repo.Demand.EXPECT().Update(ctx, ids.DemandID, gomock.Any()).Return(nil).Times(1)
+
+		repo.Demand.EXPECT().FindByID(ctx, ids.DemandID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
 		resp, err := uc.UpdateDemand(ctx, ids.DemandID, dtos.Update)
 
@@ -362,7 +463,7 @@ func TestDemandRepository_UpdateDemand(t *testing.T) {
 	})
 }
 
-func TestDemandRepository_DeleteDemand(t *testing.T) {
+func TestDemandUsecase_DeleteDemand(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should delete demand successfully", func(t *testing.T) {
@@ -408,9 +509,9 @@ func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(*resp))
-		assert.Equal(t, (*domains.DemandHistorys)[0].ID, (*resp)[0].ID)
-		assert.Equal(t, (*domains.DemandHistorys)[0].Quantity, (*resp)[0].Quantity)
+		assert.Equal(t, 2, len(resp))
+		assert.Equal(t, (domains.DemandHistorys)[0].ID, (resp)[0].ID)
+		assert.Equal(t, (domains.DemandHistorys)[0].Quantity, (resp)[0].Quantity)
 	})
 
 	t.Run("should return error when get demand history fails", func(t *testing.T) {
@@ -423,4 +524,15 @@ func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.EqualError(t, err, "internal error")
 	})
 
+	t.Run("should return error when demand not found", func(t *testing.T) {
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.DemandHistorys, nil).Times(1)
+
+		repo.Demand.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
+	})
 }

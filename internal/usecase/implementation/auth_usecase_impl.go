@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -20,10 +20,11 @@ type AuthUsecaseImpl struct {
 	hash     utils.Hasher
 	rabbitMQ messages.RabbitMQ
 	cache    cache.Cache
+	OTP      utils.OTP
 }
 
-func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher, rabbitMQ messages.RabbitMQ, cache cache.Cache) usecase_interface.AuthUsecase {
-	return &AuthUsecaseImpl{userRepo, token, hash, rabbitMQ, cache}
+func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher, rabbitMQ messages.RabbitMQ, cache cache.Cache, OTP utils.OTP) usecase_interface.AuthUsecase {
+	return &AuthUsecaseImpl{userRepo, token, hash, rabbitMQ, cache, OTP}
 }
 
 func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error) {
@@ -53,8 +54,13 @@ func (u *AuthUsecaseImpl) SendOTP(ctx context.Context, req *dto.AuthSendDTO) err
 		return utils.NewValidationError(err)
 	}
 
+	_, err := u.userRepo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return utils.NewBadRequestError("user not found")
+	}
+
 	// Generate OTP
-	otp, err := utils.GenerateOTP(6)
+	otp, err := u.OTP.GenerateOTP(6)
 	if err != nil {
 		return utils.NewInternalError("Failed to generate OTP")
 	}

@@ -28,7 +28,7 @@ type LandIDs struct {
 
 type LandMocks struct {
 	Land        *domain.Land
-	Lands       *[]domain.Land
+	Lands       []*domain.Land
 	UpdatedLand *domain.Land
 	User        *domain.User
 }
@@ -54,7 +54,7 @@ func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRe
 			Certificate: "cert",
 			UserID:      userID,
 		},
-		Lands: &[]domain.Land{
+		Lands: []*domain.Land{
 			{
 				ID:          landID,
 				LandArea:    100,
@@ -97,7 +97,7 @@ func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRe
 	return ids, mocks, dto, repo, uc, ctx
 }
 
-func TestCreateLand(t *testing.T) {
+func TestLandUsecase_CreateLand(t *testing.T) {
 
 	ids, mocks, dtos, repo, uc, ctx := LandUsecaseUtils(t)
 
@@ -153,7 +153,7 @@ func TestCreateLand(t *testing.T) {
 	})
 }
 
-func TestGetLandByID(t *testing.T) {
+func TestLandUsecase_GetLandByID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
 	t.Run("should return land successfully", func(t *testing.T) {
@@ -178,7 +178,7 @@ func TestGetLandByID(t *testing.T) {
 	})
 }
 
-func TestGetLandByUserID(t *testing.T) {
+func TestLandUsecase_GetLandByUserID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
 	t.Run("should return lands successfully", func(t *testing.T) {
@@ -191,9 +191,9 @@ func TestGetLandByUserID(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
-		assert.Len(t, *resp, 1)
-		assert.Equal(t, (*mocks.Lands)[0].LandArea, (*resp)[0].LandArea)
-		assert.Equal(t, (*mocks.Lands)[0].Certificate, (*resp)[0].Certificate)
+		assert.Len(t, resp, 1)
+		assert.Equal(t, (mocks.Lands)[0].LandArea, (resp)[0].LandArea)
+		assert.Equal(t, (mocks.Lands)[0].Certificate, (resp)[0].Certificate)
 	})
 
 	t.Run("should return error user not found", func(t *testing.T) {
@@ -218,7 +218,7 @@ func TestGetLandByUserID(t *testing.T) {
 	})
 }
 
-func TestGetAllLands(t *testing.T) {
+func TestLandUsecase_GetAllLands(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
 	t.Run("should return lands successfully", func(t *testing.T) {
@@ -227,9 +227,9 @@ func TestGetAllLands(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, mocks.Lands, resp)
-		assert.Len(t, (*mocks.Lands), 1)
-		assert.Equal(t, (*mocks.Lands)[0].LandArea, (*resp)[0].LandArea)
-		assert.Equal(t, (*mocks.Lands)[0].Certificate, (*resp)[0].Certificate)
+		assert.Len(t, (mocks.Lands), 1)
+		assert.Equal(t, (mocks.Lands)[0].LandArea, (resp)[0].LandArea)
+		assert.Equal(t, (mocks.Lands)[0].Certificate, (resp)[0].Certificate)
 	})
 
 	t.Run("should return error internal error", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestGetAllLands(t *testing.T) {
 	})
 }
 
-func TestUpdateLand(t *testing.T) {
+func TestLandUsecase_UpdateLand(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := LandUsecaseUtils(t)
 	t.Run("should update land successfully", func(t *testing.T) {
 
@@ -318,7 +318,7 @@ func TestUpdateLand(t *testing.T) {
 
 }
 
-func TestDeleteLand(t *testing.T) {
+func TestLandUsecase_DeleteLand(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
 	t.Run("should delete land successfully", func(t *testing.T) {
@@ -350,7 +350,7 @@ func TestDeleteLand(t *testing.T) {
 	})
 }
 
-func TestRestoreLand(t *testing.T) {
+func TestLandUsecase_RestoreLand(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := LandUsecaseUtils(t)
 
 	t.Run("should restore land successfully", func(t *testing.T) {

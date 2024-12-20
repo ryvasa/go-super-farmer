@@ -17,6 +17,11 @@ func GetPaginationParams(c *gin.Context) (*dto.PaginationDTO, error) {
 		return nil, err
 	}
 
+	// Validate after binding
+	if err := pagination.Validate(); err != nil {
+		return nil, err
+	}
+
 	return pagination, nil
 }
 

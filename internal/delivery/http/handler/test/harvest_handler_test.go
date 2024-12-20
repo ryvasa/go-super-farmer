@@ -3,8 +3,11 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,7 +18,8 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/test/response"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/usecase/mock"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
+	mock_usecase "github.com/ryvasa/go-super-farmer/internal/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +34,7 @@ type responseHarvestHandler struct {
 
 type HarvestHandlerMocks struct {
 	Harvest        *domain.Harvest
-	Harvests       *[]domain.Harvest
+	Harvests       []*domain.Harvest
 	UpdatedHarvest *domain.Harvest
 }
 
@@ -42,10 +46,15 @@ type HarvestHandlerIDs struct {
 	CommodityID     uuid.UUID
 }
 
-func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHandler, *mock.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks) {
+type HarvestHandlerDTOMocks struct {
+	ParamsDTO           *dto.HarvestParamsDTO
+	ResponseDownloadDTO *dto.DownloadResponseDTO
+}
+
+func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHandler, *mock_usecase.MockHarvestUsecase, HarvestHandlerIDs, HarvestHandlerMocks, HarvestHandlerDTOMocks) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	uc := mock.NewMockHarvestUsecase(ctrl)
+	uc := mock_usecase.NewMockHarvestUsecase(ctrl)
 	h := handler_implementation.NewHarvestHandler(uc)
 	r := gin.Default()
 
@@ -75,7 +84,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 			Unit:            unit,
 			HarvestDate:     harvestDate,
 		},
-		Harvests: &[]domain.Harvest{
+		Harvests: []*domain.Harvest{
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
@@ -95,11 +104,26 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 		},
 	}
 
-	return r, h, uc, ids, mocks
+	startDate, _ := time.Parse("2006-01-02", "2023-10-26")
+	endDate, _ := time.Parse("2006-01-02", "2023-10-27")
+
+	dtos := HarvestHandlerDTOMocks{
+		ParamsDTO: &dto.HarvestParamsDTO{
+			LandCommodityID: landCommodityID,
+			StartDate:       startDate,
+			EndDate:         endDate,
+		},
+		ResponseDownloadDTO: &dto.DownloadResponseDTO{
+			Message:     "Report generation in progress. Please check back in a few moments.",
+			DownloadURL: "http://localhost:8080/api/harvests/land_commodity/1/download/file?start_date=2023-10-26&end_date=2023-10-27",
+		},
+	}
+
+	return r, h, uc, ids, mocks, dtos
 }
 
 func TestHarvestHandler_CreateHarvest(t *testing.T) {
-	r, h, uc, _, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, _, mocks, _ := HarvestHandlerSetUp(t)
 	r.POST("/harvests", h.CreateHarvest)
 
 	t.Run("should create harvest successfully", func(t *testing.T) {
@@ -163,7 +187,7 @@ func TestHarvestHandler_CreateHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_GetAllHarvest(t *testing.T) {
-	r, h, uc, _, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, _, mocks, _ := HarvestHandlerSetUp(t)
 	r.GET("/harvests", h.GetAllHarvest)
 	t.Run("should return all harvests successfully", func(t *testing.T) {
 		uc.EXPECT().GetAllHarvest(gomock.Any()).Return(mocks.Harvests, nil).Times(1)
@@ -177,7 +201,7 @@ func TestHarvestHandler_GetAllHarvest(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().GetAllHarvest(gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
@@ -194,7 +218,7 @@ func TestHarvestHandler_GetAllHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestByID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/:id", h.GetHarvestByID)
 
@@ -259,7 +283,7 @@ func TestHarvestHandler_GetHarvestByID(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestByCommodityID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/commodity/:id", h.GetHarvestByCommodityID)
 
@@ -275,7 +299,7 @@ func TestHarvestHandler_GetHarvestByCommodityID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -307,7 +331,7 @@ func TestHarvestHandler_GetHarvestByCommodityID(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestByLandID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/land/:id", h.GetHarvestByLandID)
 
@@ -323,7 +347,7 @@ func TestHarvestHandler_GetHarvestByLandID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -355,7 +379,7 @@ func TestHarvestHandler_GetHarvestByLandID(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestByLandCommodityID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/land_commodity/:id", h.GetHarvestByLandCommodityID)
 
@@ -371,7 +395,7 @@ func TestHarvestHandler_GetHarvestByLandCommodityID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -403,7 +427,7 @@ func TestHarvestHandler_GetHarvestByLandCommodityID(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/region/:id", h.GetHarvestByRegionID)
 
@@ -419,7 +443,7 @@ func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -451,7 +475,7 @@ func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
 }
 
 func TestHarvestHandler_UpdateHarvest(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.PATCH("/harvests/:id", h.UpdateHarvest)
 
@@ -542,7 +566,7 @@ func TestHarvestHandler_UpdateHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_DeleteHarvest(t *testing.T) {
-	r, h, uc, ids, _ := HarvestHandlerSetUp(t)
+	r, h, uc, ids, _, _ := HarvestHandlerSetUp(t)
 
 	r.DELETE("/harvests/:id", h.DeleteHarvest)
 
@@ -605,7 +629,7 @@ func TestHarvestHandler_DeleteHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_RestoreHarvest(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.POST("/harvests/:id/restore", h.RestoreHarvest)
 
@@ -671,7 +695,7 @@ func TestHarvestHandler_RestoreHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_GetAllDeletedHarvest(t *testing.T) {
-	r, h, uc, _, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, _, mocks, _ := HarvestHandlerSetUp(t)
 	r.GET("/harvests/deleted", h.GetAllDeletedHarvest)
 	t.Run("should return all deleted harvests successfully", func(t *testing.T) {
 		uc.EXPECT().GetAllDeletedHarvest(gomock.Any()).Return(mocks.Harvests, nil).Times(1)
@@ -685,7 +709,7 @@ func TestHarvestHandler_GetAllDeletedHarvest(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
-		assert.Len(t, response.Data, len(*mocks.Harvests))
+		assert.Len(t, response.Data, len(mocks.Harvests))
 	})
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().GetAllDeletedHarvest(gomock.Any()).Return(nil, utils.NewInternalError("Internal error")).Times(1)
@@ -702,7 +726,7 @@ func TestHarvestHandler_GetAllDeletedHarvest(t *testing.T) {
 }
 
 func TestHarvestHandler_GetHarvestDeletedByID(t *testing.T) {
-	r, h, uc, ids, mocks := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
 	r.GET("/harvests/deleted/:id", h.GetHarvestDeletedByID)
 
@@ -763,5 +787,165 @@ func TestHarvestHandler_GetHarvestDeletedByID(t *testing.T) {
 		assert.NotNil(t, response.Errors)
 		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
 		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
+
+func TestHarvestHandler_DownloadHarvestByLandCommodityID(t *testing.T) {
+	r, h, uc, ids, _, dtos := HarvestHandlerSetUp(t)
+	r.GET("/harvests/land_commodity/:id/download", h.DownloadHarvestByLandCommodityID)
+
+	t.Run("should return success response and download URL", func(t *testing.T) {
+		uc.EXPECT().DownloadHarvestByLandCommodityID(gomock.Any(), dtos.ParamsDTO).Return(dtos.ResponseDownloadDTO, nil).Times(1)
+
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/land_commodity/%s/download?start_date=2023-10-26&end_date=2023-10-27", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response response.ResponseDownload
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, response.Data.DownloadURL)
+		assert.Equal(t, "Report generation in progress. Please check back in a few moments.", response.Data.Message)
+	})
+
+	t.Run("should return error when invalid id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/harvests/land_commodity/abc/download", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response response.ResponseDownload
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should return error when invalid start date format", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/land_commodity/%s/download?start_date=invalid-date&end_date=2023-10-27", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response response.ResponseDownload
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should return error when invalid end date format", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/land_commodity/%s/download?start_date=2023-10-26&end_date=invalid-date", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response response.ResponseDownload
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should return error when land commodity usecase returns error", func(t *testing.T) {
+		uc.EXPECT().DownloadHarvestByLandCommodityID(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewInternalError("Internal error")).Times(1)
+
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/land_commodity/%s/download?start_date=2023-10-26&end_date=2023-10-27", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response response.ResponseDownload
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+}
+
+func TestHarvestHandler_GetHarvestExcelFile(t *testing.T) {
+	r, h, uc, ids, _, dtos := HarvestHandlerSetUp(t)
+	r.GET("/harvests/:id/download/file", h.GetHarvestExcelFile)
+
+	// Create a temporary directory for test files.  This is crucial for cleanup.
+	tempDir, err := os.MkdirTemp("", "harvest_reports")
+	if err != nil {
+		t.Fatalf("Failed to create temporary directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir) // Clean up after the test
+
+	// Create a dummy Excel file (replace with your actual file creation if needed)
+	dummyFilePath := filepath.Join(tempDir, "harvests_dummy.xlsx")
+	err = os.WriteFile(dummyFilePath, []byte("Dummy Excel content"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create dummy Excel file: %v", err)
+	}
+
+	t.Run("should return excel file", func(t *testing.T) {
+		// Modify the expectation to match the dummy file we just created.  Important!
+		// We need to return the correct file path.
+		expectedFilePath := dummyFilePath
+		uc.EXPECT().GetHarvestExcelFile(gomock.Any(), dtos.ParamsDTO).Return(&expectedFilePath, nil).Times(1)
+
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Disposition"), "filename=harvests_dummy.xlsx")                            // Check filename in header
+		assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", w.Header().Get("Content-Type")) //Check content type
+	})
+
+	t.Run("should return 404 when file not found", func(t *testing.T) {
+		// This case now has to be modified to reflect that a file is NOT present
+		uc.EXPECT().GetHarvestExcelFile(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewNotFoundError("Report file not found")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.LandCommodityID), nil) // Use existing ID
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		var response responseHarvestHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("should return 500 when usecase returns an error", func(t *testing.T) {
+		uc.EXPECT().GetHarvestExcelFile(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewInternalError("Simulated file system error")).Times(1)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.LandCommodityID), nil) // Use existing ID
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		var response responseHarvestHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("should return error when invalid start date format", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/%s/download/file?start_date=invalid-date&end_date=2023-10-27", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseHarvestHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should return error when invalid end date format", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/harvests/%s/download/file?start_date=2023-10-26&end_date=invalid-date", ids.LandCommodityID), nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseHarvestHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }

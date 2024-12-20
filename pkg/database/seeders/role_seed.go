@@ -16,11 +16,6 @@ func SeedRoles(db *gorm.DB) {
 		return
 	}
 
-	roles := []domain.Role{
-		{ID: 1, Name: "Admin"},
-		{ID: 2, Name: "Farmer"},
-	}
-
 	for _, role := range roles {
 		result := db.Create(&role)
 		if result.Error != nil {

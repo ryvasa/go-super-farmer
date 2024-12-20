@@ -25,7 +25,7 @@ type CityIDs struct {
 
 type CityMocks struct {
 	City        *domain.City
-	Cities      *[]domain.City
+	Cities      []*domain.City
 	UpdatedCity *domain.City
 }
 
@@ -50,7 +50,7 @@ func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRe
 			Name:       "test",
 			ProvinceID: provinceID,
 		},
-		Cities: &[]domain.City{
+		Cities: []*domain.City{
 			{
 				ID:         cityID,
 				Name:       "test",
@@ -86,7 +86,7 @@ func CityUsecaseUtils(t *testing.T) (*CityIDs, *CityMocks, *CityDTOMock, *CityRe
 	return ids, mocks, dto, repo, uc, ctx
 }
 
-func TestCreateCity(t *testing.T) {
+func TestCityUsecase_CreateCity(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := CityUsecaseUtils(t)
 	t.Run("should create city successfully", func(t *testing.T) {
 		repo.City.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.City) error {
@@ -134,7 +134,7 @@ func TestCreateCity(t *testing.T) {
 	})
 }
 
-func TestGetAllcities(t *testing.T) {
+func TestCityUsecase_GetAllcities(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
 	t.Run("should return all cities", func(t *testing.T) {
@@ -143,8 +143,8 @@ func TestGetAllcities(t *testing.T) {
 		resp, err := uc.GetAllCities(ctx)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(*resp))
-		assert.Equal(t, (*mocks.Cities)[0].Name, (*resp)[0].Name)
+		assert.Equal(t, 1, len(resp))
+		assert.Equal(t, (mocks.Cities)[0].Name, (resp)[0].Name)
 	})
 
 	t.Run("should return error internal error", func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestGetAllcities(t *testing.T) {
 	})
 }
 
-func TestGetCityById(t *testing.T) {
+func TestCityUsecase_GetCityById(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
 	t.Run("shpuld return city successfully", func(t *testing.T) {
@@ -182,7 +182,7 @@ func TestGetCityById(t *testing.T) {
 	})
 }
 
-func TestUpdateCity(t *testing.T) {
+func TestCityUsecase_UpdateCity(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := CityUsecaseUtils(t)
 
 	t.Run("should update city successfully", func(t *testing.T) {
@@ -249,7 +249,7 @@ func TestUpdateCity(t *testing.T) {
 	})
 }
 
-func TestDeleteCity(t *testing.T) {
+func TestCityUsecase_DeleteCity(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := CityUsecaseUtils(t)
 
 	t.Run("should delete city successfully", func(t *testing.T) {

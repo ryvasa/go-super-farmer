@@ -2,7 +2,10 @@ package usecase_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -11,6 +14,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,6 +23,7 @@ type LandCommodityRepoMock struct {
 	LandCommodity *mock.MockLandCommodityRepository
 	Land          *mock.MockLandRepository
 	Commodity     *mock.MockCommodityRepository
+	Cache         *mock_pkg.MockCache
 }
 
 type LandCommodityIDs struct {
@@ -29,7 +34,7 @@ type LandCommodityIDs struct {
 
 type LandCommodityMocks struct {
 	LandCommodity        *domain.LandCommodity
-	LandCommodities      *[]domain.LandCommodity
+	LandCommodities      []*domain.LandCommodity
 	UpdatedLandCommodity *domain.LandCommodity
 	Land                 *domain.Land
 	Commodity            *domain.Commodity
@@ -58,7 +63,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 			LandID:      landID,
 			LandArea:    float64(100),
 		},
-		LandCommodities: &[]domain.LandCommodity{
+		LandCommodities: []*domain.LandCommodity{
 			{
 				ID:          landCommodityID,
 				CommodityID: commodityID,
@@ -104,9 +109,10 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 		LandCommodity: mock.NewMockLandCommodityRepository(gomock.NewController(t)),
 		Land:          mock.NewMockLandRepository(gomock.NewController(t)),
 		Commodity:     mock.NewMockCommodityRepository(gomock.NewController(t)),
+		Cache:         mock_pkg.NewMockCache(gomock.NewController(t)),
 	}
 
-	uc := usecase_implementation.NewLandCommodityUsecase(repoMock.LandCommodity, repoMock.Land, repoMock.Commodity)
+	uc := usecase_implementation.NewLandCommodityUsecase(repoMock.LandCommodity, repoMock.Land, repoMock.Commodity, repoMock.Cache)
 	ctx := context.Background()
 
 	return ids, mocks, dtoMocks, repoMock, uc, ctx
@@ -218,8 +224,8 @@ func TestLandCommodityUsecase_GetLandCommodityByLandID(t *testing.T) {
 		resp, err := uc.GetLandCommodityByLandID(ctx, ids.LandID)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, (*mocks.LandCommodities)[0].LandArea, (*resp)[0].LandArea)
+		assert.Len(t, resp, 2)
+		assert.Equal(t, (mocks.LandCommodities)[0].LandArea, (resp)[0].LandArea)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -242,8 +248,8 @@ func TestLandCommodityUsecase_GetLandCommodityByCommodityID(t *testing.T) {
 		resp, err := uc.GetLandCommodityByCommodityID(ctx, ids.CommodityID)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, (*mocks.LandCommodities)[0].LandArea, (*resp)[0].LandArea)
+		assert.Len(t, resp, 2)
+		assert.Equal(t, (mocks.LandCommodities)[0].LandArea, (resp)[0].LandArea)
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
@@ -260,24 +266,64 @@ func TestLandCommodityUsecase_GetLandCommodityByCommodityID(t *testing.T) {
 func TestLandCommodityUsecase_GetAllLandCommodity(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := LandCommodityUtils(t)
 
-	t.Run("should return land commodity successfully", func(t *testing.T) {
-		repo.LandCommodity.EXPECT().FindAll(ctx).Return(mocks.LandCommodities, nil).Times(1)
+	key := fmt.Sprintf("land_commodity_%s", "all")
+	t.Run("should get all land commodity successfully from repo", func(t *testing.T) {
+		// Setup expectations
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.LandCommodity.EXPECT().FindAll(ctx).Return(mocks.LandCommodities, nil)
+
+		// Expect cache set to be called with any byte array and return nil
+		repo.Cache.EXPECT().
+			Set(ctx, key, gomock.Any(), 4*time.Minute).
+			Return(nil)
+
+		// Execute
+		resp, err := uc.GetAllLandCommodity(ctx)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, len(mocks.LandCommodities), len(resp))
+		assert.Equal(t, (mocks.LandCommodities)[0].ID, (resp)[0].ID)
+	})
+
+	t.Run("should return error when get all land commodity fails", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.LandCommodity.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error"))
+
+		resp, err := uc.GetAllLandCommodity(ctx)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should return land commodity from cache when cache hit", func(t *testing.T) {
+		// Setup cached data
+		cachedLandCommodities, err := json.Marshal(mocks.LandCommodities)
+		assert.NoError(t, err)
+
+		// Expect cache get to return the cached data
+		repo.Cache.EXPECT().Get(ctx, key).Return(cachedLandCommodities, nil)
 
 		resp, err := uc.GetAllLandCommodity(ctx)
 
 		assert.NoError(t, err)
-		assert.Len(t, *resp, 2)
-		assert.Equal(t, (*mocks.LandCommodities)[0].LandArea, (*resp)[0].LandArea)
+		assert.Equal(t, len(mocks.LandCommodities), len(resp))
+		assert.Equal(t, (mocks.LandCommodities)[0].ID, (resp)[0].ID)
 	})
 
-	t.Run("should return error when internal error", func(t *testing.T) {
-		repo.LandCommodity.EXPECT().FindAll(ctx).Return(nil, utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error when cache set fails", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
+		repo.LandCommodity.EXPECT().FindAll(ctx).Return(mocks.LandCommodities, nil)
+		repo.Cache.EXPECT().
+			Set(ctx, key, gomock.Any(), 4*time.Minute).
+			Return(fmt.Errorf("cache error"))
 
 		resp, err := uc.GetAllLandCommodity(ctx)
 
-		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.EqualError(t, err, "internal error")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cache error")
 	})
 }
 

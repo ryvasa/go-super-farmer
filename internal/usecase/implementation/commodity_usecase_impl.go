@@ -54,6 +54,7 @@ func (uc *CommodityUsecaseImpl) CreateCommodity(ctx context.Context, req *dto.Co
 
 	return createdCommodity, nil
 }
+
 func (uc *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context, queryParams *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
 	// Validasi pagination params
 	if err := queryParams.Validate(); err != nil {
@@ -73,8 +74,23 @@ func (uc *CommodityUsecaseImpl) GetAllCommodities(ctx context.Context, queryPara
 		err := json.Unmarshal(cached, &response)
 		if err != nil {
 			logrus.Log.Error("Error get from cache")
-			return nil, err
+			return nil, utils.NewInternalError("invalid data")
 		}
+
+		// Convert data back to []*dto.UserResponseDTO
+		if data, ok := response.Data.([]interface{}); ok {
+			commodities := make([]*domain.Commodity, len(data))
+			for i, item := range data {
+				if commodityMap, ok := item.(map[string]interface{}); ok {
+					commodityJSON, _ := json.Marshal(commodityMap)
+					var commodity domain.Commodity
+					json.Unmarshal(commodityJSON, &commodity)
+					commodities[i] = &commodity
+				}
+			}
+			response.Data = commodities
+		}
+
 		logrus.Log.Info("Cache hit")
 		return response, nil
 	}
@@ -143,17 +159,17 @@ func (uc *CommodityUsecaseImpl) UpdateCommodity(ctx context.Context, id uuid.UUI
 		commodity.Description = *req.Description
 	}
 
-	err = uc.cache.DeleteByPattern(ctx, "commodity")
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
 	err = uc.commodityRepository.Update(ctx, id, commodity)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
 	updatedCommodity, err := uc.commodityRepository.FindByID(ctx, id)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	err = uc.cache.DeleteByPattern(ctx, "commodity")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
