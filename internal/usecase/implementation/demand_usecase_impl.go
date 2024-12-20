@@ -17,16 +17,16 @@ type DemandUsecaseImpl struct {
 	demandRepo        repository_interface.DemandRepository
 	demandHistoryRepo repository_interface.DemandHistoryRepository
 	commodityRepo     repository_interface.CommodityRepository
-	regionRepo        repository_interface.RegionRepository
+	cityRepo          repository_interface.CityRepository
 	txManager         transaction.TransactionManager
 }
 
-func NewDemandUsecase(demandRepo repository_interface.DemandRepository, demandHistoryRepo repository_interface.DemandHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository, txManager transaction.TransactionManager) usecase_interface.DemandUsecase {
+func NewDemandUsecase(demandRepo repository_interface.DemandRepository, demandHistoryRepo repository_interface.DemandHistoryRepository, commodityRepo repository_interface.CommodityRepository, cityRepo repository_interface.CityRepository, txManager transaction.TransactionManager) usecase_interface.DemandUsecase {
 	return &DemandUsecaseImpl{
 		demandRepo,
 		demandHistoryRepo,
 		commodityRepo,
-		regionRepo,
+		cityRepo,
 		txManager,
 	}
 }
@@ -40,12 +40,12 @@ func (u *DemandUsecaseImpl) CreateDemand(ctx context.Context, req *dto.DemandCre
 	if err != nil {
 		return nil, utils.NewNotFoundError("commodity not found")
 	}
-	_, err = u.regionRepo.FindByID(ctx, req.RegionID)
+	_, err = u.cityRepo.FindByID(ctx, req.CityID)
 	if err != nil {
-		return nil, utils.NewNotFoundError("region not found")
+		return nil, utils.NewNotFoundError("city not found")
 	}
 	demand.CommodityID = req.CommodityID
-	demand.RegionID = req.RegionID
+	demand.CityID = req.CityID
 	demand.Quantity = req.Quantity
 	demand.ID = uuid.New()
 
@@ -90,13 +90,13 @@ func (u *DemandUsecaseImpl) GetDemandsByCommodityID(ctx context.Context, commodi
 	return demands, nil
 }
 
-func (u *DemandUsecaseImpl) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Demand, error) {
-	_, err := u.regionRepo.FindByID(ctx, regionID)
+func (u *DemandUsecaseImpl) GetDemandsByCityID(ctx context.Context, cityID int64) ([]*domain.Demand, error) {
+	_, err := u.cityRepo.FindByID(ctx, cityID)
 	if err != nil {
-		return nil, utils.NewNotFoundError("region not found")
+		return nil, utils.NewNotFoundError("city not found")
 	}
 
-	demands, err := u.demandRepo.FindByRegionID(ctx, regionID)
+	demands, err := u.demandRepo.FindByCityID(ctx, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -119,8 +119,8 @@ func (u *DemandUsecaseImpl) UpdateDemand(ctx context.Context, id uuid.UUID, req 
 			ID:          uuid.New(),
 			CommodityID: demand.CommodityID,
 			Commodity:   demand.Commodity,
-			RegionID:    demand.RegionID,
-			Region:      demand.Region,
+			CityID:      demand.CityID,
+			City:        demand.City,
 			Quantity:    demand.Quantity,
 			Unit:        demand.Unit,
 		}
@@ -165,12 +165,12 @@ func (u *DemandUsecaseImpl) DeleteDemand(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) ([]*domain.DemandHistory, error) {
-	demands, err := u.demandHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.DemandHistory, error) {
+	demands, err := u.demandHistoryRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	demand, err := u.demandRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	demand, err := u.demandRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -179,8 +179,8 @@ func (u *DemandUsecaseImpl) GetDemandHistoryByCommodityIDAndRegionID(ctx context
 		ID:          demand.ID,
 		CommodityID: demand.CommodityID,
 		Commodity:   demand.Commodity,
-		RegionID:    demand.RegionID,
-		Region:      demand.Region,
+		CityID:      demand.CityID,
+		City:        demand.City,
 		Quantity:    demand.Quantity,
 		CreatedAt:   demand.CreatedAt,
 		UpdatedAt:   demand.UpdatedAt,

@@ -2,6 +2,7 @@ package handler_implementation
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -71,13 +72,13 @@ func (h *SupplyHandlerImpl) GetSupplyByCommodityID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, supplies)
 }
 
-func (h *SupplyHandlerImpl) GetSupplyByRegionID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *SupplyHandlerImpl) GetSupplyByCityID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	supplies, err := h.uc.GetSupplyByRegionID(c, id)
+	supplies, err := h.uc.GetSupplyByCityID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -118,18 +119,18 @@ func (h *SupplyHandlerImpl) DeleteSupply(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Supply deleted successfully"})
 }
 
-func (h *SupplyHandlerImpl) GetSupplyHistoryByCommodityIDAndRegionID(c *gin.Context) {
+func (h *SupplyHandlerImpl) GetSupplyHistoryByCommodityIDAndCityID(c *gin.Context) {
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	regionID, err := uuid.Parse(c.Param("region_id"))
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	supplies, err := h.uc.GetSupplyHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	supplies, err := h.uc.GetSupplyHistoryByCommodityIDAndCityID(c, commodityID, cityID)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ type PriceHandlerMocks struct {
 type PriceHandlerIDs struct {
 	PriceID     uuid.UUID
 	CommodityID uuid.UUID
-	RegionID    uuid.UUID
+	CityID      int64
 }
 
 type PriceHandlerDTOMocks struct {
@@ -67,39 +68,39 @@ func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandle
 	r := gin.Default()
 
 	priceID := uuid.New()
-	CommodityID := uuid.New()
-	RegionID := uuid.New()
+	commodityID := uuid.New()
+	cityID := int64(1)
 
 	ids := PriceHandlerIDs{
 		PriceID:     priceID,
-		CommodityID: CommodityID,
-		RegionID:    RegionID,
+		CommodityID: commodityID,
+		CityID:      cityID,
 	}
 
 	mocks := PriceHandlerMocks{
 		Price: &domain.Price{
 			ID:          priceID,
-			CommodityID: CommodityID,
-			RegionID:    RegionID,
+			CommodityID: commodityID,
+			CityID:      cityID,
 		},
 		Prices: []*domain.Price{
 			{
 				ID:          priceID,
-				CommodityID: CommodityID,
-				RegionID:    RegionID,
+				CommodityID: commodityID,
+				CityID:      cityID,
 			},
 		},
 		PriceHistory: []*domain.PriceHistory{
 			{
 				ID:          priceID,
-				CommodityID: CommodityID,
-				RegionID:    RegionID,
+				CommodityID: commodityID,
+				CityID:      cityID,
 			},
 		},
 		UpdatePrice: &domain.Price{
 			ID:          priceID,
-			CommodityID: CommodityID,
-			RegionID:    RegionID,
+			CommodityID: commodityID,
+			CityID:      cityID,
 		},
 	}
 
@@ -108,14 +109,14 @@ func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandle
 
 	dtos := PriceHandlerDTOMocks{
 		ParamsDTO: &dto.PriceParamsDTO{
-			CommodityID: CommodityID,
-			RegionID:    RegionID,
+			CommodityID: commodityID,
+			CityID:      cityID,
 			StartDate:   startDate,
 			EndDate:     endDate,
 		},
 		ResponseDownloadDTO: &dto.DownloadResponseDTO{
 			Message:     "Price history report generation in progress. Please check back in a few moments.",
-			DownloadURL: "http://localhost:8080/api/prices/history/commodity/1/region/1/download/file?start_date=2023-10-26&end_date=2023-10-27",
+			DownloadURL: "http://localhost:8080/api/prices/history/commodity/1/city/1/download/file?start_date=2023-10-26&end_date=2023-10-27",
 		},
 	}
 
@@ -130,7 +131,7 @@ func TestPriceHandler_CreatePrice(t *testing.T) {
 	t.Run("should create price successfully", func(t *testing.T) {
 		uc.EXPECT().CreatePrice(gomock.Any(), gomock.Any()).Return(mockc.Price, nil).Times(1)
 
-		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","region_id":"` + ids.RegionID.String() + `"}`
+		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `}`
 		req, _ := http.NewRequest(http.MethodPost, "/prices", bytes.NewBuffer([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -165,7 +166,7 @@ func TestPriceHandler_CreatePrice(t *testing.T) {
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().CreatePrice(gomock.Any(), gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
 
-		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","region_id":"` + ids.RegionID.String() + `"}`
+		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `}`
 		req, _ := http.NewRequest(http.MethodPost, "/prices", bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -313,16 +314,16 @@ func TestPriceHandler_GetPricesByCommodityID(t *testing.T) {
 	})
 }
 
-func TestPriceHandler_GetPricesByRegionID(t *testing.T) {
+func TestPriceHandler_GetPricesByCityID(t *testing.T) {
 	r, h, uc, ids, mocks, _ := PriceHandlerSetUp(t)
 
-	r.GET("/prices/region/:id", h.GetPricesByRegionID)
+	r.GET("/prices/city/:id", h.GetPricesByCityID)
 
-	t.Run("should get prices by region id successfully", func(t *testing.T) {
-		uc.EXPECT().GetPricesByRegionID(gomock.Any(), ids.RegionID).Return(mocks.Prices, nil).Times(1)
+	t.Run("should get prices by city id successfully", func(t *testing.T) {
+		uc.EXPECT().GetPricesByCityID(gomock.Any(), ids.CityID).Return(mocks.Prices, nil).Times(1)
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/region/"+ids.RegionID.String(), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/city/"+strconv.FormatInt(ids.CityID, 10), nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -334,10 +335,10 @@ func TestPriceHandler_GetPricesByRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
-		uc.EXPECT().GetPricesByRegionID(gomock.Any(), ids.RegionID).Return(nil, utils.NewInternalError("Internal error"))
+		uc.EXPECT().GetPricesByCityID(gomock.Any(), ids.CityID).Return(nil, utils.NewInternalError("Internal error"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/region/"+ids.RegionID.String(), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/city/"+strconv.FormatInt(ids.CityID, 10), nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -348,10 +349,10 @@ func TestPriceHandler_GetPricesByRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when id is invalid", func(t *testing.T) {
-		uc.EXPECT().GetPricesByRegionID(gomock.Any(), uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+		uc.EXPECT().GetPricesByCityID(gomock.Any(), uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/region/aa", nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/city/aa", nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -370,7 +371,7 @@ func TestPriceHandler_UpdatePrice(t *testing.T) {
 	t.Run("should update price successfully", func(t *testing.T) {
 		uc.EXPECT().UpdatePrice(gomock.Any(), ids.PriceID, gomock.Any()).Return(mocks.UpdatePrice, nil).Times(1)
 
-		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","region_id":"` + ids.RegionID.String() + `"}`
+		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `}`
 		req, _ := http.NewRequest(http.MethodPut, "/prices/"+ids.PriceID.String(), bytes.NewBuffer([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -405,7 +406,7 @@ func TestPriceHandler_UpdatePrice(t *testing.T) {
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().UpdatePrice(gomock.Any(), ids.PriceID, gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
 
-		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","region_id":"` + ids.RegionID.String() + `"}`
+		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `}`
 		req, _ := http.NewRequest(http.MethodPut, "/prices/"+ids.PriceID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -423,7 +424,7 @@ func TestPriceHandler_UpdatePrice(t *testing.T) {
 	t.Run("should return error when id is invalid", func(t *testing.T) {
 		uc.EXPECT().UpdatePrice(gomock.Any(), uuid.Nil, gomock.Any()).Return(nil, utils.NewBadRequestError("ID is invalid"))
 
-		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","region_id":"` + ids.RegionID.String() + `"}`
+		reqBody := `{"commodity_id":"` + ids.CommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `}`
 		req, _ := http.NewRequest(http.MethodPut, "/prices/aa", bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -535,16 +536,16 @@ func TestPriceHandler_RestorePrice(t *testing.T) {
 	})
 }
 
-func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
+func TestPriceHandler_GetPriceByCommodityIDAndCityID(t *testing.T) {
 	r, h, uc, ids, mocks, _ := PriceHandlerSetUp(t)
 
-	r.GET("/prices/commodity_id/:commodity_id/region/:region_id", h.GetPriceByCommodityIDAndRegionID)
+	r.GET("/prices/commodity_id/:commodity_id/city/:city_id", h.GetPriceByCommodityIDAndCityID)
 
-	t.Run("should get price by commodity id and region id successfully", func(t *testing.T) {
-		uc.EXPECT().GetPriceByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(mocks.Price, nil).Times(1)
+	t.Run("should get price by commodity id and city id successfully", func(t *testing.T) {
+		uc.EXPECT().GetPriceByCommodityIDAndCityID(gomock.Any(), ids.CommodityID, ids.CityID).Return(mocks.Price, nil).Times(1)
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String(), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/city/"+strconv.FormatInt(ids.CityID, 10), nil))
 
 		var response responsePriceHandler
 		assert.NoError(t, json.NewDecoder(w.Body).Decode(&response))
@@ -555,10 +556,10 @@ func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
-		uc.EXPECT().GetPriceByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("Internal error"))
+		uc.EXPECT().GetPriceByCommodityIDAndCityID(gomock.Any(), ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("Internal error"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String(), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/city/"+strconv.FormatInt(ids.CityID, 10), nil))
 
 		var response responsePriceHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -571,7 +572,7 @@ func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
 	t.Run("should return error when commodity id is invalid", func(t *testing.T) {
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/aa/region/%s", ids.RegionID), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/aa/city/%d", ids.CityID), nil))
 
 		var response responsePriceHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -581,10 +582,10 @@ func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("should return error when region id is invalid", func(t *testing.T) {
+	t.Run("should return error when city id is invalid", func(t *testing.T) {
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/%s/region/qq", ids.CommodityID), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/%s/city/qq", ids.CommodityID), nil))
 
 		var response responsePriceHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -595,16 +596,16 @@ func TestPriceHandler_GetPriceByCommodityIDAndRegionID(t *testing.T) {
 	})
 }
 
-func TestPriceHandler_GetPricesHistoryByCommodityIDAndRegionID(t *testing.T) {
+func TestPriceHandler_GetPricesHistoryByCommodityIDAndCityID(t *testing.T) {
 	r, h, uc, ids, mocks, _ := PriceHandlerSetUp(t)
 
-	r.GET("/prices/commodity_id/:commodity_id/region/:region_id/history", h.GetPricesHistoryByCommodityIDAndRegionID)
+	r.GET("/prices/commodity_id/:commodity_id/city/:city_id/history", h.GetPricesHistoryByCommodityIDAndCityID)
 
-	t.Run("should get price history by commodity id and region id successfully", func(t *testing.T) {
-		uc.EXPECT().GetPriceHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(mocks.PriceHistory, nil).Times(1)
+	t.Run("should get price history by commodity id and city id successfully", func(t *testing.T) {
+		uc.EXPECT().GetPriceHistoryByCommodityIDAndCityID(gomock.Any(), ids.CommodityID, ids.CityID).Return(mocks.PriceHistory, nil).Times(1)
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String()+"/history", nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/city/"+strconv.FormatInt(ids.CityID, 10)+"/history", nil))
 
 		var response responsePricesHandler
 		assert.NoError(t, json.NewDecoder(w.Body).Decode(&response))
@@ -614,10 +615,10 @@ func TestPriceHandler_GetPricesHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
-		uc.EXPECT().GetPriceHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("Internal error"))
+		uc.EXPECT().GetPriceHistoryByCommodityIDAndCityID(gomock.Any(), ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("Internal error"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/region/"+ids.RegionID.String()+"/history", nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices/commodity_id/"+ids.CommodityID.String()+"/city/"+strconv.FormatInt(ids.CityID, 10)+"/history", nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -628,10 +629,10 @@ func TestPriceHandler_GetPricesHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when commodity id is invalid", func(t *testing.T) {
-		uc.EXPECT().GetPriceHistoryByCommodityIDAndRegionID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+		uc.EXPECT().GetPriceHistoryByCommodityIDAndCityID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/aa/region/%s/history", ids.RegionID), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/aa/city/%d/history", ids.CityID), nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -641,11 +642,11 @@ func TestPriceHandler_GetPricesHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("should return error when region id is invalid", func(t *testing.T) {
-		uc.EXPECT().GetPriceHistoryByCommodityIDAndRegionID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+	t.Run("should return error when city id is invalid", func(t *testing.T) {
+		uc.EXPECT().GetPriceHistoryByCommodityIDAndCityID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/%s/region/bb/history", ids.CommodityID), nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/prices/commodity_id/%s/city/bb/history", ids.CommodityID), nil))
 
 		var response responsePricesHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -658,12 +659,12 @@ func TestPriceHandler_GetPricesHistoryByCommodityIDAndRegionID(t *testing.T) {
 
 func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	r, h, uc, ids, _, dtos := PriceHandlerSetUp(t) // No usecase mocking needed here either.
-	r.GET("/prices/history/commodity/:commodity_id/region/:region_id/download", h.DownloadPricesHistoryByCommodityIDAndRegionID)
+	r.GET("/prices/history/commodity/:commodity_id/city/:city_id/download", h.DownloadPricesHistoryByCommodityIDAndCityID)
 
 	t.Run("should return success response and download URL", func(t *testing.T) {
-		uc.EXPECT().DownloadPriceHistoryByCommodityIDAndRegionID(gomock.Any(), dtos.ParamsDTO).Return(dtos.ResponseDownloadDTO, nil).Times(1)
+		uc.EXPECT().DownloadPriceHistoryByCommodityIDAndCityID(gomock.Any(), dtos.ParamsDTO).Return(dtos.ResponseDownloadDTO, nil).Times(1)
 
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -676,7 +677,7 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid commodity id", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/abc/region/%s/download", ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/abc/city/%d/download", ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -688,8 +689,8 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("should return error when invalid region id", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/abc/download", ids.CommodityID), nil)
+	t.Run("should return error when invalid city id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/abc/download", ids.CommodityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -702,7 +703,7 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid start date format", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download?start_date=invalid-date&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download?start_date=invalid-date&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -715,7 +716,7 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid end date format", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download?start_date=2023-10-26&end_date=invalid-date", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download?start_date=2023-10-26&end_date=invalid-date", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -728,9 +729,9 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	})
 
 	t.Run("should return error when land commodity usecase returns error", func(t *testing.T) {
-		uc.EXPECT().DownloadPriceHistoryByCommodityIDAndRegionID(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewInternalError("Internal error")).Times(1)
+		uc.EXPECT().DownloadPriceHistoryByCommodityIDAndCityID(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewInternalError("Internal error")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -745,7 +746,7 @@ func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 
 func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 	r, h, uc, ids, _, dtos := PriceHandlerSetUp(t)
-	r.GET("/prices/history/commodity/:commodity_id/region/:region_id/download/file", h.GetPriceHistoryExcelFile)
+	r.GET("/prices/history/commodity/:commodity_id/city/:city_id/download/file", h.GetPriceHistoryExcelFile)
 
 	// Create a temporary directory for test files.  This is crucial for cleanup.
 	tempDir, err := os.MkdirTemp("", "price_reports")
@@ -768,9 +769,9 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 		logrus.Log.Info(expectedFilePath)
 		uc.EXPECT().GetPriceExcelFile(gomock.Any(), dtos.ParamsDTO).Return(&expectedFilePath, nil).Times(1)
 
-		logrus.Log.Info(ids.CommodityID, ids.RegionID)
+		logrus.Log.Info(ids.CommodityID, ids.CityID)
 
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -784,7 +785,7 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid commodity id", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/abc/region/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/abc/city/%d/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -796,8 +797,8 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("should return error when invalid region id", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/abc/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID), nil)
+	t.Run("should return error when invalid city id", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/abc/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -810,7 +811,7 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid start date format", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download/file?start_date=invalid-date&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download/file?start_date=invalid-date&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -823,7 +824,7 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid end date format", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download/file?start_date=2023-10-26&end_date=invalid-date", ids.CommodityID, ids.RegionID), nil)
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download/file?start_date=2023-10-26&end_date=invalid-date", ids.CommodityID, ids.CityID), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -838,7 +839,7 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 	t.Run("should return 404 when file not found", func(t *testing.T) {
 		// This case now has to be modified to reflect that a file is NOT present
 		uc.EXPECT().GetPriceExcelFile(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewNotFoundError("Report file not found")).Times(1)
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil) // Use existing ID
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil) // Use existing ID
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		var response responsePriceHandler
@@ -851,7 +852,7 @@ func TestPriceHandler_GetPriceExcelFile(t *testing.T) {
 
 	t.Run("should return 500 when usecase returns an error", func(t *testing.T) {
 		uc.EXPECT().GetPriceExcelFile(gomock.Any(), dtos.ParamsDTO).Return(nil, utils.NewInternalError("Simulated file system error")).Times(1)
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/region/%s/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.RegionID), nil) // Use existing ID
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/prices/history/commodity/%s/city/%d/download/file?start_date=2023-10-26&end_date=2023-10-27", ids.CommodityID, ids.CityID), nil) // Use existing ID
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		var response responsePriceHandler

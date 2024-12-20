@@ -19,7 +19,7 @@ type RabbitMQUsecaseImpl struct {
 }
 type PriceMessage struct {
 	CommodityID uuid.UUID `json:"CommodityID"`
-	RegionID    uuid.UUID `json:"RegionID"`
+	CityID      int64     `json:"CityID"`
 	StartDate   time.Time `json:"StartDate"`
 	EndDate     time.Time `json:"EndDate"`
 }
@@ -44,13 +44,13 @@ func (u *RabbitMQUsecaseImpl) HandlePriceHistoryMessage(msgBody []byte) error {
 	}
 
 	// Ambil data dari repository
-	results, err := u.reportRepo.GetPriceHistoryReport(msg.StartDate, msg.EndDate, msg.CommodityID, msg.RegionID)
+	results, err := u.reportRepo.GetPriceHistoryReport(msg.StartDate, msg.EndDate, msg.CommodityID, msg.CityID)
 	if err != nil {
 		return err
 	}
 
 	// Generate excel menggunakan usecase
-	if err := u.excelService.CreatePriceHistoryReport(results, results[0].Commodity.Name, results[0].Region.City.Name, results[0].Commodity.ID, results[0].Region.ID, msg.StartDate, msg.EndDate); err != nil {
+	if err := u.excelService.CreatePriceHistoryReport(results, results[0].Commodity.Name, results[0].City.Name, results[0].Commodity.ID, results[0].ID, msg.StartDate, msg.EndDate); err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (u *RabbitMQUsecaseImpl) HandleHarvestMessage(msgBody []byte) error {
 	}
 
 	// Generate excel menggunakan usecase
-	if err := u.excelService.CreateHarvestReport(results, results[0].LandCommodity.Commodity.Name, results[0].Region.City.Name, results[0].LandCommodity.Land.User.Name, results[0].LandCommodity.ID, msg.StartDate, msg.EndDate); err != nil {
+	if err := u.excelService.CreateHarvestReport(results, results[0].LandCommodity.Commodity.Name, results[0].City.Name, results[0].LandCommodity.Land.User.Name, results[0].LandCommodity.ID, msg.StartDate, msg.EndDate); err != nil {
 		return err
 	}
 

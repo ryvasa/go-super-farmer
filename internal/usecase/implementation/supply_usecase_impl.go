@@ -17,16 +17,16 @@ type SupplyUsecaseImpl struct {
 	supplyRepo        repository_interface.SupplyRepository
 	supplyHistoryRepo repository_interface.SupplyHistoryRepository
 	commodityRepo     repository_interface.CommodityRepository
-	regionRepo        repository_interface.RegionRepository
+	cityRepo          repository_interface.CityRepository
 	txManager         transaction.TransactionManager
 }
 
-func NewSupplyUsecase(supplyRepo repository_interface.SupplyRepository, supplyHistoryRepo repository_interface.SupplyHistoryRepository, commodityRepo repository_interface.CommodityRepository, regionRepo repository_interface.RegionRepository, txManager transaction.TransactionManager) usecase_interface.SupplyUsecase {
+func NewSupplyUsecase(supplyRepo repository_interface.SupplyRepository, supplyHistoryRepo repository_interface.SupplyHistoryRepository, commodityRepo repository_interface.CommodityRepository, cityRepo repository_interface.CityRepository, txManager transaction.TransactionManager) usecase_interface.SupplyUsecase {
 	return &SupplyUsecaseImpl{
 		supplyRepo,
 		supplyHistoryRepo,
 		commodityRepo,
-		regionRepo,
+		cityRepo,
 		txManager,
 	}
 }
@@ -39,15 +39,15 @@ func (u *SupplyUsecaseImpl) CreateSupply(ctx context.Context, req *dto.SupplyCre
 	if err != nil {
 		return nil, utils.NewNotFoundError("commodity not found")
 	}
-	region, err := u.regionRepo.FindByID(ctx, req.RegionID)
+	city, err := u.cityRepo.FindByID(ctx, req.CityID)
 	if err != nil {
-		return nil, utils.NewNotFoundError("region not found")
+		return nil, utils.NewNotFoundError("city not found")
 	}
 	supply.CommodityID = req.CommodityID
-	supply.RegionID = req.RegionID
+	supply.CityID = req.CityID
 	supply.Quantity = req.Quantity
 	supply.Commodity = commodity
-	supply.Region = region
+	supply.City = city
 	supply.ID = uuid.New()
 
 	err = u.supplyRepo.Create(ctx, &supply)
@@ -87,8 +87,8 @@ func (u *SupplyUsecaseImpl) GetSupplyByCommodityID(ctx context.Context, commodit
 	return supplies, nil
 }
 
-func (u *SupplyUsecaseImpl) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Supply, error) {
-	supplies, err := u.supplyRepo.FindByRegionID(ctx, regionID)
+func (u *SupplyUsecaseImpl) GetSupplyByCityID(ctx context.Context, cityID int64) ([]*domain.Supply, error) {
+	supplies, err := u.supplyRepo.FindByCityID(ctx, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -111,8 +111,8 @@ func (u *SupplyUsecaseImpl) UpdateSupply(ctx context.Context, id uuid.UUID, req 
 			ID:          uuid.New(),
 			CommodityID: supply.CommodityID,
 			Commodity:   supply.Commodity,
-			RegionID:    supply.RegionID,
-			Region:      supply.Region,
+			CityID:      supply.CityID,
+			City:        supply.City,
 			Quantity:    supply.Quantity,
 			Unit:        supply.Unit,
 		}
@@ -158,12 +158,12 @@ func (u *SupplyUsecaseImpl) DeleteSupply(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) ([]*domain.SupplyHistory, error) {
-	supplys, err := u.supplyHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.SupplyHistory, error) {
+	supplys, err := u.supplyHistoryRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	supply, err := u.supplyRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	supply, err := u.supplyRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -172,8 +172,8 @@ func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndRegionID(ctx context
 		ID:          supply.ID,
 		CommodityID: supply.CommodityID,
 		Commodity:   supply.Commodity,
-		RegionID:    supply.RegionID,
-		Region:      supply.Region,
+		CityID:      supply.CityID,
+		City:        supply.City,
 		Quantity:    supply.Quantity,
 		CreatedAt:   supply.CreatedAt,
 		UpdatedAt:   supply.UpdatedAt,

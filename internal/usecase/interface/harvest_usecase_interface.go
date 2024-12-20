@@ -15,7 +15,7 @@ type HarvestUsecase interface {
 	GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
 	GetHarvestByLandID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
 	GetHarvestByLandCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
-	GetHarvestByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
+	GetHarvestByCityID(ctx context.Context, id int64) ([]*domain.Harvest, error)
 	UpdateHarvest(ctx context.Context, id uuid.UUID, req *dto.HarvestUpdateDTO) (*domain.Harvest, error)
 	DeleteHarvest(ctx context.Context, id uuid.UUID) error
 	RestoreHarvest(ctx context.Context, id uuid.UUID) (*domain.Harvest, error)

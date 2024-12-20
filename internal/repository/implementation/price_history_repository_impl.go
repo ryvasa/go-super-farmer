@@ -31,16 +31,15 @@ func (r *PriceHistoryRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID)
 	return &priceHistory, nil
 }
 
-func (r *PriceHistoryRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.PriceHistory, error) {
+func (r *PriceHistoryRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.PriceHistory, error) {
 	priceHistories := []*domain.PriceHistory{}
-	err := r.DB(ctx).Preload("Commodity", func(db *gorm.DB) *gorm.DB {
-		return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
-	}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
+	err := r.DB(ctx).
+		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
+			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region.Province").
-		Preload("Region.City").Where("commodity_id = ? AND region_id = ?", commodityID, regionID).Find(&priceHistories).Error
+		Preload("City").
+		Preload("City.Province").
+		Where("commodity_id = ? AND city_id = ?", commodityID, cityID).Find(&priceHistories).Error
 	if err != nil {
 		return nil, err
 	}

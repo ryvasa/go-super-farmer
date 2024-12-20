@@ -45,7 +45,6 @@ func NewRouter(handlers *handler.Handlers) *gin.Engine {
 		NewPriceRoute(handlers.PriceHandler),
 		NewProvinceRoute(handlers.ProvinceHandler),
 		NewCityRoute(handlers.CityHandler),
-		NewRegionRoute(handlers.RegionHandler),
 		NewDemandRoute(handlers.DemandHandler),
 		NewSupplyRoute(handlers.SupplyHandler),
 		NewHarvestRoute(handlers.HarvestHandler),

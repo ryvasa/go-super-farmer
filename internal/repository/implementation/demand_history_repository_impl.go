@@ -46,17 +46,17 @@ func (r *DemandHistoryRepositoryImpl) FindByCommodityID(ctx context.Context, id 
 	return supplies, nil
 }
 
-func (r *DemandHistoryRepositoryImpl) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.DemandHistory, error) {
+func (r *DemandHistoryRepositoryImpl) FindByCityID(ctx context.Context, id int64) ([]*domain.DemandHistory, error) {
 	var supplies []*domain.DemandHistory
-	if err := r.DB(ctx).Where("region_id = ?", id).Find(&supplies).Error; err != nil {
+	if err := r.DB(ctx).Where("city_id = ?", id).Find(&supplies).Error; err != nil {
 		return nil, err
 	}
 	return supplies, nil
 }
 
-func (r *DemandHistoryRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) ([]*domain.DemandHistory, error) {
+func (r *DemandHistoryRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.DemandHistory, error) {
 	var supplies []*domain.DemandHistory
-	if err := r.DB(ctx).Where("commodity_id = ? AND region_id = ?", commodityID, regionID).Find(&supplies).Error; err != nil {
+	if err := r.DB(ctx).Where("commodity_id = ? AND city_id = ?", commodityID, cityID).Find(&supplies).Error; err != nil {
 		return nil, err
 	}
 	return supplies, nil

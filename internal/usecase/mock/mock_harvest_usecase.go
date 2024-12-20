@@ -111,6 +111,21 @@ func (mr *MockHarvestUsecaseMockRecorder) GetAllHarvest(ctx interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllHarvest", reflect.TypeOf((*MockHarvestUsecase)(nil).GetAllHarvest), ctx)
 }
 
+// GetHarvestByCityID mocks base method.
+func (m *MockHarvestUsecase) GetHarvestByCityID(ctx context.Context, id int64) ([]*domain.Harvest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHarvestByCityID", ctx, id)
+	ret0, _ := ret[0].([]*domain.Harvest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHarvestByCityID indicates an expected call of GetHarvestByCityID.
+func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByCityID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHarvestByCityID", reflect.TypeOf((*MockHarvestUsecase)(nil).GetHarvestByCityID), ctx, id)
+}
+
 // GetHarvestByCommodityID mocks base method.
 func (m *MockHarvestUsecase) GetHarvestByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
 	m.ctrl.T.Helper()
@@ -169,21 +184,6 @@ func (m *MockHarvestUsecase) GetHarvestByLandID(ctx context.Context, id uuid.UUI
 func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByLandID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHarvestByLandID", reflect.TypeOf((*MockHarvestUsecase)(nil).GetHarvestByLandID), ctx, id)
-}
-
-// GetHarvestByRegionID mocks base method.
-func (m *MockHarvestUsecase) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHarvestByRegionID", ctx, id)
-	ret0, _ := ret[0].([]*domain.Harvest)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetHarvestByRegionID indicates an expected call of GetHarvestByRegionID.
-func (mr *MockHarvestUsecaseMockRecorder) GetHarvestByRegionID(ctx, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHarvestByRegionID", reflect.TypeOf((*MockHarvestUsecase)(nil).GetHarvestByRegionID), ctx, id)
 }
 
 // GetHarvestDeletedByID mocks base method.

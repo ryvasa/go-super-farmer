@@ -38,7 +38,6 @@ func NewPostgres(env *env.Env) (*gorm.DB, error) {
 		&domain.LandCommodity{},
 		&domain.Province{},
 		&domain.City{},
-		&domain.Region{},
 		&domain.Price{},
 		&domain.PriceHistory{},
 		&domain.Supply{},

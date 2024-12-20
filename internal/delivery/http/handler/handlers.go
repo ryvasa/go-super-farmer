@@ -12,13 +12,12 @@ type Handlers struct {
 	PriceHandler         handler_interface.PriceHandler
 	ProvinceHandler      handler_interface.ProvinceHandler
 	CityHandler          handler_interface.CityHandler
-	RegionHandler        handler_interface.RegionHandler
 	DemandHandler        handler_interface.DemandHandler
 	SupplyHandler        handler_interface.SupplyHandler
 	HarvestHandler       handler_interface.HarvestHandler
 }
 
-func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_interface.UserHandler, landHandler handler_interface.LandHandler, authHandler handler_interface.AuthHandler, commodityHandler handler_interface.CommodityHandler, landCommodityHandler handler_interface.LandCommodityHandler, priceHandler handler_interface.PriceHandler, provinceHandler handler_interface.ProvinceHandler, cityHandler handler_interface.CityHandler, regionHandler handler_interface.RegionHandler, demandHandler handler_interface.DemandHandler, supplyHandler handler_interface.SupplyHandler, harvestHandler handler_interface.HarvestHandler) *Handlers {
+func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_interface.UserHandler, landHandler handler_interface.LandHandler, authHandler handler_interface.AuthHandler, commodityHandler handler_interface.CommodityHandler, landCommodityHandler handler_interface.LandCommodityHandler, priceHandler handler_interface.PriceHandler, provinceHandler handler_interface.ProvinceHandler, cityHandler handler_interface.CityHandler, demandHandler handler_interface.DemandHandler, supplyHandler handler_interface.SupplyHandler, harvestHandler handler_interface.HarvestHandler) *Handlers {
 	return &Handlers{
 		RoleHandler:          roleHandler,
 		UserHandler:          userHandler,
@@ -29,7 +28,6 @@ func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_
 		PriceHandler:         priceHandler,
 		ProvinceHandler:      provinceHandler,
 		CityHandler:          cityHandler,
-		RegionHandler:        regionHandler,
 		DemandHandler:        demandHandler,
 		SupplyHandler:        supplyHandler,
 		HarvestHandler:       harvestHandler,

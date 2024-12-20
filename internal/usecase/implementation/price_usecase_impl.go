@@ -21,7 +21,7 @@ import (
 
 type PriceMessage struct {
 	CommodityID uuid.UUID `json:"CommodityID"`
-	RegionID    uuid.UUID `json:"RegionID"`
+	CityID      int64     `json:"CityID"`
 	StartDate   time.Time `json:"StartDate"`
 	EndDate     time.Time `json:"EndDate"`
 }
@@ -29,15 +29,15 @@ type PriceMessage struct {
 type PriceUsecaseImpl struct {
 	priceRepo        repository_interface.PriceRepository
 	priceHistoryRepo repository_interface.PriceHistoryRepository
-	regionRepo       repository_interface.RegionRepository
+	cityRepo         repository_interface.CityRepository
 	commodityRepo    repository_interface.CommodityRepository
 	rabbitMQ         messages.RabbitMQ
 	txManager        transaction.TransactionManager
 	cache            cache.Cache
 }
 
-func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, regionRepo repository_interface.RegionRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache) usecase_interface.PriceUsecase {
-	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, regionRepo, commodityRepo, rabbitMQ, txManager, cache}
+func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache) usecase_interface.PriceUsecase {
+	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, cityRepo, commodityRepo, rabbitMQ, txManager, cache}
 }
 
 func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error) {
@@ -50,12 +50,12 @@ func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreate
 		return nil, utils.NewNotFoundError("commodity not found")
 	}
 
-	if _, err := u.regionRepo.FindByID(ctx, req.RegionID); err != nil {
-		return nil, utils.NewNotFoundError("region not found")
+	if _, err := u.cityRepo.FindByID(ctx, req.CityID); err != nil {
+		return nil, utils.NewNotFoundError("city not found")
 	}
 
 	price.CommodityID = req.CommodityID
-	price.RegionID = req.RegionID
+	price.CityID = req.CityID
 	price.Price = req.Price
 	price.ID = uuid.New()
 
@@ -122,8 +122,8 @@ func (u *PriceUsecaseImpl) GetPricesByCommodityID(ctx context.Context, commodity
 	return prices, nil
 }
 
-func (u *PriceUsecaseImpl) GetPricesByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Price, error) {
-	prices, err := u.priceRepo.FindByRegionID(ctx, regionID)
+func (u *PriceUsecaseImpl) GetPricesByCityID(ctx context.Context, cityID int64) ([]*domain.Price, error) {
+	prices, err := u.priceRepo.FindByCityID(ctx, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -150,7 +150,7 @@ func (u *PriceUsecaseImpl) UpdatePrice(ctx context.Context, id uuid.UUID, req *d
 		historyPrice := domain.PriceHistory{
 			ID:          uuid.New(),
 			CommodityID: existingPrice.CommodityID,
-			RegionID:    existingPrice.RegionID,
+			CityID:      existingPrice.CityID,
 			Price:       existingPrice.Price,
 			CreatedAt:   existingPrice.CreatedAt,
 			UpdatedAt:   existingPrice.UpdatedAt,
@@ -236,15 +236,15 @@ func (u *PriceUsecaseImpl) RestorePrice(ctx context.Context, id uuid.UUID) (*dom
 	return restoredPrice, nil
 }
 
-func (u *PriceUsecaseImpl) GetPriceByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*domain.Price, error) {
-	price, err := u.priceRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+func (u *PriceUsecaseImpl) GetPriceByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Price, error) {
+	price, err := u.priceRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	return price, nil
 }
-func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.PriceHistory, error) {
-	cacheKey := fmt.Sprintf("price_history_%s_%s", commodityID, regionID)
+func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.PriceHistory, error) {
+	cacheKey := fmt.Sprintf("price_history_%s_%d", commodityID, cityID)
 	cachedPriceHistory, err := u.cache.Get(ctx, cacheKey)
 	if err == nil && cachedPriceHistory != nil {
 		var priceHistories []*domain.PriceHistory
@@ -254,12 +254,12 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 		}
 		return priceHistories, nil
 	}
-	historyPrices, err := u.priceHistoryRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	historyPrices, err := u.priceHistoryRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	currentPrice, err := u.priceRepo.FindByCommodityIDAndRegionID(ctx, commodityID, regionID)
+	currentPrice, err := u.priceRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -267,9 +267,9 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 	currentPriceHistory := &domain.PriceHistory{
 		ID:          currentPrice.ID,
 		CommodityID: currentPrice.CommodityID,
-		RegionID:    currentPrice.RegionID,
+		CityID:      currentPrice.CityID,
 		Commodity:   currentPrice.Commodity,
-		Region:      currentPrice.Region,
+		City:        currentPrice.City,
 		Price:       currentPrice.Price,
 		CreatedAt:   currentPrice.CreatedAt,
 		UpdatedAt:   currentPrice.UpdatedAt,
@@ -288,10 +288,10 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 	return newHistoryPrices, nil
 }
 
-func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
+func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndCityID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
 	msg := PriceMessage{
 		CommodityID: params.CommodityID,
-		RegionID:    params.RegionID,
+		CityID:      params.CityID,
 		StartDate:   params.StartDate,
 		EndDate:     params.EndDate,
 	}
@@ -301,15 +301,15 @@ func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx cont
 	}
 	response := dto.DownloadResponseDTO{
 		Message: "Price history report generation in progress. Please check back in a few moments.",
-		DownloadURL: fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
-			params.CommodityID, params.RegionID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02")),
+		DownloadURL: fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
+			params.CommodityID, params.CityID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02")),
 	}
 	return &response, nil
 }
 
 func (u *PriceUsecaseImpl) GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error) {
 	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/price_history_%s_%s_%s_%s_*.xlsx", params.CommodityID, params.RegionID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"))
+	filePath := fmt.Sprintf("./public/reports/price_history_%s_%d_%s_%s_*.xlsx", params.CommodityID, params.CityID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"))
 	matches, err := filepath.Glob(filePath)
 	if err != nil {
 		return nil, utils.NewInternalError("Error finding report file")

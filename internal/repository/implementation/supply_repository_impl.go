@@ -46,9 +46,9 @@ func (r *SupplyRepositoryImpl) FindByCommodityID(ctx context.Context, id uuid.UU
 	return supplies, nil
 }
 
-func (r *SupplyRepositoryImpl) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Supply, error) {
+func (r *SupplyRepositoryImpl) FindByCityID(ctx context.Context, id int64) ([]*domain.Supply, error) {
 	var supplies []*domain.Supply
-	if err := r.DB(ctx).Where("region_id = ?", id).Find(&supplies).Error; err != nil {
+	if err := r.DB(ctx).Where("city_id = ?", id).Find(&supplies).Error; err != nil {
 		return nil, err
 	}
 	return supplies, nil
@@ -62,9 +62,9 @@ func (r *SupplyRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.DB(ctx).Where("id = ?", id).Delete(&domain.Supply{}).Error
 }
 
-func (r *SupplyRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID uuid.UUID, regionID uuid.UUID) (*domain.Supply, error) {
+func (r *SupplyRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Supply, error) {
 	var supply domain.Supply
-	err := r.DB(ctx).Where("commodity_id = ? AND region_id = ?", commodityID, regionID).First(&supply).Error
+	err := r.DB(ctx).Where("commodity_id = ? AND city_id = ?", commodityID, cityID).First(&supply).Error
 	if err != nil {
 		return nil, err
 	}

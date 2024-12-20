@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -102,13 +103,13 @@ func (h *HarvestHandlerImpl) GetHarvestByLandCommodityID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, harvests)
 }
 
-func (h *HarvestHandlerImpl) GetHarvestByRegionID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *HarvestHandlerImpl) GetHarvestByCityID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	harvests, err := h.uc.GetHarvestByRegionID(c, id)
+	harvests, err := h.uc.GetHarvestByCityID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

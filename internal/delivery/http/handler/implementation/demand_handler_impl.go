@@ -2,6 +2,7 @@ package handler_implementation
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -71,13 +72,13 @@ func (h *DemandHandlerImpl) GetDemandsByCommodityID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, demands)
 }
 
-func (h *DemandHandlerImpl) GetDemandsByRegionID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *DemandHandlerImpl) GetDemandsByCityID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	demands, err := h.uc.GetDemandsByRegionID(c, id)
+	demands, err := h.uc.GetDemandsByCityID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -118,18 +119,18 @@ func (h *DemandHandlerImpl) DeleteDemand(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Demand deleted successfully"})
 }
 
-func (h *DemandHandlerImpl) GetDemandHistoryByCommodityIDAndRegionID(c *gin.Context) {
+func (h *DemandHandlerImpl) GetDemandHistoryByCommodityIDAndCityID(c *gin.Context) {
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	regionID, err := uuid.Parse(c.Param("region_id"))
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	demands, err := h.uc.GetDemandHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	demands, err := h.uc.GetDemandHistoryByCommodityIDAndCityID(c, commodityID, cityID)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

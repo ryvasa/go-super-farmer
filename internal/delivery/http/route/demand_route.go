@@ -18,8 +18,8 @@ func (r *DemandRoute) Register(public, protected *gin.RouterGroup) {
 	protected.GET("/demands", r.handler.GetAllDemands)
 	protected.GET("/demands/:id", r.handler.GetDemandByID)
 	protected.GET("/demands/commodity/:commodity_id", r.handler.GetDemandsByCommodityID)
-	protected.GET("/demands/region/:id", r.handler.GetDemandsByRegionID)
+	protected.GET("/demands/city/:id", r.handler.GetDemandsByCityID)
 	protected.PATCH("/demands/:id", r.handler.UpdateDemand)
 	protected.DELETE("/demands/:id", r.handler.DeleteDemand)
-	protected.GET("/demands/commodity/:commodity_id/region/:region_id", r.handler.GetDemandHistoryByCommodityIDAndRegionID)
+	protected.GET("/demands/commodity/:commodity_id/city/:city_id", r.handler.GetDemandHistoryByCommodityIDAndCityID)
 }
