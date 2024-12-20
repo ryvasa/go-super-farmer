@@ -3,6 +3,7 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -496,11 +497,25 @@ func TestSupplyHandler_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("should return error when id is invalid", func(t *testing.T) {
+	t.Run("should return error when commodity id is invalid", func(t *testing.T) {
 		uc.EXPECT().GetSupplyHistoryByCommodityIDAndRegionID(gomock.Any(), uuid.Nil, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
 
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/supplies/commodity/aa/region/bb", nil))
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, fmt.Sprintf("/supplies/commodity/aa/region/%s", ids.RegionID), nil))
+
+		var response responseSupplyHistoryHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("should return error when region id is invalid", func(t *testing.T) {
+		uc.EXPECT().GetSupplyHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/supplies/commodity/"+ids.CommodityID.String()+"/region/aa", nil))
 
 		var response responseSupplyHistoryHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)

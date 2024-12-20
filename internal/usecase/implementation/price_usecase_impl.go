@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,7 +19,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
-type Message struct {
+type PriceMessage struct {
 	CommodityID uuid.UUID `json:"CommodityID"`
 	RegionID    uuid.UUID `json:"RegionID"`
 	StartDate   time.Time `json:"StartDate"`
@@ -287,8 +288,8 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndRegionID(ctx context.C
 	return newHistoryPrices, nil
 }
 
-func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) error {
-	msg := Message{
+func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
+	msg := PriceMessage{
 		CommodityID: params.CommodityID,
 		RegionID:    params.RegionID,
 		StartDate:   params.StartDate,
@@ -296,7 +297,30 @@ func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndRegionID(ctx cont
 	}
 	err := u.rabbitMQ.PublishJSON(ctx, "report-exchange", "price-history", msg)
 	if err != nil {
-		return utils.NewInternalError(err.Error())
+		return nil, utils.NewInternalError(err.Error())
 	}
-	return nil
+	response := dto.DownloadResponseDTO{
+		Message: "Price history report generation in progress. Please check back in a few moments.",
+		DownloadURL: fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
+			params.CommodityID, params.RegionID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02")),
+	}
+	return &response, nil
+}
+
+func (u *PriceUsecaseImpl) GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error) {
+	// Get the latest excel file
+	filePath := fmt.Sprintf("./public/reports/price_history_%s_%s_%s_%s_*.xlsx", params.CommodityID, params.RegionID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"))
+	matches, err := filepath.Glob(filePath)
+	if err != nil {
+		return nil, utils.NewInternalError("Error finding report file")
+	}
+
+	if len(matches) == 0 {
+		return nil, utils.NewNotFoundError("Report file not found")
+	}
+
+	// Get the latest file (assuming filename contains timestamp)
+	latestFile := matches[len(matches)-1]
+
+	return &latestFile, nil
 }

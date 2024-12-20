@@ -315,7 +315,7 @@ func TestLandHandler_UpdateLand(t *testing.T) {
 		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(ids.UserID, nil).Times(1)
 		uc.EXPECT().UpdateLand(gomock.Any(), ids.UserID, ids.LandID, gomock.Any()).Return(nil, utils.NewInternalError("internal server error")).Times(1)
 
-		reqBody := `{"land_area":10,"certificate":"test"}`
+		reqBody := `{"land_area":"invalid","certificate":"test"}`
 		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+ids.LandID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -326,8 +326,8 @@ func TestLandHandler_UpdateLand(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response.Errors)
-		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("should return error when invalid id", func(t *testing.T) {
@@ -358,8 +358,26 @@ func TestLandHandler_UpdateLand(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response.Errors)
-		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
+
+	t.Run("should return error when auth error", func(t *testing.T) {
+		authUtil.EXPECT().GetAuthUserID(gomock.Any()).Return(uuid.UUID{}, utils.NewUnauthorizedError("unauthorized")).Times(1)
+
+		reqBody := `{"land_area":10,"certificate":"test"}`
+		req, _ := http.NewRequest(http.MethodPatch, "/lands/"+ids.LandID.String(), bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseLandHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "UNAUTHORIZED")
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
 

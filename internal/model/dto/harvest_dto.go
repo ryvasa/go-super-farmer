@@ -20,9 +20,8 @@ type HarvestUpdateDTO struct {
 	Unit        string  `json:"unit" validate:"omitempty"`
 }
 
-
 type HarvestParamsDTO struct {
 	LandCommodityID uuid.UUID `json:"land_commodity_id" validate:"required"`
-	StartDate   time.Time `json:"start_date" validate:"required"`
-	EndDate     time.Time `json:"end_date" validate:"required"`
+	StartDate       time.Time `json:"start_date" validate:"required"`
+	EndDate         time.Time `json:"end_date" validate:"required"`
 }

@@ -509,4 +509,18 @@ func TestDemandHandler_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
+
+	t.Run("should return error when region id is invalid", func(t *testing.T) {
+		uc.EXPECT().GetDemandHistoryByCommodityIDAndRegionID(gomock.Any(), ids.CommodityID, uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/demands/commodity/"+ids.CommodityID.String()+"/region/aa", nil))
+
+		var response responseDemandHistoryHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }

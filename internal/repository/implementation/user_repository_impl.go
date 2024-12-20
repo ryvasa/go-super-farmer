@@ -25,9 +25,7 @@ func (r *UserRepositoryImpl) Create(ctx context.Context, user *domain.User) erro
 func (r *UserRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).
-		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "name")
-	}).
+		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").
 		First(&user, id).Error
 	if err != nil {
 		return nil, err
@@ -43,9 +41,7 @@ func (r *UserRepositoryImpl) FindAll(ctx context.Context, params *dto.Pagination
 			utils.ApplyFilters(&params.Filter),
 			utils.GetPaginationScope(params),
 		).
-		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").Preload("Role", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "name")
-	}).
+		Select("users.id", "users.name", "users.email", "users.phone", "users.created_at", "users.updated_at").
 		Find(&users).Error
 
 	if err != nil {
@@ -77,9 +73,7 @@ func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) 
 
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	err := r.db.WithContext(ctx).Preload("Role", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "name")
-	}).
+	err := r.db.WithContext(ctx).
 		Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, err

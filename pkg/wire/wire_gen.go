@@ -48,7 +48,8 @@ func InitializeApp() (*app.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher, rabbitMQ, cacheCache)
+	otp := utils.NewOTPGenerator()
+	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher, rabbitMQ, cacheCache, otp)
 	userHandler := handler_implementation.NewUserHandler(userUsecase, authUsecase)
 	landRepository := repository_implementation.NewLandRepository(db)
 	landUsecase := usecase_implementation.NewLandUsecase(landRepository, userRepository)
@@ -85,7 +86,8 @@ func InitializeApp() (*app.App, error) {
 	supplyUsecase := usecase_implementation.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, regionRepository, transactionManager)
 	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
 	harvestRepository := repository_implementation.NewHarvestRepository(db)
-	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository, rabbitMQ, cacheCache)
+	globFunc := utils.NewGlobFunc()
+	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, regionRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc)
 	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
 	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, regionHandler, demandHandler, supplyHandler, harvestHandler)
 	engine := route.NewRouter(handlers)
@@ -97,7 +99,7 @@ func InitializeApp() (*app.App, error) {
 
 var tokenSet = wire.NewSet(token.NewToken)
 
-var utilSet = wire.NewSet(utils.NewAuthUtil, utils.NewHasher)
+var utilSet = wire.NewSet(utils.NewAuthUtil, utils.NewHasher, utils.NewOTPGenerator, utils.NewGlobFunc)
 
 var repositorySet = wire.NewSet(repository.NewBaseRepository, repository_implementation.NewRoleRepository, repository_implementation.NewUserRepository, repository_implementation.NewLandRepository, repository_implementation.NewCommodityRepository, repository_implementation.NewLandCommodityRepository, repository_implementation.NewPriceRepository, repository_implementation.NewProvinceRepository, repository_implementation.NewCityRepository, repository_implementation.NewRegionRepository, repository_implementation.NewPriceHistoryRepository, repository_implementation.NewDemandRepository, repository_implementation.NewSupplyRepository, repository_implementation.NewDemandHistoryRepository, repository_implementation.NewSupplyHistoryRepository, repository_implementation.NewHarvestRepository)
 

@@ -67,11 +67,12 @@ func (mr *MockHarvestUsecaseMockRecorder) DeleteHarvest(ctx, id interface{}) *go
 }
 
 // DownloadHarvestByLandCommodityID mocks base method.
-func (m *MockHarvestUsecase) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) error {
+func (m *MockHarvestUsecase) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) (*dto.DownloadResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadHarvestByLandCommodityID", ctx, harvestParams)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*dto.DownloadResponseDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DownloadHarvestByLandCommodityID indicates an expected call of DownloadHarvestByLandCommodityID.
@@ -198,6 +199,21 @@ func (m *MockHarvestUsecase) GetHarvestDeletedByID(ctx context.Context, id uuid.
 func (mr *MockHarvestUsecaseMockRecorder) GetHarvestDeletedByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHarvestDeletedByID", reflect.TypeOf((*MockHarvestUsecase)(nil).GetHarvestDeletedByID), ctx, id)
+}
+
+// GetHarvestExcelFile mocks base method.
+func (m *MockHarvestUsecase) GetHarvestExcelFile(ctx context.Context, params *dto.HarvestParamsDTO) (*string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHarvestExcelFile", ctx, params)
+	ret0, _ := ret[0].(*string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHarvestExcelFile indicates an expected call of GetHarvestExcelFile.
+func (mr *MockHarvestUsecaseMockRecorder) GetHarvestExcelFile(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHarvestExcelFile", reflect.TypeOf((*MockHarvestUsecase)(nil).GetHarvestExcelFile), ctx, params)
 }
 
 // RestoreHarvest mocks base method.

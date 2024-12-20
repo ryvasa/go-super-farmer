@@ -215,45 +215,51 @@ func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
 		return
 	}
 	harvestParams.LandCommodityID = id
-	err = h.uc.DownloadHarvestByLandCommodityID(c, harvestParams)
+	res, err := h.uc.DownloadHarvestByLandCommodityID(c, harvestParams)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *HarvestHandlerImpl) GetHarvestExcelFile(c *gin.Context) {
+	params := &dto.HarvestParamsDTO{}
+
+	startDateStr := c.Query("start_date")
+	if startDateStr != "" {
+		startDate, err := time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		params.StartDate = startDate
+	}
+	endDatestr := c.Query("end_date")
+	if endDatestr != "" {
+		endDate, err := time.Parse("2006-01-02", endDatestr)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		params.EndDate = endDate
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	params.LandCommodityID = id
+	// Get the latest file (assuming filename contains timestamp)
+	latestFile, err := h.uc.GetHarvestExcelFile(c, params)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"message": "Report generation in progress. Please check back in a few moments.",
-		"download_url": fmt.Sprintf("http://localhost:8080/api/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
-			id, harvestParams.StartDate.Format("2006-01-02"), harvestParams.EndDate.Format("2006-01-02")),
-	})
-}
-
-func (h *HarvestHandlerImpl) GetHarvestExcelFile(c *gin.Context) {
-	id := c.Param("id")
-	startDateStr := c.Query("start_date")
-	endDatestr := c.Query("end_date")
-	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/harvests_%s_%s_%s_*.xlsx", id, startDateStr, endDatestr)
-	matches, err := filepath.Glob(filePath)
-	if err != nil {
-		utils.ErrorResponse(c, utils.NewInternalError("Error finding report file"))
-		return
-	}
-
-	if len(matches) == 0 {
-		utils.ErrorResponse(c, utils.NewNotFoundError("Report file not found"))
-		return
-	}
-
-	// Get the latest file (assuming filename contains timestamp)
-	latestFile := matches[len(matches)-1]
-
 	// Set headers for file download
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(latestFile)))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(*latestFile)))
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 	// Serve the file
-	c.File(latestFile)
+	c.File(*latestFile)
 }

@@ -133,6 +133,22 @@ func TestUserHandler_RegisterUser(t *testing.T) {
 		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
+
+	t.Run("should return error when send otp error", func(t *testing.T) {
+		uc.User.EXPECT().Register(gomock.Any(), gomock.Any()).Return(mocks.User, nil).Times(1)
+		uc.Auth.EXPECT().SendOTP(gomock.Any(), gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+		reqBody := `{"email":"test@example.com"}`
+		req, _ := http.NewRequest(http.MethodPost, "/users", bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseUserHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	})
 }
 
 func TestUserHandler_GetOneUser(t *testing.T) {

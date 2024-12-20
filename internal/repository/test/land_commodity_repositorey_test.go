@@ -29,6 +29,7 @@ type LandCommodityMockRows struct {
 	Notfound        *sqlmock.Rows
 	Commodity       *sqlmock.Rows
 	Land            *sqlmock.Rows
+	Count           *sqlmock.Rows
 }
 
 type LandCommodityMocDomain struct {
@@ -66,6 +67,7 @@ func LandCommodityRepositorySetup(t *testing.T) (*database.MockDB, repository_in
 
 		Land: sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate"}).
 			AddRow(landID, userID, float64(100), "certificate"),
+		Count: sqlmock.NewRows([]string{"count"}).AddRow(1),
 	}
 
 	domains := LandCommodityMocDomain{
@@ -425,6 +427,60 @@ func TestLandCommodityRepository_FindDeletedByID(t *testing.T) {
 		result, err := repo.FindDeletedByID(context.TODO(), ids.LandCommodityID)
 		assert.Nil(t, result)
 		assert.True(t, errors.Is(err, gorm.ErrRecordNotFound))
+		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
+	})
+}
+
+func TestLandCommodityRepository_SumLandAreaByLandID(t *testing.T) {
+	mockDB, repo, ids, rows, _ := LandCommodityRepositorySetup(t)
+
+	defer mockDB.SqlDB.Close()
+
+	expectedSQL := `SELECT COALESCE(SUM(land_area), 0) FROM "land_commodities" WHERE land_id = $1 AND "land_commodities"."deleted_at" IS NULL`
+
+	t.Run("should return land commodity when sum land area by land id successfully", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.LandID).WillReturnRows(rows.Count)
+
+		result, err := repo.SumLandAreaByLandID(context.TODO(), ids.LandID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, float64(1), result)
+		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
+	})
+	t.Run("should return ) when sum land area by land id failed", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.LandID).WillReturnError(errors.New("database error"))
+
+		result, err := repo.SumLandAreaByLandID(context.TODO(), ids.LandID)
+		assert.Equal(t, float64(0), result)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
+		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
+	})
+}
+
+func TestLandCommodityRepository_SumLandAreaByCommodityID(t *testing.T) {
+	mockDB, repo, ids, rows, _ := LandCommodityRepositorySetup(t)
+
+	defer mockDB.SqlDB.Close()
+
+	expectedSQL := `SELECT SUM(land_area) FROM "land_commodities" WHERE commodity_id = $1 AND "land_commodities"."deleted_at" IS NULL`
+
+	t.Run("should return land commodity when sum land area by commodity id successfully", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID).WillReturnRows(rows.Count)
+
+		result, err := repo.SumLandAreaByCommodityID(context.TODO(), ids.CommodityID)
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, float64(1), result)
+		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
+	})
+	t.Run("should return ) when sum land area by commodity id failed", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID).WillReturnError(errors.New("database error"))
+
+		result, err := repo.SumLandAreaByCommodityID(context.TODO(), ids.CommodityID)
+		assert.Equal(t, float64(0), result)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "database error")
 		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
 	})
 }

@@ -59,10 +59,6 @@ func (h *CommodityHandlerImpl) GetCommodityById(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	if commodity == nil {
-		utils.ErrorResponse(c, utils.NewNotFoundError("commodity not found"))
-		return
-	}
 	utils.SuccessResponse(c, http.StatusOK, commodity)
 }
 
