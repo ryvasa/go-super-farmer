@@ -12,7 +12,7 @@ type Commodity struct {
 	Name        string         `gorm:"size:100; not null; type:varchar(100);uniqueIndex" validate:"min=5"`
 	Description string         `gorm:"size:255; not null; type:varchar(255)" validate:"min=5"`
 	Code        string         `gorm:"size:100; not null; type:varchar(100);uniqueIndex" validate:"min=5"`
-	Duration    time.Time      `gorm:"not null"`
+	Duration    time.Duration  `gorm:"type:interval;not null"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
