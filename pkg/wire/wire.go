@@ -28,6 +28,8 @@ var tokenSet = wire.NewSet(
 var utilSet = wire.NewSet(
 	utils.NewAuthUtil,
 	utils.NewHasher,
+	utils.NewOTPGenerator,
+	utils.NewGlobFunc,
 )
 
 var repositorySet = wire.NewSet(

@@ -67,11 +67,12 @@ func (mr *MockPriceUsecaseMockRecorder) DeletePrice(ctx, id interface{}) *gomock
 }
 
 // DownloadPriceHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockPriceUsecase) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) error {
+func (m *MockPriceUsecase) DownloadPriceHistoryByCommodityIDAndRegionID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadPriceHistoryByCommodityIDAndRegionID", ctx, params)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*dto.DownloadResponseDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DownloadPriceHistoryByCommodityIDAndRegionID indicates an expected call of DownloadPriceHistoryByCommodityIDAndRegionID.
@@ -123,6 +124,21 @@ func (m *MockPriceUsecase) GetPriceByID(ctx context.Context, id uuid.UUID) (*dom
 func (mr *MockPriceUsecaseMockRecorder) GetPriceByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPriceByID", reflect.TypeOf((*MockPriceUsecase)(nil).GetPriceByID), ctx, id)
+}
+
+// GetPriceExcelFile mocks base method.
+func (m *MockPriceUsecase) GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPriceExcelFile", ctx, params)
+	ret0, _ := ret[0].(*string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPriceExcelFile indicates an expected call of GetPriceExcelFile.
+func (mr *MockPriceUsecaseMockRecorder) GetPriceExcelFile(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPriceExcelFile", reflect.TypeOf((*MockPriceUsecase)(nil).GetPriceExcelFile), ctx, params)
 }
 
 // GetPriceHistoryByCommodityIDAndRegionID mocks base method.

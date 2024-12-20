@@ -16,16 +16,17 @@ import (
 	mockToken "github.com/ryvasa/go-super-farmer/pkg/auth/token/mock"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
-	mockUtils "github.com/ryvasa/go-super-farmer/utils/mock"
+	mock_utils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 type AuthRepoMock struct {
 	User     *mock.MockUserRepository
 	Token    *mockToken.MockToken
-	Hash     *mockUtils.MockHasher
+	Hash     *mock_utils.MockHasher
 	RabbitMQ *mock_pkg.MockRabbitMQ
 	Cache    *mock_pkg.MockCache
+	OTP      *mock_utils.MockOTP
 }
 
 type AuthIDs struct {
@@ -89,13 +90,14 @@ func AuthUsecaseUtils(t *testing.T) (*AuthIDs, *AuthMocks, *AuthDTOMock, *AuthRe
 	defer ctrl.Finish()
 	utilToken := mockToken.NewMockToken(ctrl)
 	userRepo := mock.NewMockUserRepository(ctrl)
-	hash := mockUtils.NewMockHasher(ctrl)
+	hash := mock_utils.NewMockHasher(ctrl)
 	rabbitMQ := mock_pkg.NewMockRabbitMQ(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
-	uc := usecase_implementation.NewAuthUsecase(userRepo, utilToken, hash, rabbitMQ, cache)
+	otp := mock_utils.NewMockOTP(ctrl)
+	uc := usecase_implementation.NewAuthUsecase(userRepo, utilToken, hash, rabbitMQ, cache, otp)
 	ctx := context.TODO()
 
-	repo := &AuthRepoMock{User: userRepo, Token: utilToken, Hash: hash, RabbitMQ: rabbitMQ, Cache: cache}
+	repo := &AuthRepoMock{User: userRepo, Token: utilToken, Hash: hash, RabbitMQ: rabbitMQ, Cache: cache, OTP: otp}
 
 	return ids, mocks, dto, repo, uc, ctx
 }
@@ -170,6 +172,7 @@ func TestAuthUsecase_SendOTP(t *testing.T) {
 
 	t.Run("should successfully send OTP", func(t *testing.T) {
 		repo.User.EXPECT().FindByEmail(ctx, dtos.SendOTP.Email).Return(mocks.User, nil)
+		repo.OTP.EXPECT().GenerateOTP(gomock.Any()).Return("", nil)
 		repo.Cache.EXPECT().Set(ctx, gomock.Any(), gomock.Any(), 5*time.Minute).Return(nil)
 		repo.RabbitMQ.EXPECT().PublishJSON(ctx, "mail-exchange", "verify-email", gomock.Any()).Return(nil)
 
@@ -196,6 +199,7 @@ func TestAuthUsecase_SendOTP(t *testing.T) {
 
 	t.Run("should return error when cache fails", func(t *testing.T) {
 		repo.User.EXPECT().FindByEmail(ctx, dtos.SendOTP.Email).Return(mocks.User, nil)
+		repo.OTP.EXPECT().GenerateOTP(gomock.Any()).Return("", nil)
 		repo.Cache.EXPECT().Set(ctx, gomock.Any(), gomock.Any(), 5*time.Minute).
 			Return(utils.NewInternalError("cache error"))
 
@@ -206,6 +210,7 @@ func TestAuthUsecase_SendOTP(t *testing.T) {
 
 	t.Run("should return error when rabbitmq fails", func(t *testing.T) {
 		repo.User.EXPECT().FindByEmail(ctx, dtos.SendOTP.Email).Return(mocks.User, nil)
+		repo.OTP.EXPECT().GenerateOTP(gomock.Any()).Return("", nil)
 		repo.Cache.EXPECT().Set(ctx, gomock.Any(), gomock.Any(), 5*time.Minute).Return(nil)
 		repo.RabbitMQ.EXPECT().PublishJSON(ctx, "mail-exchange", "verify-email", gomock.Any()).
 			Return(utils.NewInternalError("rabbitmq error"))
@@ -213,6 +218,17 @@ func TestAuthUsecase_SendOTP(t *testing.T) {
 		err := uc.SendOTP(ctx, dtos.SendOTP)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "rabbitmq error")
+	})
+
+	t.Run("should return error when generate OTP fails", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.SendOTP.Email).Return(mocks.User, nil)
+		repo.Cache.EXPECT().Set(ctx, gomock.Any(), gomock.Any(), 5*time.Minute).Return(nil)
+		repo.RabbitMQ.EXPECT().PublishJSON(ctx, "mail-exchange", "verify-email", gomock.Any()).Return(nil)
+		repo.OTP.EXPECT().GenerateOTP(gomock.Any()).Return("", utils.NewInternalError("Failed to generate OTP"))
+
+		err := uc.SendOTP(ctx, dtos.SendOTP)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Failed to generate OTP")
 	})
 }
 

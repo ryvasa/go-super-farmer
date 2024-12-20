@@ -304,6 +304,16 @@ func TestDemandUsecase_GetDemandsByRegionID(t *testing.T) {
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
+
+	t.Run("should return error when region not found", func(t *testing.T) {
+		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+
+		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "region not found")
+	})
 }
 
 func TestDemandUsecase_UpdateDemand(t *testing.T) {
@@ -514,4 +524,15 @@ func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 		assert.EqualError(t, err, "internal error")
 	})
 
+	t.Run("should return error when demand not found", func(t *testing.T) {
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.DemandHistorys, nil).Times(1)
+
+		repo.Demand.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "internal error")
+	})
 }

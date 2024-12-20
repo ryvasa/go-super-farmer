@@ -1,5 +1,7 @@
 package response
 
+import "github.com/ryvasa/go-super-farmer/internal/model/dto"
+
 type ResponseMessage struct {
 	Status  int     `json:"status"`
 	Success bool    `json:"success"`
@@ -15,4 +17,12 @@ type Message struct {
 type Error struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+}
+
+type ResponseDownload struct {
+	Status  int                     `json:"status"`
+	Success bool                    `json:"success"`
+	Message string                  `json:"message"`
+	Data    dto.DownloadResponseDTO `json:"data"`
+	Errors  Error                   `json:"errors"`
 }

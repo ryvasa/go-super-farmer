@@ -122,6 +122,24 @@ func TestCommodityHandler_CreateCommodity(t *testing.T) {
 		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
+
+	t.Run("should return error when commodity not found", func(t *testing.T) {
+		uc.EXPECT().CreateCommodity(gomock.Any(), gomock.Any()).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
+
+		reqBody := `{"name":"commodity","description":"commodity description"}`
+		req, _ := http.NewRequest(http.MethodPost, "/commodities", bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseCommodityHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "NOT_FOUND")
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
 }
 
 func TestCommodityHandler_GetAllCommodities(t *testing.T) {

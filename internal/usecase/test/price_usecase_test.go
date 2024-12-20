@@ -44,7 +44,7 @@ type Pricemocks struct {
 	HistoryPrice  *domain.PriceHistory
 	Commodity     *domain.Commodity
 	Region        *domain.Region
-	Message       usecase_implementation.Message
+	Message       usecase_implementation.PriceMessage
 }
 
 type PriceDTOmocks struct {
@@ -126,7 +126,7 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 		Region: &domain.Region{
 			ID: regionID,
 		},
-		Message: usecase_implementation.Message{
+		Message: usecase_implementation.PriceMessage{
 			CommodityID: dtos.Params.CommodityID,
 			RegionID:    dtos.Params.RegionID,
 			StartDate:   dtos.Params.StartDate,
@@ -755,10 +755,16 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndRegionID(t *testing.T)
 			Return(nil)
 
 		// Execute
-		err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
+		res, err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
+
+		url := fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
+			dtos.Params.CommodityID, dtos.Params.RegionID, dtos.Params.StartDate.Format("2006-01-02"), dtos.Params.EndDate.Format("2006-01-02"))
 
 		// Assert
 		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, res.Message, "Price history report generation in progress. Please check back in a few moments.")
+		assert.Equal(t, res.DownloadURL, url)
 	})
 
 	t.Run("should return error when publish fails", func(t *testing.T) {
@@ -768,10 +774,12 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndRegionID(t *testing.T)
 			Return(fmt.Errorf("publish error"))
 
 		// Execute
-		err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
+		resp, err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
 
 		// Assert
 		assert.Error(t, err)
+		assert.Nil(t, resp)
 		assert.EqualError(t, err, "publish error")
 	})
+
 }

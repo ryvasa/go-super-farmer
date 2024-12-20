@@ -207,4 +207,18 @@ func TestRegionHandler_GetRegionByID(t *testing.T) {
 		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
+
+	t.Run("should return error when id is invalid", func(t *testing.T) {
+		uc.EXPECT().GetRegionByID(gomock.Any(), uuid.Nil).Return(nil, utils.NewBadRequestError("ID is invalid"))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/regions/aa", nil))
+
+		var response responseRegionHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotNil(t, response.Errors)
+		assert.Equal(t, response.Errors.Code, "BAD_REQUEST")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }

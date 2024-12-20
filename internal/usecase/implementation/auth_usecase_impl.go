@@ -20,10 +20,11 @@ type AuthUsecaseImpl struct {
 	hash     utils.Hasher
 	rabbitMQ messages.RabbitMQ
 	cache    cache.Cache
+	OTP      utils.OTP
 }
 
-func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher, rabbitMQ messages.RabbitMQ, cache cache.Cache) usecase_interface.AuthUsecase {
-	return &AuthUsecaseImpl{userRepo, token, hash, rabbitMQ, cache}
+func NewAuthUsecase(userRepo repository_interface.UserRepository, token token.Token, hash utils.Hasher, rabbitMQ messages.RabbitMQ, cache cache.Cache, OTP utils.OTP) usecase_interface.AuthUsecase {
+	return &AuthUsecaseImpl{userRepo, token, hash, rabbitMQ, cache, OTP}
 }
 
 func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.AuthResponseDTO, error) {
@@ -59,7 +60,7 @@ func (u *AuthUsecaseImpl) SendOTP(ctx context.Context, req *dto.AuthSendDTO) err
 	}
 
 	// Generate OTP
-	otp, err := utils.GenerateOTP(6)
+	otp, err := u.OTP.GenerateOTP(6)
 	if err != nil {
 		return utils.NewInternalError("Failed to generate OTP")
 	}

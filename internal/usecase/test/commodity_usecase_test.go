@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: fix test for update and delete
 type CommodityRepoMock struct {
 	Commodity *mock.MockCommodityRepository
 	Cache     *mock_pkg.MockCache
@@ -128,6 +127,45 @@ func TestCommodityUsecase_CreateCommodity(t *testing.T) {
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "Validation failed")
 	})
+
+	t.Run("should return error when create commodity fails", func(t *testing.T) {
+		repo.Commodity.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
+
+		resp, err := uc.CreateCommodity(ctx, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should return error when get created commodity fails", func(t *testing.T) {
+		repo.Commodity.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, c *domain.Commodity) error {
+			c.ID = ids.CommodityID
+			return nil
+		}).Times(1)
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(nil, utils.NewInternalError("find created commodity error")).Times(1)
+
+		resp, err := uc.CreateCommodity(ctx, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "find created commodity error")
+	})
+
+	t.Run("should return error when cache delete fails", func(t *testing.T) {
+		repo.Commodity.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, c *domain.Commodity) error {
+			c.ID = ids.CommodityID
+			return nil
+		}).Times(1)
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+		repo.Cache.EXPECT().DeleteByPattern(ctx, "commodity").Return(utils.NewInternalError("cache delete error")).Times(1)
+
+		resp, err := uc.CreateCommodity(ctx, dtos.Create)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "cache delete error")
+	})
 }
 
 func TestCommodityUsecase_GetAllCommodities(t *testing.T) {
@@ -226,6 +264,20 @@ func TestCommodityUsecase_GetAllCommodities(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.Contains(t, err.Error(), "page must be greater than 0")
+	})
+
+	t.Run("should return error when set cache fails", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return(nil, nil)
+		repo.Commodity.EXPECT().FindAll(ctx, queryParams).Return(mocks.Commodities, nil)
+		repo.Commodity.EXPECT().Count(ctx, &queryParams.Filter).Return(int64(1), nil)
+
+		repo.Cache.EXPECT().Set(ctx, cacheKey, gomock.Any(), 4*time.Minute).Return(utils.NewInternalError("cache set error")).Times(1)
+
+		resp, err := uc.GetAllCommodities(ctx, queryParams)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.Contains(t, err.Error(), "cache set error")
 	})
 }
 
