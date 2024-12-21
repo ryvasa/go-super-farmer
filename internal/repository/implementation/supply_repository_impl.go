@@ -7,6 +7,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 )
 
 type SupplyRepositoryImpl struct {
@@ -64,6 +65,7 @@ func (r *SupplyRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (r *SupplyRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Supply, error) {
 	var supply domain.Supply
+	logrus.Log.Info("find supply by commodity id and city id", commodityID, cityID)
 	err := r.DB(ctx).Where("commodity_id = ? AND city_id = ?", commodityID, cityID).First(&supply).Error
 	if err != nil {
 		return nil, err

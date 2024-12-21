@@ -161,12 +161,17 @@ func (u *SupplyUsecaseImpl) DeleteSupply(ctx context.Context, id uuid.UUID) erro
 func (u *SupplyUsecaseImpl) GetSupplyHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.SupplyHistory, error) {
 	supplys, err := u.supplyHistoryRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
+		logrus.Log.Error(err)
 		return nil, utils.NewInternalError(err.Error())
 	}
+	logrus.Log.Info("supply history found")
+
 	supply, err := u.supplyRepo.FindByCommodityIDAndCityID(ctx, commodityID, cityID)
 	if err != nil {
+		logrus.Log.Error(err)
 		return nil, utils.NewInternalError(err.Error())
 	}
+	logrus.Log.Info("supply found")
 
 	currentSupply := &domain.SupplyHistory{
 		ID:          supply.ID,

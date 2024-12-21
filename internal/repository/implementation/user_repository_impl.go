@@ -74,7 +74,9 @@ func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) 
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).
-		Where("email = ?", email).First(&user).Error
+		Where("email = ?", email).
+		Preload("Role").
+		First(&user).Error
 	if err != nil {
 		return nil, err
 	}
