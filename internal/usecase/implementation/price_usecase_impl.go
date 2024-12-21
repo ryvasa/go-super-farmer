@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,10 +34,11 @@ type PriceUsecaseImpl struct {
 	rabbitMQ         messages.RabbitMQ
 	txManager        transaction.TransactionManager
 	cache            cache.Cache
+	globFunc         utils.GlobFunc
 }
 
-func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache) usecase_interface.PriceUsecase {
-	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, cityRepo, commodityRepo, rabbitMQ, txManager, cache}
+func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache, globFunc utils.GlobFunc) usecase_interface.PriceUsecase {
+	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, cityRepo, commodityRepo, rabbitMQ, txManager, cache, globFunc}
 }
 
 func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error) {
@@ -76,34 +77,71 @@ func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreate
 
 	return createdPrice, nil
 }
-func (u *PriceUsecaseImpl) GetAllPrices(ctx context.Context) ([]*domain.Price, error) {
-	var prices []*domain.Price
-	key := fmt.Sprintf("price_%s", "all")
-
-	cachedPrice, err := u.cache.Get(ctx, key)
-	if err == nil && cachedPrice != nil {
-		err := json.Unmarshal(cachedPrice, &prices)
-		if err != nil {
-			return nil, err
-		}
-		return prices, nil
+func (u *PriceUsecaseImpl) GetAllPrices(ctx context.Context, queryParams *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
+	if err := queryParams.Validate(); err != nil {
+		return nil, utils.NewBadRequestError(err.Error())
 	}
 
-	prices, err = u.priceRepo.FindAll(ctx)
+	var response *dto.PaginationResponseDTO
+
+	cacheKey := fmt.Sprintf("price_list_page_%d_limit_%d",
+		queryParams.Page,
+		queryParams.Limit,
+	)
+
+	cached, err := u.cache.Get(ctx, cacheKey)
+	if err == nil && cached != nil {
+		err := json.Unmarshal(cached, &response)
+		if err != nil {
+			logrus.Log.Errorf("Error: %v", err)
+			return nil, utils.NewInternalError("invalid data")
+		}
+
+		if data, ok := response.Data.([]interface{}); ok {
+			prices := make([]*domain.Price, len(data))
+			for i, item := range data {
+				if priceMap, ok := item.(map[string]interface{}); ok {
+					priceJSON, _ := json.Marshal(priceMap)
+					var price domain.Price
+					json.Unmarshal(priceJSON, &price)
+					prices[i] = &price
+				}
+			}
+			response.Data = prices
+		}
+
+		logrus.Log.Info("Cache hit")
+		return response, nil
+	}
+
+	prices, err := u.priceRepo.FindAll(ctx, queryParams)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	pricesJSON, err := json.Marshal(prices)
+	count, err := u.priceRepo.Count(ctx, &queryParams.Filter)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+
+	response = &dto.PaginationResponseDTO{
+		TotalRows:  int64(count),
+		TotalPages: int(math.Ceil(float64(count) / float64(queryParams.Limit))),
+		Page:       queryParams.Page,
+		Limit:      queryParams.Limit,
+		Data:       prices,
+	}
+
+	pricesJSON, err := json.Marshal(response)
 	if err != nil {
 		return nil, err
 	}
-	err = u.cache.Set(ctx, key, pricesJSON, 4*time.Minute)
+	err = u.cache.Set(ctx, cacheKey, pricesJSON, 4*time.Minute)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 
-	return prices, nil
+	return response, nil
 }
 
 func (u *PriceUsecaseImpl) GetPriceByID(ctx context.Context, id uuid.UUID) (*domain.Price, error) {
@@ -277,11 +315,11 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndCityID(ctx context.Con
 	}
 	newHistoryPrices := append(historyPrices, currentPriceHistory)
 
-	userJSON, err := json.Marshal(newHistoryPrices)
+	priceJSON, err := json.Marshal(newHistoryPrices)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-	err = u.cache.Set(ctx, cacheKey, userJSON, 4*time.Minute)
+	err = u.cache.Set(ctx, cacheKey, priceJSON, 4*time.Minute)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -309,8 +347,13 @@ func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndCityID(ctx contex
 
 func (u *PriceUsecaseImpl) GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error) {
 	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/price_history_%s_%d_%s_%s_*.xlsx", params.CommodityID, params.CityID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"))
-	matches, err := filepath.Glob(filePath)
+	filePath := fmt.Sprintf("./public/reports/price_history_%s_%d_%s_%s_*.xlsx",
+		params.CommodityID,
+		params.CityID,
+		params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"),
+	)
+
+	matches, err := u.globFunc.Glob(filePath) // Gunakan globFunc yang bisa dimock
 	if err != nil {
 		return nil, utils.NewInternalError("Error finding report file")
 	}
@@ -319,7 +362,6 @@ func (u *PriceUsecaseImpl) GetPriceExcelFile(ctx context.Context, params *dto.Pr
 		return nil, utils.NewNotFoundError("Report file not found")
 	}
 
-	// Get the latest file (assuming filename contains timestamp)
 	latestFile := matches[len(matches)-1]
 
 	return &latestFile, nil

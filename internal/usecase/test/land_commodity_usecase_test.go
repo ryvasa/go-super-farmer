@@ -104,15 +104,22 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 			LandArea:    float64(200),
 		},
 	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	landCommodity := mock_repo.NewMockLandCommodityRepository(ctrl)
+	land := mock_repo.NewMockLandRepository(ctrl)
+	commodity := mock_repo.NewMockCommodityRepository(ctrl)
+	cache := mock_pkg.NewMockCache(ctrl)
 
 	repoMock := &LandCommodityRepoMock{
-		LandCommodity: mock_repo.NewMockLandCommodityRepository(gomock.NewController(t)),
-		Land:          mock_repo.NewMockLandRepository(gomock.NewController(t)),
-		Commodity:     mock_repo.NewMockCommodityRepository(gomock.NewController(t)),
-		Cache:         mock_pkg.NewMockCache(gomock.NewController(t)),
+		LandCommodity: landCommodity,
+		Land:          land,
+		Commodity:     commodity,
+		Cache:         cache,
 	}
 
-	uc := usecase_implementation.NewLandCommodityUsecase(repoMock.LandCommodity, repoMock.Land, repoMock.Commodity, repoMock.Cache)
+	uc := usecase_implementation.NewLandCommodityUsecase(landCommodity, land, commodity, cache)
 	ctx := context.Background()
 
 	return ids, mocks, dtoMocks, repoMock, uc, ctx
@@ -330,28 +337,6 @@ func TestLandCommodityUsecase_GetAllLandCommodity(t *testing.T) {
 func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := LandCommodityUtils(t)
 
-	t.Run("should update land commodity successfully", func(t *testing.T) {
-
-		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.LandCommodity, nil).Times(1)
-
-		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
-
-		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
-
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
-
-		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, mocks.LandCommodity).Return(nil).Times(1)
-
-		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.UpdatedLandCommodity, nil).Times(1)
-
-		resp, err := uc.UpdateLandCommodity(ctx, ids.LandCommodityID, dtos.Update)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, resp)
-		assert.Equal(t, ids.LandCommodityID, resp.ID)
-		assert.Equal(t, float64(200), resp.LandArea)
-	})
-
 	t.Run("should return error when validation error", func(t *testing.T) {
 		resp, err := uc.UpdateLandCommodity(ctx, ids.LandCommodityID, &dto.LandCommodityUpdateDTO{LandArea: 0})
 
@@ -427,6 +412,28 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "internal error")
+	})
+
+	t.Run("should update land commodity successfully", func(t *testing.T) {
+
+		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.LandCommodity, nil).Times(1)
+
+		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
+
+		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
+
+		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
+
+		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, mocks.LandCommodity).Return(nil).Times(1)
+
+		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.UpdatedLandCommodity, nil).Times(1)
+
+		resp, err := uc.UpdateLandCommodity(ctx, ids.LandCommodityID, dtos.Update)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, ids.LandCommodityID, resp.ID)
+		assert.Equal(t, float64(200), resp.LandArea)
 	})
 }
 

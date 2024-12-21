@@ -5,8 +5,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/utils"
 	"gorm.io/gorm"
 )
 
@@ -22,10 +24,14 @@ func (r *PriceRepositoryImpl) Create(ctx context.Context, price *domain.Price) e
 	return r.DB(ctx).Create(price).Error
 }
 
-func (r *PriceRepositoryImpl) FindAll(ctx context.Context) ([]*domain.Price, error) {
+func (r *PriceRepositoryImpl) FindAll(ctx context.Context, params *dto.PaginationDTO) ([]*domain.Price, error) {
 	var prices []*domain.Price
 
 	err := r.DB(ctx).
+		Scopes(
+			utils.ApplyFilters(&params.Filter),
+			utils.GetPaginationScope(params),
+		).
 		Preload("Commodity").
 		Preload("City").
 		Preload("City.Province").
@@ -134,4 +140,18 @@ func (r *PriceRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, co
 		return nil, err
 	}
 	return &price, nil
+}
+
+func (r *PriceRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	var count int64
+	err := r.DB(ctx).
+		Model(&domain.Price{}).
+		Scopes(
+			utils.ApplyFilters(filter),
+		).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
