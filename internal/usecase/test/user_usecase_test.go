@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -21,7 +21,7 @@ import (
 )
 
 type UserRepoMock struct {
-	User  *mock.MockUserRepository
+	User  *mock_repo.MockUserRepository
 	Hash  *mockUtils.MockHasher
 	Cache *mock_pkg.MockCache
 }
@@ -96,7 +96,7 @@ func UserUsecaseUtils(t *testing.T) (*UserIDs, *UserMocks, *MockUserDTOs, *UserR
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	userRepo := mock.NewMockUserRepository(ctrl)
+	userRepo := mock_repo.NewMockUserRepository(ctrl)
 	hash := mockUtils.NewMockHasher(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
 	uc := usecase_implementation.NewUserUsecase(userRepo, hash, cache)

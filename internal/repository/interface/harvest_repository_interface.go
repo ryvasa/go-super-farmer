@@ -14,7 +14,7 @@ type HarvestRepository interface {
 	FindByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
 	FindByLandID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
 	FindByLandCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
-	FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error)
+	FindByCityID(ctx context.Context, id int64) ([]*domain.Harvest, error)
 	Update(ctx context.Context, id uuid.UUID, harvest *domain.Harvest) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID) error

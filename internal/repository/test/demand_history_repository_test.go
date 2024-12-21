@@ -18,7 +18,7 @@ import (
 
 type DemandHistoryIDs struct {
 	DemandHistoryID uuid.UUID
-	RegionID        uuid.UUID
+	CityID          int64
 	CommodityID     uuid.UUID
 }
 
@@ -37,29 +37,29 @@ func DemandHistoryRepositorySetup(t *testing.T) (*database.MockDB, DemandHistory
 
 	repo := repository_implementation.NewDemandHistoryRepository(mockDB.BaseRepo)
 
-	regionID := uuid.New()
+	cityID := int64(1)
 	commodityID := uuid.New()
 	demandHistoryID := uuid.New()
 
 	ids := DemandHistoryIDs{
-		RegionID:        regionID,
+		CityID:          cityID,
 		CommodityID:     commodityID,
 		DemandHistoryID: demandHistoryID,
 	}
 
 	rows := DemandHistoryMockRows{
-		DemandHistory: sqlmock.NewRows([]string{"id", "region_id", "commodity_id", "quantity", "created_at", "updated_at"}).
-			AddRow(demandHistoryID, regionID, commodityID, float64(10), time.Now(), time.Now()),
+		DemandHistory: sqlmock.NewRows([]string{"id", "city_id", "commodity_id", "quantity", "created_at", "updated_at"}).
+			AddRow(demandHistoryID, cityID, commodityID, float64(10), time.Now(), time.Now()),
 
-		DemandHistories: sqlmock.NewRows([]string{"id", "region_id", "commodity_id", "quantity", "created_at", "updated_at"}).
-			AddRow(demandHistoryID, regionID, commodityID, float64(10), time.Now(), time.Now()).
-			AddRow(uuid.New(), regionID, commodityID, float64(10), time.Now(), time.Now()),
+		DemandHistories: sqlmock.NewRows([]string{"id", "city_id", "commodity_id", "quantity", "created_at", "updated_at"}).
+			AddRow(demandHistoryID, cityID, commodityID, float64(10), time.Now(), time.Now()).
+			AddRow(uuid.New(), cityID, commodityID, float64(10), time.Now(), time.Now()),
 	}
 
 	domains := DemandHistoryMocDomain{
 		DemandHistory: &domain.DemandHistory{
 			ID:          demandHistoryID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			CommodityID: commodityID,
 			Quantity:    float64(10),
 		},
@@ -72,12 +72,12 @@ func TestDemandHistoryRepository_Create(t *testing.T) {
 	mockDB, ids, _, domains, repo := DemandHistoryRepositorySetup(t)
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `INSERT INTO "demand_histories" ("id","commodity_id","region_id","quantity","unit","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
+	expectedSQL := `INSERT INTO "demand_histories" ("id","commodity_id","city_id","quantity","unit","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.DemandHistoryID, ids.CommodityID, ids.RegionID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.DemandHistoryID, ids.CommodityID, ids.CityID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 		err := mockDB.TxManager.WithTransaction(context.Background(), func(ctx context.Context) error {
@@ -90,7 +90,7 @@ func TestDemandHistoryRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.DemandHistoryID, ids.CommodityID, ids.RegionID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.DemandHistoryID, ids.CommodityID, ids.CityID, float64(10), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -115,7 +115,7 @@ func TestDemandHistoryRepository_FindAll(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Len(t, result, 2)
 		assert.Equal(t, ids.DemandHistoryID, (result)[0].ID)
-		assert.Equal(t, ids.RegionID, (result)[0].RegionID)
+		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, ids.CommodityID, (result)[0].CommodityID)
 		assert.Equal(t, float64(10), (result)[0].Quantity)
 
@@ -147,7 +147,7 @@ func TestDemandHistoryRepository_FindByID(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.DemandHistoryID, result.ID)
-		assert.Equal(t, ids.RegionID, result.RegionID)
+		assert.Equal(t, ids.CityID, result.CityID)
 		assert.Equal(t, ids.CommodityID, result.CommodityID)
 		assert.Equal(t, float64(10), result.Quantity)
 
@@ -179,7 +179,7 @@ func TestDemandHistoryRepository_FindByCommodityID(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.DemandHistoryID, (result)[0].ID)
-		assert.Equal(t, ids.RegionID, (result)[0].RegionID)
+		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, ids.CommodityID, (result)[0].CommodityID)
 		assert.Equal(t, float64(10), (result)[0].Quantity)
 
@@ -198,30 +198,30 @@ func TestDemandHistoryRepository_FindByCommodityID(t *testing.T) {
 	})
 }
 
-func TestDemandHistoryRepository_FindByRegionID(t *testing.T) {
+func TestDemandHistoryRepository_FindByCityID(t *testing.T) {
 	mockDB, ids, rows, _, repo := DemandHistoryRepositorySetup(t)
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `SELECT * FROM "demand_histories" WHERE region_id = $1 AND "demand_histories"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "demand_histories" WHERE city_id = $1 AND "demand_histories"."deleted_at" IS NULL`
 
-	t.Run("should return demand histories when find by region id successfully", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID).WillReturnRows(rows.DemandHistories)
+	t.Run("should return demand histories when find by city id successfully", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CityID).WillReturnRows(rows.DemandHistories)
 
-		result, err := repo.FindByRegionID(context.TODO(), ids.RegionID)
+		result, err := repo.FindByCityID(context.TODO(), ids.CityID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.DemandHistoryID, (result)[0].ID)
-		assert.Equal(t, ids.RegionID, (result)[0].RegionID)
+		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, ids.CommodityID, (result)[0].CommodityID)
 		assert.Equal(t, float64(10), (result)[0].Quantity)
 
 		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
 	})
 
-	t.Run("should return error when find by region id failed", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.RegionID).WillReturnError(errors.New("database error"))
+	t.Run("should return error when find by city id failed", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CityID).WillReturnError(errors.New("database error"))
 
-		result, err := repo.FindByRegionID(context.TODO(), ids.RegionID)
+		result, err := repo.FindByCityID(context.TODO(), ids.CityID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")
@@ -230,30 +230,30 @@ func TestDemandHistoryRepository_FindByRegionID(t *testing.T) {
 	})
 }
 
-func TestDemandHistoryRepository_FindByCommodityIDAndRegionID(t *testing.T) {
+func TestDemandHistoryRepository_FindByCommodityIDAndCityID(t *testing.T) {
 	mockDB, ids, rows, _, repo := DemandHistoryRepositorySetup(t)
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `SELECT * FROM "demand_histories" WHERE (commodity_id = $1 AND region_id = $2) AND "demand_histories"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "demand_histories" WHERE (commodity_id = $1 AND city_id = $2) AND "demand_histories"."deleted_at" IS NULL`
 
-	t.Run("should return demands history when find by commodity id and region id successfully", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnRows(rows.DemandHistory)
+	t.Run("should return demands history when find by commodity id and city id successfully", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.CityID).WillReturnRows(rows.DemandHistory)
 
-		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
+		result, err := repo.FindByCommodityIDAndCityID(context.TODO(), ids.CommodityID, ids.CityID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.DemandHistoryID, (result)[0].ID)
-		assert.Equal(t, ids.RegionID, (result)[0].RegionID)
+		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, ids.CommodityID, (result)[0].CommodityID)
 		assert.Equal(t, float64(10), (result)[0].Quantity)
 
 		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
 	})
 
-	t.Run("should return error when find by commodity id and region id failed", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.RegionID).WillReturnError(errors.New("database error"))
+	t.Run("should return error when find by commodity id and city id failed", func(t *testing.T) {
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, ids.CityID).WillReturnError(errors.New("database error"))
 
-		result, err := repo.FindByCommodityIDAndRegionID(context.TODO(), ids.CommodityID, ids.RegionID)
+		result, err := repo.FindByCommodityIDAndCityID(context.TODO(), ids.CommodityID, ids.CityID)
 		assert.Nil(t, result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")

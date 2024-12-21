@@ -8,7 +8,7 @@ import (
 
 type PriceCreateDTO struct {
 	CommodityID uuid.UUID `json:"commodity_id" validate:"required"`
-	RegionID    uuid.UUID `json:"region_id" validate:"required"`
+	CityID      int64     `json:"city_id" validate:"required"`
 	Price       float64   `json:"price" validate:"required,min=1"`
 }
 
@@ -25,25 +25,20 @@ type PriceResponseDTO struct {
 		Name        string    `json:"name"`
 		Description string    `json:"-"`
 	} `json:"commodity"`
-	RegionID uuid.UUID `json:"-"`
-	Region   struct {
-		ID         uuid.UUID `json:"id"`
-		ProvinceID int64     `json:"-"`
+	CityID int64 `json:"-"`
+	City   struct {
+		ID         int64 `json:"id"`
+		ProvinceID int64 `json:"-"`
 		Province   struct {
 			ID   int64  `json:"id"`
 			Name string `json:"name"`
 		} `json:"province"`
-		CityID int64 `json:"-"`
-		City   struct {
-			ID   int64  `json:"id"`
-			Name string `json:"name"`
-		} `json:"city"`
-	} `json:"region"`
+	} `json:"city"`
 }
 
 type PriceParamsDTO struct {
 	CommodityID uuid.UUID `json:"commodity_id" validate:"required"`
-	RegionID    uuid.UUID `json:"region_id" validate:"required"`
+	CityID      int64     `json:"city_id" validate:"required"`
 	StartDate   time.Time `json:"start_date" validate:"required"`
 	EndDate     time.Time `json:"end_date" validate:"required"`
 }

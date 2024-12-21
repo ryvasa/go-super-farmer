@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -17,8 +17,8 @@ import (
 )
 
 type LandRepoMock struct {
-	Land *mock.MockLandRepository
-	User *mock.MockUserRepository
+	Land *mock_repo.MockLandRepository
+	User *mock_repo.MockUserRepository
 }
 
 type LandIDs struct {
@@ -87,8 +87,8 @@ func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRe
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	landRepo := mock.NewMockLandRepository(ctrl)
-	userRepo := mock.NewMockUserRepository(ctrl)
+	landRepo := mock_repo.NewMockLandRepository(ctrl)
+	userRepo := mock_repo.NewMockUserRepository(ctrl)
 	uc := usecase_implementation.NewLandUsecase(landRepo, userRepo)
 	ctx := context.TODO()
 

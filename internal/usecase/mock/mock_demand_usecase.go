@@ -96,19 +96,34 @@ func (mr *MockDemandUsecaseMockRecorder) GetDemandByID(ctx, id interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandByID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandByID), ctx, id)
 }
 
-// GetDemandHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockDemandUsecase) GetDemandHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.DemandHistory, error) {
+// GetDemandHistoryByCommodityIDAndCityID mocks base method.
+func (m *MockDemandUsecase) GetDemandHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.DemandHistory, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDemandHistoryByCommodityIDAndRegionID", ctx, commodityID, regionID)
+	ret := m.ctrl.Call(m, "GetDemandHistoryByCommodityIDAndCityID", ctx, commodityID, cityID)
 	ret0, _ := ret[0].([]*domain.DemandHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDemandHistoryByCommodityIDAndRegionID indicates an expected call of GetDemandHistoryByCommodityIDAndRegionID.
-func (mr *MockDemandUsecaseMockRecorder) GetDemandHistoryByCommodityIDAndRegionID(ctx, commodityID, regionID interface{}) *gomock.Call {
+// GetDemandHistoryByCommodityIDAndCityID indicates an expected call of GetDemandHistoryByCommodityIDAndCityID.
+func (mr *MockDemandUsecaseMockRecorder) GetDemandHistoryByCommodityIDAndCityID(ctx, commodityID, cityID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandHistoryByCommodityIDAndRegionID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandHistoryByCommodityIDAndRegionID), ctx, commodityID, regionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandHistoryByCommodityIDAndCityID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandHistoryByCommodityIDAndCityID), ctx, commodityID, cityID)
+}
+
+// GetDemandsByCityID mocks base method.
+func (m *MockDemandUsecase) GetDemandsByCityID(ctx context.Context, cityID int64) ([]*domain.Demand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDemandsByCityID", ctx, cityID)
+	ret0, _ := ret[0].([]*domain.Demand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDemandsByCityID indicates an expected call of GetDemandsByCityID.
+func (mr *MockDemandUsecaseMockRecorder) GetDemandsByCityID(ctx, cityID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandsByCityID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandsByCityID), ctx, cityID)
 }
 
 // GetDemandsByCommodityID mocks base method.
@@ -124,21 +139,6 @@ func (m *MockDemandUsecase) GetDemandsByCommodityID(ctx context.Context, commodi
 func (mr *MockDemandUsecaseMockRecorder) GetDemandsByCommodityID(ctx, commodityID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandsByCommodityID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandsByCommodityID), ctx, commodityID)
-}
-
-// GetDemandsByRegionID mocks base method.
-func (m *MockDemandUsecase) GetDemandsByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Demand, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDemandsByRegionID", ctx, regionID)
-	ret0, _ := ret[0].([]*domain.Demand)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDemandsByRegionID indicates an expected call of GetDemandsByRegionID.
-func (mr *MockDemandUsecaseMockRecorder) GetDemandsByRegionID(ctx, regionID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDemandsByRegionID", reflect.TypeOf((*MockDemandUsecase)(nil).GetDemandsByRegionID), ctx, regionID)
 }
 
 // UpdateDemand mocks base method.

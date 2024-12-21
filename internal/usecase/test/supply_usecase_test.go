@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -18,17 +18,17 @@ import (
 )
 
 type SupplyRepoMock struct {
-	Supply        *mock.MockSupplyRepository
-	SupplyHistory *mock.MockSupplyHistoryRepository
-	Commodity     *mock.MockCommodityRepository
-	Region        *mock.MockRegionRepository
+	Supply        *mock_repo.MockSupplyRepository
+	SupplyHistory *mock_repo.MockSupplyHistoryRepository
+	Commodity     *mock_repo.MockCommodityRepository
+	City          *mock_repo.MockCityRepository
 	TxManager     *mock_pkg.MockTransactionManager
 }
 
 type SupplyIDs struct {
 	SupplyID        uuid.UUID
 	CommodityID     uuid.UUID
-	RegionID        uuid.UUID
+	CityID          int64
 	SupplyHistoryID uuid.UUID
 }
 
@@ -37,7 +37,7 @@ type SupplyDomainMocks struct {
 	Supplys        []*domain.Supply
 	UpdatedSupply  *domain.Supply
 	Commodity      *domain.Commodity
-	Region         *domain.Region
+	City           *domain.City
 	SupplyHistorys []*domain.SupplyHistory
 }
 
@@ -47,7 +47,7 @@ type SupplyDTOMocks struct {
 }
 
 func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDTOMocks, *SupplyRepoMock, usecase_interface.SupplyUsecase, context.Context) {
-	regionID := uuid.New()
+	cityID := int64(1)
 	commodityID := uuid.New()
 	supplyID := uuid.New()
 	supplyHstoryID := uuid.New()
@@ -55,7 +55,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 	ids := &SupplyIDs{
 		SupplyID:        supplyID,
 		CommodityID:     commodityID,
-		RegionID:        regionID,
+		CityID:          cityID,
 		SupplyHistoryID: supplyHstoryID,
 	}
 
@@ -63,34 +63,34 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 		Supply: &domain.Supply{
 			ID:          supplyID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    10,
 		},
 		Supplys: []*domain.Supply{
 			{
 				ID:          supplyID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Quantity:    10,
 			},
 		},
 		UpdatedSupply: &domain.Supply{
 			ID:          supplyID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    20,
 		},
 		Commodity: &domain.Commodity{
 			ID: commodityID,
 		},
-		Region: &domain.Region{
-			ID: regionID,
+		City: &domain.City{
+			ID: cityID,
 		},
 		SupplyHistorys: []*domain.SupplyHistory{
 			{
 				ID:          supplyHstoryID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Quantity:    50,
 			},
 		},
@@ -99,7 +99,7 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 	dtos := &SupplyDTOMocks{
 		Create: &dto.SupplyCreateDTO{
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    10,
 		},
 		Update: &dto.SupplyUpdateDTO{
@@ -110,18 +110,18 @@ func SupplyUsecaseSetup(t *testing.T) (*SupplyIDs, *SupplyDomainMocks, *SupplyDT
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	regionRepo := mock.NewMockRegionRepository(ctrl)
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	supplyRepo := mock.NewMockSupplyRepository(ctrl)
-	supplyHistoryRepo := mock.NewMockSupplyHistoryRepository(ctrl)
+	cityRepo := mock_repo.NewMockCityRepository(ctrl)
+	commodityRepo := mock_repo.NewMockCommodityRepository(ctrl)
+	supplyRepo := mock_repo.NewMockSupplyRepository(ctrl)
+	supplyHistoryRepo := mock_repo.NewMockSupplyHistoryRepository(ctrl)
 	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 
-	uc := usecase_implementation.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, regionRepo, txRepo)
+	uc := usecase_implementation.NewSupplyUsecase(supplyRepo, supplyHistoryRepo, commodityRepo, cityRepo, txRepo)
 	ctx := context.Background()
 
 	repo := &SupplyRepoMock{
 		Supply:        supplyRepo,
-		Region:        regionRepo,
+		City:          cityRepo,
 		Commodity:     commodityRepo,
 		SupplyHistory: supplyHistoryRepo,
 		TxManager:     txRepo,
@@ -136,7 +136,7 @@ func TestSupplyRepository_CreateSupply(t *testing.T) {
 	t.Run("should create supply successfully", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
 		repo.Supply.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Supply) error {
 			p.ID = ids.SupplyID
@@ -149,7 +149,7 @@ func TestSupplyRepository_CreateSupply(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, ids.CommodityID, resp.CommodityID)
-		assert.Equal(t, ids.RegionID, resp.RegionID)
+		assert.Equal(t, ids.CityID, resp.CityID)
 		assert.Equal(t, ids.SupplyID, resp.ID)
 	})
 
@@ -157,7 +157,7 @@ func TestSupplyRepository_CreateSupply(t *testing.T) {
 
 		resp, err := uc.CreateSupply(ctx, &dto.SupplyCreateDTO{
 			CommodityID: ids.CommodityID,
-			RegionID:    ids.RegionID,
+			CityID:      ids.CityID,
 			Quantity:    -10,
 		})
 
@@ -176,22 +176,22 @@ func TestSupplyRepository_CreateSupply(t *testing.T) {
 		assert.EqualError(t, err, "commodity not found")
 	})
 
-	t.Run("should return error when region not found", func(t *testing.T) {
+	t.Run("should return error when city not found", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
 		resp, err := uc.CreateSupply(ctx, dtos.Create)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "region not found")
+		assert.EqualError(t, err, "city not found")
 	})
 
 	t.Run("should return error when create supply fails", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
 		repo.Supply.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
@@ -278,27 +278,27 @@ func TestSupplyRepository_GetSupplyByCommodityID(t *testing.T) {
 	})
 }
 
-func TestSupplyRepository_GetSupplyByRegionID(t *testing.T) {
+func TestSupplyRepository_GetSupplyByCityID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := SupplyUsecaseSetup(t)
 
-	t.Run("should get supplys by region id successfully", func(t *testing.T) {
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+	t.Run("should get supplys by city id successfully", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
-		repo.Supply.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(domains.Supplys, nil).Times(1)
+		repo.Supply.EXPECT().FindByCityID(ctx, ids.CityID).Return(domains.Supplys, nil).Times(1)
 
-		resp, err := uc.GetSupplyByRegionID(ctx, ids.RegionID)
+		resp, err := uc.GetSupplyByCityID(ctx, ids.CityID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, len(domains.Supplys), len(resp))
 		assert.Equal(t, (domains.Supplys)[0].ID, (resp)[0].ID)
 	})
 
-	t.Run("should return error when get supplys by region id fails", func(t *testing.T) {
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+	t.Run("should return error when get supplys by city id fails", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
-		repo.Supply.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.Supply.EXPECT().FindByCityID(ctx, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.GetSupplyByRegionID(ctx, ids.RegionID)
+		resp, err := uc.GetSupplyByCityID(ctx, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
@@ -487,16 +487,16 @@ func TestSupplyRepository_DeleteSupply(t *testing.T) {
 	})
 }
 
-func TestSupplyUsecase_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
+func TestSupplyUsecase_GetSupplyHistoryByCommodityIDAndCityID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := SupplyUsecaseSetup(t)
 
 	t.Run("should return supply history successfully", func(t *testing.T) {
 
-		repo.SupplyHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.SupplyHistorys, nil).Times(1)
+		repo.SupplyHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(domains.SupplyHistorys, nil).Times(1)
 
-		repo.Supply.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.Supply, nil).Times(1)
+		repo.Supply.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(domains.Supply, nil).Times(1)
 
-		resp, err := uc.GetSupplyHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetSupplyHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(resp))
@@ -505,9 +505,9 @@ func TestSupplyUsecase_GetSupplyHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when get supply history fails", func(t *testing.T) {
-		repo.SupplyHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.SupplyHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.GetSupplyHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetSupplyHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)

@@ -16,7 +16,7 @@ func NewReportRepositoryImpl(db *gorm.DB) ReportRepository {
 	return &ReportRepositoryImpl{db}
 }
 
-func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commodityID, regionID uuid.UUID) ([]domain.PriceHistory, error) {
+func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commodityID uuid.UUID, cityID int64) ([]domain.PriceHistory, error) {
 	var results []domain.PriceHistory
 	startOfDay := start.UTC()
 	endOfDay := end.Add(24 * time.Hour).Add(-time.Second)
@@ -26,12 +26,9 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
-		Where("prices.commodity_id = ? AND prices.region_id = ? AND prices.created_at BETWEEN ? AND ?", commodityID, regionID, startOfDay, endOfDay).
+		Preload("City").
+		Preload("City.Province").
+		Where("prices.commodity_id = ? AND prices.city_id = ? AND prices.created_at BETWEEN ? AND ?", commodityID, cityID, startOfDay, endOfDay).
 		First(&currentPrice).Error
 	if err != nil {
 		return nil, err
@@ -41,23 +38,22 @@ func (r *ReportRepositoryImpl) GetPriceHistoryReport(start, end time.Time, commo
 	results = append(results, domain.PriceHistory{
 		ID:          currentPrice.ID,
 		CommodityID: currentPrice.CommodityID,
-		RegionID:    currentPrice.RegionID,
+		CityID:      currentPrice.CityID,
 		Price:       currentPrice.Price,
 		Unit:        currentPrice.Unit,
 		CreatedAt:   time.Now(),
 		Commodity:   currentPrice.Commodity,
-		Region:      currentPrice.Region,
+		City:        currentPrice.City,
 	})
 
 	// Query price histories
 	var histories []domain.PriceHistory
 	err = r.db.Preload("Commodity").
-		Preload("Region.City").
+		Preload("City").
 		Joins("JOIN commodities ON price_histories.commodity_id = commodities.id").
-		Joins("JOIN regions ON price_histories.region_id = regions.id").
-		Joins("JOIN cities ON regions.city_id = cities.id").
-		Where("price_histories.commodity_id = ? AND price_histories.region_id = ? AND price_histories.deleted_at IS NULL AND price_histories.created_at BETWEEN ? AND ?",
-			commodityID, regionID, startOfDay, endOfDay).
+		Joins("JOIN cities ON price_histories.city_id = cities.id").
+		Where("price_histories.commodity_id = ? AND price_histories.city_id = ? AND price_histories.deleted_at IS NULL AND price_histories.created_at BETWEEN ? AND ?",
+			commodityID, cityID, startOfDay, endOfDay).
 		Order("price_histories.created_at DESC").
 		Find(&histories).Error
 	if err != nil {
@@ -76,12 +72,11 @@ func (r *ReportRepositoryImpl) GetHarvestReport(start, end time.Time, landCommod
 	err := r.db.
 		Where("land_commodity_id = ? AND deleted_at IS NULL", landCommodityID).
 		Preload("LandCommodity").
-		Preload("Region").
+		Preload("City").
 		Preload("LandCommodity.Commodity").
 		Preload("LandCommodity.Land").
 		Preload("LandCommodity.Land.User").
-		Preload("Region.Province").
-		Preload("Region.City").
+		Preload("City.Province").
 		Order("harvests.created_at DESC").
 		Where("harvests.created_at BETWEEN ? AND ?", startOfDay, endOfDay).
 		Find(&results).Error

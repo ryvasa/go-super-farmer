@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ type HarvestHandlerMocks struct {
 type HarvestHandlerIDs struct {
 	HarvestID       uuid.UUID
 	LandCommodityID uuid.UUID
-	RegionID        uuid.UUID
+	CityID          int64
 	LandID          uuid.UUID
 	CommodityID     uuid.UUID
 }
@@ -60,7 +61,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 
 	harvestID := uuid.New()
 	landCommodityID := uuid.New()
-	regionID := uuid.New()
+	cityID := int64(1)
 	landID := uuid.New()
 	commodityID := uuid.New()
 	quantity := float64(100)
@@ -70,7 +71,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 	ids := HarvestHandlerIDs{
 		HarvestID:       harvestID,
 		LandCommodityID: landCommodityID,
-		RegionID:        regionID,
+		CityID:          cityID,
 		LandID:          landID,
 		CommodityID:     commodityID,
 	}
@@ -79,7 +80,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 		Harvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			RegionID:        regionID,
+			CityID:          cityID,
 			Quantity:        quantity,
 			Unit:            unit,
 			HarvestDate:     harvestDate,
@@ -88,7 +89,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
-				RegionID:        regionID,
+				CityID:          cityID,
 				Quantity:        quantity,
 				Unit:            unit,
 				HarvestDate:     harvestDate,
@@ -97,7 +98,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 		UpdatedHarvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			RegionID:        regionID,
+			CityID:          cityID,
 			Quantity:        quantity + 1,
 			Unit:            unit,
 			HarvestDate:     harvestDate,
@@ -123,13 +124,13 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 }
 
 func TestHarvestHandler_CreateHarvest(t *testing.T) {
-	r, h, uc, _, mocks, _ := HarvestHandlerSetUp(t)
+	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 	r.POST("/harvests", h.CreateHarvest)
 
 	t.Run("should create harvest successfully", func(t *testing.T) {
 		uc.EXPECT().CreateHarvest(gomock.Any(), gomock.Any()).Return(mocks.Harvest, nil).Times(1)
 
-		reqBody := `{"land_commodity_id":"` + mocks.Harvest.LandCommodityID.String() + `","region_id":"` + mocks.Harvest.RegionID.String() + `","quantity":100,"unit":"kg","harvest_date":"2022-01-01"}`
+		reqBody := `{"land_commodity_id":"` + mocks.Harvest.LandCommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `,"quantity":100,"unit":"kg","harvest_date":"2022-01-01"}`
 
 		req, _ := http.NewRequest(http.MethodPost, "/harvests", bytes.NewReader([]byte(reqBody)))
 
@@ -168,7 +169,7 @@ func TestHarvestHandler_CreateHarvest(t *testing.T) {
 	t.Run("should return error when internal error", func(t *testing.T) {
 		uc.EXPECT().CreateHarvest(gomock.Any(), gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
 
-		reqBody := `{"land_commodity_id":"` + mocks.Harvest.LandCommodityID.String() + `","region_id":"` + mocks.Harvest.RegionID.String() + `","quantity":100,"unit":"kg","harvest_date":"2022-01-01"}`
+		reqBody := `{"land_commodity_id":"` + mocks.Harvest.LandCommodityID.String() + `","city_id":` + strconv.FormatInt(ids.CityID, 10) + `,"quantity":100,"unit":"kg","harvest_date":"2022-01-01"}`
 
 		req, _ := http.NewRequest(http.MethodPost, "/harvests", bytes.NewReader([]byte(reqBody)))
 
@@ -426,15 +427,15 @@ func TestHarvestHandler_GetHarvestByLandCommodityID(t *testing.T) {
 	})
 }
 
-func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
+func TestHarvestHandler_GetHarvestByCityID(t *testing.T) {
 	r, h, uc, ids, mocks, _ := HarvestHandlerSetUp(t)
 
-	r.GET("/harvests/region/:id", h.GetHarvestByRegionID)
+	r.GET("/harvests/city/:id", h.GetHarvestByCityID)
 
-	t.Run("should return harvests by region id successfully", func(t *testing.T) {
-		uc.EXPECT().GetHarvestByRegionID(gomock.Any(), ids.RegionID).Return(mocks.Harvests, nil).Times(1)
+	t.Run("should return harvests by city id successfully", func(t *testing.T) {
+		uc.EXPECT().GetHarvestByCityID(gomock.Any(), ids.CityID).Return(mocks.Harvests, nil).Times(1)
 
-		req, _ := http.NewRequest(http.MethodGet, "/harvests/region/"+ids.RegionID.String(), nil)
+		req, _ := http.NewRequest(http.MethodGet, "/harvests/city/"+strconv.FormatInt(ids.CityID, 10), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		var response struct {
@@ -447,9 +448,9 @@ func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when internal error", func(t *testing.T) {
-		uc.EXPECT().GetHarvestByRegionID(gomock.Any(), ids.RegionID).Return(nil, utils.NewInternalError("Internal error")).Times(1)
+		uc.EXPECT().GetHarvestByCityID(gomock.Any(), ids.CityID).Return(nil, utils.NewInternalError("Internal error")).Times(1)
 
-		req, _ := http.NewRequest(http.MethodGet, "/harvests/region/"+ids.RegionID.String(), nil)
+		req, _ := http.NewRequest(http.MethodGet, "/harvests/city/"+strconv.FormatInt(ids.CityID, 10), nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		var response responseHarvestHandler
@@ -461,7 +462,7 @@ func TestHarvestHandler_GetHarvestByRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when invalid id", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, "/harvests/region/abc", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/harvests/city/abc", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 

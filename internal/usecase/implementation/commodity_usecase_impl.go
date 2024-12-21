@@ -35,6 +35,7 @@ func (uc *CommodityUsecaseImpl) CreateCommodity(ctx context.Context, req *dto.Co
 	commodity.Name = req.Name
 	commodity.Description = req.Description
 	commodity.Code = req.Code
+	commodity.Duration = req.Duration
 	commodity.ID = uuid.New()
 
 	err := uc.commodityRepository.Create(ctx, &commodity)

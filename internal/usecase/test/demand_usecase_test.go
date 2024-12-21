@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -18,17 +18,17 @@ import (
 )
 
 type DemandRepoMock struct {
-	Demand        *mock.MockDemandRepository
-	DemandHistory *mock.MockDemandHistoryRepository
-	Commodity     *mock.MockCommodityRepository
-	Region        *mock.MockRegionRepository
+	Demand        *mock_repo.MockDemandRepository
+	DemandHistory *mock_repo.MockDemandHistoryRepository
+	Commodity     *mock_repo.MockCommodityRepository
+	City          *mock_repo.MockCityRepository
 	TxManager     *mock_pkg.MockTransactionManager
 }
 
 type DemandIDs struct {
 	DemandID        uuid.UUID
 	CommodityID     uuid.UUID
-	RegionID        uuid.UUID
+	CityID          int64
 	DemandHistoryID uuid.UUID
 }
 
@@ -37,7 +37,7 @@ type DemandDomainMocks struct {
 	Demands        []*domain.Demand
 	UpdatedDemand  *domain.Demand
 	Commodity      *domain.Commodity
-	Region         *domain.Region
+	City           *domain.City
 	DemandHistorys []*domain.DemandHistory
 }
 
@@ -47,7 +47,7 @@ type DemandDTOMocks struct {
 }
 
 func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDTOMocks, *DemandRepoMock, usecase_interface.DemandUsecase, context.Context) {
-	regionID := uuid.New()
+	cityID := int64(1)
 	commodityID := uuid.New()
 	demandID := uuid.New()
 	demandHstoryID := uuid.New()
@@ -55,7 +55,7 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 	ids := &DemandIDs{
 		DemandID:        demandID,
 		CommodityID:     commodityID,
-		RegionID:        regionID,
+		CityID:          cityID,
 		DemandHistoryID: demandHstoryID,
 	}
 
@@ -63,34 +63,34 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 		Demand: &domain.Demand{
 			ID:          demandID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    10,
 		},
 		Demands: []*domain.Demand{
 			{
 				ID:          demandID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Quantity:    10,
 			},
 		},
 		UpdatedDemand: &domain.Demand{
 			ID:          demandID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    20,
 		},
 		Commodity: &domain.Commodity{
 			ID: commodityID,
 		},
-		Region: &domain.Region{
-			ID: regionID,
+		City: &domain.City{
+			ID: cityID,
 		},
 		DemandHistorys: []*domain.DemandHistory{
 			{
 				ID:          demandHstoryID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Quantity:    20,
 			},
 		},
@@ -99,7 +99,7 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 	dtos := &DemandDTOMocks{
 		Create: &dto.DemandCreateDTO{
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Quantity:    10,
 		},
 		Update: &dto.DemandUpdateDTO{
@@ -110,18 +110,18 @@ func DemandUsecaseSetup(t *testing.T) (*DemandIDs, *DemandDomainMocks, *DemandDT
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	regionRepo := mock.NewMockRegionRepository(ctrl)
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	demandRepo := mock.NewMockDemandRepository(ctrl)
-	demandHistoryRepo := mock.NewMockDemandHistoryRepository(ctrl)
+	cityRepo := mock_repo.NewMockCityRepository(ctrl)
+	commodityRepo := mock_repo.NewMockCommodityRepository(ctrl)
+	demandRepo := mock_repo.NewMockDemandRepository(ctrl)
+	demandHistoryRepo := mock_repo.NewMockDemandHistoryRepository(ctrl)
 	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 
-	uc := usecase_implementation.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, regionRepo, txRepo)
+	uc := usecase_implementation.NewDemandUsecase(demandRepo, demandHistoryRepo, commodityRepo, cityRepo, txRepo)
 	ctx := context.Background()
 
 	repo := &DemandRepoMock{
 		Demand:        demandRepo,
-		Region:        regionRepo,
+		City:          cityRepo,
 		Commodity:     commodityRepo,
 		DemandHistory: demandHistoryRepo,
 		TxManager:     txRepo,
@@ -136,7 +136,7 @@ func TestDemandUsecase_CreateDemand(t *testing.T) {
 	t.Run("should create demand successfully", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
 		repo.Demand.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Demand) error {
 			p.ID = ids.DemandID
@@ -149,7 +149,7 @@ func TestDemandUsecase_CreateDemand(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, ids.CommodityID, resp.CommodityID)
-		assert.Equal(t, ids.RegionID, resp.RegionID)
+		assert.Equal(t, ids.CityID, resp.CityID)
 		assert.Equal(t, ids.DemandID, resp.ID)
 	})
 
@@ -157,7 +157,7 @@ func TestDemandUsecase_CreateDemand(t *testing.T) {
 
 		resp, err := uc.CreateDemand(ctx, &dto.DemandCreateDTO{
 			CommodityID: ids.CommodityID,
-			RegionID:    ids.RegionID,
+			CityID:      ids.CityID,
 			Quantity:    -10,
 		})
 
@@ -176,22 +176,22 @@ func TestDemandUsecase_CreateDemand(t *testing.T) {
 		assert.EqualError(t, err, "commodity not found")
 	})
 
-	t.Run("should return error when region not found", func(t *testing.T) {
+	t.Run("should return error when city not found", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
 		resp, err := uc.CreateDemand(ctx, dtos.Create)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "region not found")
+		assert.EqualError(t, err, "city not found")
 	})
 
 	t.Run("should return error when create demand fails", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(domains.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
 		repo.Demand.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
@@ -278,41 +278,41 @@ func TestDemandUsecase_GetDemandsByCommodityID(t *testing.T) {
 	})
 }
 
-func TestDemandUsecase_GetDemandsByRegionID(t *testing.T) {
+func TestDemandUsecase_GetDemandsByCityID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
-	t.Run("should get demands by region id successfully", func(t *testing.T) {
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+	t.Run("should get demands by city id successfully", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
-		repo.Demand.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(domains.Demands, nil).Times(1)
+		repo.Demand.EXPECT().FindByCityID(ctx, ids.CityID).Return(domains.Demands, nil).Times(1)
 
-		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
+		resp, err := uc.GetDemandsByCityID(ctx, ids.CityID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, len(domains.Demands), len(resp))
 		assert.Equal(t, (domains.Demands)[0].ID, (resp)[0].ID)
 	})
 
-	t.Run("should return error when get demands by region id fails", func(t *testing.T) {
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(domains.Region, nil).Times(1)
+	t.Run("should return error when get demands by city id fails", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 
-		repo.Demand.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.Demand.EXPECT().FindByCityID(ctx, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
+		resp, err := uc.GetDemandsByCityID(ctx, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
 
-	t.Run("should return error when region not found", func(t *testing.T) {
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+	t.Run("should return error when city not found", func(t *testing.T) {
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
-		resp, err := uc.GetDemandsByRegionID(ctx, ids.RegionID)
+		resp, err := uc.GetDemandsByCityID(ctx, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "region not found")
+		assert.EqualError(t, err, "city not found")
 	})
 }
 
@@ -497,16 +497,16 @@ func TestDemandUsecase_DeleteDemand(t *testing.T) {
 	})
 }
 
-func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
+func TestDemandUsecase_GetDemandHistoryByCommodityIDAndCityID(t *testing.T) {
 	ids, domains, _, repo, uc, ctx := DemandUsecaseSetup(t)
 
 	t.Run("should return demand history successfully", func(t *testing.T) {
 
-		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.DemandHistorys, nil).Times(1)
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(domains.DemandHistorys, nil).Times(1)
 
-		repo.Demand.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.Demand, nil).Times(1)
+		repo.Demand.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(domains.Demand, nil).Times(1)
 
-		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetDemandHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(resp))
@@ -515,9 +515,9 @@ func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when get demand history fails", func(t *testing.T) {
-		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetDemandHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
@@ -525,11 +525,11 @@ func TestDemandUsecase_GetDemandHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 
 	t.Run("should return error when demand not found", func(t *testing.T) {
-		repo.DemandHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(domains.DemandHistorys, nil).Times(1)
+		repo.DemandHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(domains.DemandHistorys, nil).Times(1)
 
-		repo.Demand.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.Demand.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		resp, err := uc.GetDemandHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetDemandHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)

@@ -109,7 +109,7 @@ func TestCityHandler_CreateCity(t *testing.T) {
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
-		var response responseCommodityHandler
+		var response responseCityHandler
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.NotNil(t, response.Errors)

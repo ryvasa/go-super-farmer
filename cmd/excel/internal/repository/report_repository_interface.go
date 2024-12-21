@@ -8,6 +8,6 @@ import (
 )
 
 type ReportRepository interface {
-	GetPriceHistoryReport(start, end time.Time, commodityID, regionID uuid.UUID) ([]domain.PriceHistory, error)
+	GetPriceHistoryReport(start, end time.Time, commodityID uuid.UUID, cityID int64) ([]domain.PriceHistory, error)
 	GetHarvestReport(start, end time.Time, landCommodityID uuid.UUID) ([]domain.Harvest, error)
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -20,9 +20,9 @@ import (
 )
 
 type LandCommodityRepoMock struct {
-	LandCommodity *mock.MockLandCommodityRepository
-	Land          *mock.MockLandRepository
-	Commodity     *mock.MockCommodityRepository
+	LandCommodity *mock_repo.MockLandCommodityRepository
+	Land          *mock_repo.MockLandRepository
+	Commodity     *mock_repo.MockCommodityRepository
 	Cache         *mock_pkg.MockCache
 }
 
@@ -106,9 +106,9 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 	}
 
 	repoMock := &LandCommodityRepoMock{
-		LandCommodity: mock.NewMockLandCommodityRepository(gomock.NewController(t)),
-		Land:          mock.NewMockLandRepository(gomock.NewController(t)),
-		Commodity:     mock.NewMockCommodityRepository(gomock.NewController(t)),
+		LandCommodity: mock_repo.NewMockLandCommodityRepository(gomock.NewController(t)),
+		Land:          mock_repo.NewMockLandRepository(gomock.NewController(t)),
+		Commodity:     mock_repo.NewMockCommodityRepository(gomock.NewController(t)),
 		Cache:         mock_pkg.NewMockCache(gomock.NewController(t)),
 	}
 

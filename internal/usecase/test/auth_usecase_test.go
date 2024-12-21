@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mockToken "github.com/ryvasa/go-super-farmer/pkg/auth/token/mock"
@@ -21,7 +21,7 @@ import (
 )
 
 type AuthRepoMock struct {
-	User     *mock.MockUserRepository
+	User     *mock_repo.MockUserRepository
 	Token    *mockToken.MockToken
 	Hash     *mock_utils.MockHasher
 	RabbitMQ *mock_pkg.MockRabbitMQ
@@ -89,7 +89,7 @@ func AuthUsecaseUtils(t *testing.T) (*AuthIDs, *AuthMocks, *AuthDTOMock, *AuthRe
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	utilToken := mockToken.NewMockToken(ctrl)
-	userRepo := mock.NewMockUserRepository(ctrl)
+	userRepo := mock_repo.NewMockUserRepository(ctrl)
 	hash := mock_utils.NewMockHasher(ctrl)
 	rabbitMQ := mock_pkg.NewMockRabbitMQ(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)

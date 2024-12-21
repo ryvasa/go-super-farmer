@@ -7,8 +7,8 @@ type DemandHandler interface {
 	GetAllDemands(c *gin.Context)
 	GetDemandByID(c *gin.Context)
 	GetDemandsByCommodityID(c *gin.Context)
-	GetDemandsByRegionID(c *gin.Context)
+	GetDemandsByCityID(c *gin.Context)
 	UpdateDemand(c *gin.Context)
 	DeleteDemand(c *gin.Context)
-	GetDemandHistoryByCommodityIDAndRegionID(c *gin.Context)
+	GetDemandHistoryByCommodityIDAndCityID(c *gin.Context)
 }

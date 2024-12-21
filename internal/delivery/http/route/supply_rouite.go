@@ -18,8 +18,8 @@ func (r *SupplyRoute) Register(public, protected *gin.RouterGroup) {
 	protected.GET("/supplies", r.handler.GetAllSupply)
 	protected.GET("/supplies/:id", r.handler.GetSupplyByID)
 	protected.GET("/supplies/commodity/:commodity_id", r.handler.GetSupplyByCommodityID)
-	protected.GET("/supplies/region/:id", r.handler.GetSupplyByRegionID)
+	protected.GET("/supplies/city/:id", r.handler.GetSupplyByCityID)
 	protected.PATCH("/supplies/:id", r.handler.UpdateSupply)
 	protected.DELETE("/supplies/:id", r.handler.DeleteSupply)
-	protected.GET("/supplies/commodity/:commodity_id/region/:region_id", r.handler.GetSupplyHistoryByCommodityIDAndRegionID)
+	protected.GET("/supplies/commodity/:commodity_id/city/:city_id", r.handler.GetSupplyHistoryByCommodityIDAndCityID)
 }

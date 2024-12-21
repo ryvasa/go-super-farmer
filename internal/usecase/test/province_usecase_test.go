@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
@@ -15,7 +15,7 @@ import (
 )
 
 type ProvinceRepoMock struct {
-	Province *mock.MockProvinceRepository
+	Province *mock_repo.MockProvinceRepository
 }
 
 type ProvinceIDs struct {
@@ -69,7 +69,7 @@ func ProvinceUsecaseUtils(t *testing.T) (*ProvinceIDs, *ProvinceMocks, *Province
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	provinceRepo := mock.NewMockProvinceRepository(ctrl)
+	provinceRepo := mock_repo.NewMockProvinceRepository(ctrl)
 	uc := usecase_implementation.NewProvinceUsecase(provinceRepo)
 	ctx := context.TODO()
 

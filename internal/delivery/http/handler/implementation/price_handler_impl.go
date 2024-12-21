@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -75,14 +76,14 @@ func (h *PriceHandlerImpl) GetPricesByCommodityID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, prices)
 }
 
-func (h *PriceHandlerImpl) GetPricesByRegionID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+func (h *PriceHandlerImpl) GetPricesByCityID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 
-	prices, err := h.uc.GetPricesByRegionID(c, id)
+	prices, err := h.uc.GetPricesByCityID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -137,19 +138,20 @@ func (h *PriceHandlerImpl) RestorePrice(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, restoredPrice)
 }
 
-func (h *PriceHandlerImpl) GetPriceByCommodityIDAndRegionID(c *gin.Context) {
+func (h *PriceHandlerImpl) GetPriceByCommodityIDAndCityID(c *gin.Context) {
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	regionID, err := uuid.Parse(c.Param("region_id"))
+
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 
-	price, err := h.uc.GetPriceByCommodityIDAndRegionID(c, commodityID, regionID)
+	price, err := h.uc.GetPriceByCommodityIDAndCityID(c, commodityID, cityID)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -157,19 +159,19 @@ func (h *PriceHandlerImpl) GetPriceByCommodityIDAndRegionID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, price)
 }
 
-func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndRegionID(c *gin.Context) {
+func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndCityID(c *gin.Context) {
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	regionID, err := uuid.Parse(c.Param("region_id"))
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
 
-	priceHistory, err := h.uc.GetPriceHistoryByCommodityIDAndRegionID(c, commodityID, regionID)
+	priceHistory, err := h.uc.GetPriceHistoryByCommodityIDAndCityID(c, commodityID, cityID)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -177,7 +179,7 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndRegionID(c *gin.Conte
 	utils.SuccessResponse(c, http.StatusOK, priceHistory)
 }
 
-func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.Context) {
+func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Context) {
 	logrus.Log.Info("Downloading price history")
 	priceParams := &dto.PriceParamsDTO{}
 
@@ -206,15 +208,16 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndRegionID(c *gin.
 		return
 	}
 	priceParams.CommodityID = commodityID
-	regionID, err := uuid.Parse(c.Param("region_id"))
+
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	priceParams.RegionID = regionID
+	priceParams.CityID = cityID
 
 	logrus.Log.Info("Calling download price history usecase")
-	response, err := h.uc.DownloadPriceHistoryByCommodityIDAndRegionID(c, priceParams)
+	response, err := h.uc.DownloadPriceHistoryByCommodityIDAndCityID(c, priceParams)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -231,12 +234,12 @@ func (h *PriceHandlerImpl) GetPriceHistoryExcelFile(c *gin.Context) {
 	}
 	logrus.Log.Info("Commodity ID is valid ")
 
-	regionID, err := uuid.Parse(c.Param("region_id"))
+	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	logrus.Log.Info("Region ID is  valid")
+	logrus.Log.Info("City ID is  valid")
 
 	startDateStr := c.Query("start_date")
 	startDate, err := time.Parse("2006-01-02", startDateStr)
@@ -253,7 +256,7 @@ func (h *PriceHandlerImpl) GetPriceHistoryExcelFile(c *gin.Context) {
 
 	params := &dto.PriceParamsDTO{
 		CommodityID: commodityID,
-		RegionID:    regionID,
+		CityID:      cityID,
 		StartDate:   startDate,
 		EndDate:     endDate,
 	}

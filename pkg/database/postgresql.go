@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/pkg/database/seeders"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -38,7 +37,6 @@ func NewPostgres(env *env.Env) (*gorm.DB, error) {
 		&domain.LandCommodity{},
 		&domain.Province{},
 		&domain.City{},
-		&domain.Region{},
 		&domain.Price{},
 		&domain.PriceHistory{},
 		&domain.Supply{},
@@ -48,7 +46,7 @@ func NewPostgres(env *env.Env) (*gorm.DB, error) {
 		&domain.Harvest{},
 	)
 
-	seeders.Seeders(db)
+	// seeders.Seeders(db)
 
 	return db, nil
 }

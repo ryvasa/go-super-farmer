@@ -12,7 +12,7 @@ type User struct {
 	Name      string         `gorm:"size:100;not null;type:varchar(100)"`
 	Email     string         `gorm:"unique;not null;type:varchar(255)"`
 	Password  string         `gorm:"not null;type:varchar(255)"`
-	RoleID    int            `gorm:"not null;default:1"`
+	RoleID    int64          `gorm:"not null;default:1"`
 	Role      Role           `gorm:"foreignKey:RoleID"`
 	Phone     *string        `gorm:"type:varchar(20)"`
 	CreatedAt time.Time      `gorm:"autoCreateTime"`

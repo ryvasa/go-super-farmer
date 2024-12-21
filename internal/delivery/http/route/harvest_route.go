@@ -20,7 +20,7 @@ func (r *HarvestRoute) Register(public, protected *gin.RouterGroup) {
 	protected.GET("/harvests/commodity/:id", r.handler.GetHarvestByCommodityID)
 	protected.GET("/harvests/land/:id", r.handler.GetHarvestByLandID)
 	protected.GET("/harvests/land_commodity/:id", r.handler.GetHarvestByLandCommodityID)
-	protected.GET("/harvests/region/:id", r.handler.GetHarvestByRegionID)
+	protected.GET("/harvests/city/:id", r.handler.GetHarvestByCityID)
 	protected.PATCH("/harvests/:id", r.handler.UpdateHarvest)
 	protected.DELETE("/harvests/:id", r.handler.DeleteHarvest)
 	protected.PATCH("/harvests/:id/restore", r.handler.RestoreHarvest)

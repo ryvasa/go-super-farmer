@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -20,10 +20,10 @@ import (
 )
 
 type PriceRepoMock struct {
-	Price        *mock.MockPriceRepository
-	Region       *mock.MockRegionRepository
-	Commodity    *mock.MockCommodityRepository
-	PriceHistory *mock.MockPriceHistoryRepository
+	Price        *mock_repo.MockPriceRepository
+	City         *mock_repo.MockCityRepository
+	Commodity    *mock_repo.MockCommodityRepository
+	PriceHistory *mock_repo.MockPriceHistoryRepository
 	TxManager    *mock_pkg.MockTransactionManager
 	RabbitMQ     *mock_pkg.MockRabbitMQ
 	Cache        *mock_pkg.MockCache
@@ -33,7 +33,7 @@ type PriceIDs struct {
 	PriceID        uuid.UUID
 	PriceHistoryID uuid.UUID
 	CommodityID    uuid.UUID
-	RegionID       uuid.UUID
+	CityID         int64
 }
 
 type Pricemocks struct {
@@ -43,7 +43,7 @@ type Pricemocks struct {
 	HistoryPrices []*domain.PriceHistory
 	HistoryPrice  *domain.PriceHistory
 	Commodity     *domain.Commodity
-	Region        *domain.Region
+	City          *domain.City
 	Message       usecase_implementation.PriceMessage
 }
 
@@ -54,7 +54,7 @@ type PriceDTOmocks struct {
 }
 
 func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *PriceRepoMock, usecase_interface.PriceUsecase, context.Context) {
-	regionID := uuid.New()
+	cityID := int64(1)
 	commodityID := uuid.New()
 	priceID := uuid.New()
 	priceHistoryID := uuid.New()
@@ -63,14 +63,14 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 		PriceID:        priceID,
 		PriceHistoryID: priceHistoryID,
 		CommodityID:    commodityID,
-		RegionID:       regionID,
+		CityID:         cityID,
 	}
 	startDate, _ := time.Parse("2006-01-02", "2020-01-01")
 	endDate, _ := time.Parse("2006-01-02", "2021-01-01-01")
 	dtos := &PriceDTOmocks{
 		Create: &dto.PriceCreateDTO{
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Price:       100,
 		},
 		Update: &dto.PriceUpdateDTO{
@@ -78,7 +78,7 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 		},
 		Params: &dto.PriceParamsDTO{
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			StartDate:   startDate,
 			EndDate:     endDate,
 		},
@@ -89,46 +89,46 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 			{
 				ID:          priceID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Price:       100,
 			},
 		},
 		Price: &domain.Price{
 			ID:          priceID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Price:       100,
 		},
 		UpdatedPrice: &domain.Price{
 			ID:          priceID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Price:       900,
 		},
 		HistoryPrices: []*domain.PriceHistory{
 			{
 				ID:          priceID,
 				CommodityID: commodityID,
-				RegionID:    regionID,
+				CityID:      cityID,
 				Price:       100,
 			},
 		},
 		HistoryPrice: &domain.PriceHistory{
 			ID:          priceID,
 			CommodityID: commodityID,
-			RegionID:    regionID,
+			CityID:      cityID,
 			Price:       100,
 		},
 		Commodity: &domain.Commodity{
 			ID:   commodityID,
 			Name: "string",
 		},
-		Region: &domain.Region{
-			ID: regionID,
+		City: &domain.City{
+			ID: cityID,
 		},
 		Message: usecase_implementation.PriceMessage{
 			CommodityID: dtos.Params.CommodityID,
-			RegionID:    dtos.Params.RegionID,
+			CityID:      dtos.Params.CityID,
 			StartDate:   dtos.Params.StartDate,
 			EndDate:     dtos.Params.EndDate,
 		},
@@ -137,20 +137,20 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	regionRepo := mock.NewMockRegionRepository(ctrl)
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
-	priceRepo := mock.NewMockPriceRepository(ctrl)
-	priceHostoryRepo := mock.NewMockPriceHistoryRepository(ctrl)
+	cityRepo := mock_repo.NewMockCityRepository(ctrl)
+	commodityRepo := mock_repo.NewMockCommodityRepository(ctrl)
+	priceRepo := mock_repo.NewMockPriceRepository(ctrl)
+	priceHostoryRepo := mock_repo.NewMockPriceHistoryRepository(ctrl)
 	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 	rabbitMQ := mock_pkg.NewMockRabbitMQ(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
 
-	uc := usecase_implementation.NewPriceUsecase(priceRepo, priceHostoryRepo, regionRepo, commodityRepo, rabbitMQ, txRepo, cache)
+	uc := usecase_implementation.NewPriceUsecase(priceRepo, priceHostoryRepo, cityRepo, commodityRepo, rabbitMQ, txRepo, cache)
 	ctx := context.Background()
 
 	repo := &PriceRepoMock{
 		Price:        priceRepo,
-		Region:       regionRepo,
+		City:         cityRepo,
 		Commodity:    commodityRepo,
 		PriceHistory: priceHostoryRepo,
 		TxManager:    txRepo,
@@ -169,7 +169,7 @@ func TestPriceUsecase_CreatePrice(t *testing.T) {
 
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(mocks.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
 		repo.Price.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Price) error {
 			p.ID = ids.PriceID
@@ -184,7 +184,7 @@ func TestPriceUsecase_CreatePrice(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, dto.Create.CommodityID, resp.CommodityID)
-		assert.Equal(t, dto.Create.RegionID, resp.RegionID)
+		assert.Equal(t, dto.Create.CityID, resp.CityID)
 		assert.Equal(t, mocks.Price.ID, resp.ID)
 	})
 
@@ -198,22 +198,22 @@ func TestPriceUsecase_CreatePrice(t *testing.T) {
 		assert.EqualError(t, err, "commodity not found")
 	})
 
-	t.Run("should return error when region not found", func(t *testing.T) {
+	t.Run("should return error when city not found", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(nil, utils.NewNotFoundError("region not found")).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
 
 		resp, err := uc.CreatePrice(ctx, dto.Create)
 
 		assert.Nil(t, resp)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "region not found")
+		assert.EqualError(t, err, "city not found")
 	})
 
 	t.Run("should return error when create price", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(mocks.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
 		repo.Price.EXPECT().Create(ctx, gomock.Any()).Return(utils.NewInternalError("internal error")).Times(1)
 
@@ -227,7 +227,7 @@ func TestPriceUsecase_CreatePrice(t *testing.T) {
 	t.Run("should return error when get created price", func(t *testing.T) {
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(mocks.Commodity, nil).Times(1)
 
-		repo.Region.EXPECT().FindByID(ctx, ids.RegionID).Return(mocks.Region, nil).Times(1)
+		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(mocks.City, nil).Times(1)
 
 		repo.Price.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Price) error {
 			p.ID = ids.PriceID
@@ -268,7 +268,7 @@ func TestPriceUsecase_GetAllPrices(t *testing.T) {
 			assert.Equal(t, expectedResponse[i].ID, price.ID)
 			assert.Equal(t, expectedResponse[i].Price, price.Price)
 			assert.Equal(t, expectedResponse[i].CommodityID, price.CommodityID)
-			assert.Equal(t, expectedResponse[i].RegionID, price.RegionID)
+			assert.Equal(t, expectedResponse[i].CityID, price.CityID)
 		}
 	})
 
@@ -351,7 +351,7 @@ func TestPriceUsecase_GetPriceByID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ids.PriceID, res.ID)
 		assert.Equal(t, ids.CommodityID, res.CommodityID)
-		assert.Equal(t, ids.RegionID, res.RegionID)
+		assert.Equal(t, ids.CityID, res.CityID)
 		assert.Equal(t, mocks.Price.Price, res.Price)
 	})
 
@@ -375,7 +375,7 @@ func TestPriceUsecase_GetPricesByCommodityID(t *testing.T) {
 		assert.Equal(t, 1, len(res))
 		assert.Equal(t, (mocks.Prices)[0].ID, (res)[0].ID)
 		assert.Equal(t, (mocks.Prices)[0].CommodityID, (res)[0].CommodityID)
-		assert.Equal(t, (mocks.Prices)[0].RegionID, (res)[0].RegionID)
+		assert.Equal(t, (mocks.Prices)[0].CityID, (res)[0].CityID)
 		assert.Equal(t, (mocks.Prices)[0].Price, (res)[0].Price)
 	})
 
@@ -388,25 +388,25 @@ func TestPriceUsecase_GetPricesByCommodityID(t *testing.T) {
 	})
 }
 
-func TestPriceUsecase_GetPricesByRegionID(t *testing.T) {
+func TestPriceUsecase_GetPricesByCityID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := PriceUsecaseUtils(t)
 
-	t.Run("should return price by region id success", func(t *testing.T) {
-		repo.Price.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(mocks.Prices, nil).Times(1)
+	t.Run("should return price by city id success", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCityID(ctx, ids.CityID).Return(mocks.Prices, nil).Times(1)
 
-		res, err := uc.GetPricesByRegionID(ctx, ids.RegionID)
+		res, err := uc.GetPricesByCityID(ctx, ids.CityID)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(res))
 		assert.Equal(t, (mocks.Prices)[0].ID, (res)[0].ID)
 		assert.Equal(t, (mocks.Prices)[0].CommodityID, (res)[0].CommodityID)
-		assert.Equal(t, (mocks.Prices)[0].RegionID, (res)[0].RegionID)
+		assert.Equal(t, (mocks.Prices)[0].CityID, (res)[0].CityID)
 		assert.Equal(t, (mocks.Prices)[0].Price, (res)[0].Price)
 	})
 
-	t.Run("should return error when get price by region id", func(t *testing.T) {
-		repo.Price.EXPECT().FindByRegionID(ctx, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error when get price by city id", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCityID(ctx, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		_, err := uc.GetPricesByRegionID(ctx, ids.RegionID)
+		_, err := uc.GetPricesByCityID(ctx, ids.CityID)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
@@ -634,47 +634,47 @@ func TestPriceUsecase_RestorePrice(t *testing.T) {
 	})
 }
 
-func TestPriceUsecase_GetPriceByCommodityIDAndRegionID(t *testing.T) {
+func TestPriceUsecase_GetPriceByCommodityIDAndCityID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := PriceUsecaseUtils(t)
 
-	t.Run("should return price by commodity id and region id success", func(t *testing.T) {
-		repo.Price.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.Price, nil).Times(1)
+	t.Run("should return price by commodity id and city id success", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.Price, nil).Times(1)
 
-		res, err := uc.GetPriceByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		res, err := uc.GetPriceByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 		assert.NoError(t, err)
 		assert.Equal(t, ids.PriceID, res.ID)
 		assert.Equal(t, ids.CommodityID, res.CommodityID)
-		assert.Equal(t, ids.RegionID, res.RegionID)
+		assert.Equal(t, ids.CityID, res.CityID)
 		assert.Equal(t, mocks.Price.Price, res.Price)
 	})
 
-	t.Run("should return error when get price by commodity id and region id", func(t *testing.T) {
-		repo.Price.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+	t.Run("should return error when get price by commodity id and city id", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		_, err := uc.GetPriceByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		_, err := uc.GetPriceByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
 }
 
-func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
+func TestPriceUsecase_GetPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 	ids, mocks, _, repo, uc, ctx := PriceUsecaseUtils(t)
-	key := fmt.Sprintf("price_history_%s_%s", ids.CommodityID, ids.RegionID)
-	t.Run("should return price history by commodity id and region id success by repo", func(t *testing.T) {
+	key := fmt.Sprintf("price_history_%s_%d", ids.CommodityID, ids.CityID)
+	t.Run("should return price history by commodity id and city id success by repo", func(t *testing.T) {
 		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
-		repo.PriceHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.HistoryPrices, nil).Times(1)
+		repo.PriceHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.HistoryPrices, nil).Times(1)
 
-		repo.Price.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.Price, nil).Times(1)
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.Price, nil).Times(1)
 
 		repo.Cache.EXPECT().Set(ctx, key, gomock.Any(), 4*time.Minute).Return(nil)
 
-		res, err := uc.GetPriceHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		res, err := uc.GetPriceHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(res))
 		assert.Equal(t, ids.PriceID, (res)[0].ID)
 		assert.Equal(t, ids.CommodityID, (res)[0].CommodityID)
-		assert.Equal(t, ids.RegionID, (res)[0].RegionID)
+		assert.Equal(t, ids.CityID, (res)[0].CityID)
 		assert.Equal(t, mocks.Price.Price, (res)[0].Price)
 	})
 
@@ -688,7 +688,7 @@ func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
 		repo.Cache.EXPECT().Get(ctx, key).Return(cachedJSON, nil)
 
 		// Execute
-		resp, err := uc.GetPriceHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetPriceHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		// Assert
 		assert.NoError(t, err)
@@ -697,7 +697,7 @@ func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
 		for i, price := range resp {
 			assert.Equal(t, expectedResponse[i].ID, price.ID)
 			assert.Equal(t, expectedResponse[i].CommodityID, price.CommodityID)
-			assert.Equal(t, expectedResponse[i].RegionID, price.RegionID)
+			assert.Equal(t, expectedResponse[i].CityID, price.CityID)
 			assert.Equal(t, expectedResponse[i].Price, price.Price)
 			assert.Equal(t, expectedResponse[i].CreatedAt, price.CreatedAt)
 			assert.Equal(t, expectedResponse[i].UpdatedAt, price.UpdatedAt)
@@ -705,24 +705,24 @@ func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
 		}
 	})
 
-	t.Run("should return error when get price history by commodity id and region id", func(t *testing.T) {
+	t.Run("should return error when get price history by commodity id and city id", func(t *testing.T) {
 		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
 
-		repo.PriceHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.PriceHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		_, err := uc.GetPriceHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		_, err := uc.GetPriceHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
 
-	t.Run("should return error when get price by commodity id and region id", func(t *testing.T) {
+	t.Run("should return error when get price by commodity id and city id", func(t *testing.T) {
 		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
 
-		repo.PriceHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.HistoryPrices, nil).Times(1)
+		repo.PriceHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.HistoryPrices, nil).Times(1)
 
-		repo.Price.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(nil, utils.NewInternalError("internal error")).Times(1)
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
-		_, err := uc.GetPriceHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		_, err := uc.GetPriceHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "internal error")
 	})
@@ -730,12 +730,12 @@ func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
 	t.Run("should return error when cache set fails", func(t *testing.T) {
 		// Mock expectations
 		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
-		repo.PriceHistory.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.HistoryPrices, nil).Times(1)
-		repo.Price.EXPECT().FindByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID).Return(mocks.Price, nil).Times(1)
+		repo.PriceHistory.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.HistoryPrices, nil).Times(1)
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID).Return(mocks.Price, nil).Times(1)
 		repo.Cache.EXPECT().Set(ctx, key, gomock.Any(), 4*time.Minute).Return(fmt.Errorf("cache set error"))
 
 		// Execute
-		resp, err := uc.GetPriceHistoryByCommodityIDAndRegionID(ctx, ids.CommodityID, ids.RegionID)
+		resp, err := uc.GetPriceHistoryByCommodityIDAndCityID(ctx, ids.CommodityID, ids.CityID)
 
 		// Assert
 		assert.Error(t, err)
@@ -744,7 +744,7 @@ func TestPriceUsecase_GetPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
 	})
 }
 
-func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndRegionID(t *testing.T) {
+func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 	_, mocks, dtos, repo, uc, ctx := PriceUsecaseUtils(t)
 
 	t.Run("should publish message successfully", func(t *testing.T) {
@@ -755,10 +755,10 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndRegionID(t *testing.T)
 			Return(nil)
 
 		// Execute
-		res, err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
+		res, err := uc.DownloadPriceHistoryByCommodityIDAndCityID(ctx, dtos.Params)
 
-		url := fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/region/%s/download/file?start_date=%s&end_date=%s",
-			dtos.Params.CommodityID, dtos.Params.RegionID, dtos.Params.StartDate.Format("2006-01-02"), dtos.Params.EndDate.Format("2006-01-02"))
+		url := fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
+			dtos.Params.CommodityID, dtos.Params.CityID, dtos.Params.StartDate.Format("2006-01-02"), dtos.Params.EndDate.Format("2006-01-02"))
 
 		// Assert
 		assert.NoError(t, err)
@@ -774,7 +774,7 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndRegionID(t *testing.T)
 			Return(fmt.Errorf("publish error"))
 
 		// Execute
-		resp, err := uc.DownloadPriceHistoryByCommodityIDAndRegionID(ctx, dtos.Params)
+		resp, err := uc.DownloadPriceHistoryByCommodityIDAndCityID(ctx, dtos.Params)
 
 		// Assert
 		assert.Error(t, err)

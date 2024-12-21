@@ -4,6 +4,7 @@ go 1.23.2
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/casbin/casbin/v2 v2.102.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/validator/v10 v10.23.0

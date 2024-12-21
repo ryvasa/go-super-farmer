@@ -27,9 +27,8 @@ func (r *PriceRepositoryImpl) FindAll(ctx context.Context) ([]*domain.Price, err
 
 	err := r.DB(ctx).
 		Preload("Commodity").
-		Preload("Region").
-		Preload("Region.Province").
-		Preload("Region.City").
+		Preload("City").
+		Preload("City.Province").
 		Find(&prices).Error
 
 	if err != nil {
@@ -46,11 +45,8 @@ func (r *PriceRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*doma
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
+		Preload("City").
+		Preload("City.Province").
 		First(&price, id).Error
 	if err != nil {
 		return nil, err
@@ -65,11 +61,8 @@ func (r *PriceRepositoryImpl) FindByCommodityID(ctx context.Context, commodityID
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
+		Preload("City").
+		Preload("City.Province").
 		Where("prices.commodity_id = ?", commodityID).
 		Find(&prices).Error
 	if err != nil {
@@ -79,18 +72,15 @@ func (r *PriceRepositoryImpl) FindByCommodityID(ctx context.Context, commodityID
 	return prices, nil
 }
 
-func (r *PriceRepositoryImpl) FindByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Price, error) {
+func (r *PriceRepositoryImpl) FindByCityID(ctx context.Context, cityID int64) ([]*domain.Price, error) {
 	var prices []*domain.Price
 	err := r.DB(ctx).
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
-		Where("prices.region_id = ?", regionID).
+		Preload("City").
+		Preload("City.Province").
+		Where("prices.city_id = ?", cityID).
 		Find(&prices).Error
 	if err != nil {
 		return nil, err
@@ -119,11 +109,8 @@ func (r *PriceRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID)
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
+		Preload("City").
+		Preload("City.Province").
 		Unscoped().
 		Where("prices.id = ? AND prices.deleted_at IS NOT NULL", id).
 		First(&price).Error
@@ -133,18 +120,15 @@ func (r *PriceRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID)
 	return &price, nil
 }
 
-func (r *PriceRepositoryImpl) FindByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) (*domain.Price, error) {
+func (r *PriceRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Price, error) {
 	var price domain.Price
 	err := r.DB(ctx).
 		Preload("Commodity", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt", "Description")
 		}).
-		Preload("Region", func(db *gorm.DB) *gorm.DB {
-			return db.Omit("CreatedAt", "UpdatedAt", "DeletedAt")
-		}).
-		Preload("Region.Province").
-		Preload("Region.City").
-		Where("prices.commodity_id = ? AND prices.region_id = ?", commodityID, regionID).
+		Preload("City").
+		Preload("City.Province").
+		Where("prices.commodity_id = ? AND prices.city_id = ?", commodityID, cityID).
 		First(&price).Error
 	if err != nil {
 		return nil, err

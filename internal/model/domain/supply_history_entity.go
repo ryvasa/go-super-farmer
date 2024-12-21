@@ -11,8 +11,8 @@ type SupplyHistory struct {
 	ID          uuid.UUID      `gorm:"primaryKey;type:varchar(36)"`
 	CommodityID uuid.UUID      `gorm:"not null;type:varchar(36)"`
 	Commodity   *Commodity     `gorm:"foreignKey:CommodityID"`
-	RegionID    uuid.UUID      `gorm:"not null;type:varchar(36)"`
-	Region      *Region        `gorm:"foreignKey:RegionID"`
+	CityID      int64          `gorm:"not null;type:int64"`
+	City        *City          `gorm:"foreignKey:CityID" json:"city,omitempty"`
 	Quantity    float64        `gorm:"not null;type:float"`
 	Unit        string         `gorm:"not null;type:varchar(255); default:kg"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime"`

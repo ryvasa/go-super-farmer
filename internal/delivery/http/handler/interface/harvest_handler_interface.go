@@ -9,7 +9,7 @@ type HarvestHandler interface {
 	GetHarvestByCommodityID(c *gin.Context)
 	GetHarvestByLandID(c *gin.Context)
 	GetHarvestByLandCommodityID(c *gin.Context)
-	GetHarvestByRegionID(c *gin.Context)
+	GetHarvestByCityID(c *gin.Context)
 	UpdateHarvest(c *gin.Context)
 	DeleteHarvest(c *gin.Context)
 	RestoreHarvest(c *gin.Context)

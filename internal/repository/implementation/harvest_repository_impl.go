@@ -78,10 +78,10 @@ func (r *HarvestRepositoryImpl) FindByLandCommodityID(ctx context.Context, id uu
 	return harvests, nil
 }
 
-func (r *HarvestRepositoryImpl) FindByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
+func (r *HarvestRepositoryImpl) FindByCityID(ctx context.Context, id int64) ([]*domain.Harvest, error) {
 	var harvests []*domain.Harvest
 
-	if err := r.db.WithContext(ctx).Where("region_id = ?", id).Find(&harvests).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("city_id = ?", id).Find(&harvests).Error; err != nil {
 		return nil, err
 	}
 	return harvests, nil

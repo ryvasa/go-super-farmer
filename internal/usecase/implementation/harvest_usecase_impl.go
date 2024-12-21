@@ -23,15 +23,15 @@ type HarvestMessage struct {
 }
 type HarvestUsecaseImpl struct {
 	harvestRepo       repository_interface.HarvestRepository
-	regionRepo        repository_interface.RegionRepository
+	cityRepo          repository_interface.CityRepository
 	landCommodityRepo repository_interface.LandCommodityRepository
 	rabbitMQ          messages.RabbitMQ
 	cache             cache.Cache
 	globFunc          utils.GlobFunc
 }
 
-func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, regionRepo repository_interface.RegionRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc) usecase_interface.HarvestUsecase {
-	return &HarvestUsecaseImpl{harvestRepo, regionRepo, landCommodityRepo, rabbitMQ, cache, globFunc}
+func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, cityRepo repository_interface.CityRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc) usecase_interface.HarvestUsecase {
+	return &HarvestUsecaseImpl{harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, globFunc}
 }
 
 func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
@@ -39,9 +39,9 @@ func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harves
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
-	region, err := uc.regionRepo.FindByID(ctx, req.RegionID)
+	city, err := uc.cityRepo.FindByID(ctx, req.CityID)
 	if err != nil {
-		return nil, utils.NewNotFoundError("region not found")
+		return nil, utils.NewNotFoundError("city not found")
 	}
 	commodityLand, err := uc.landCommodityRepo.FindByID(ctx, req.LandCommodityID)
 	if err != nil {
@@ -53,7 +53,7 @@ func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.Harves
 		return nil, utils.NewBadRequestError("harvest date format is invalid")
 	}
 
-	harvest.RegionID = region.ID
+	harvest.CityID = city.ID
 	harvest.LandCommodityID = commodityLand.ID
 	harvest.Quantity = req.Quantity
 	harvest.Unit = req.Unit
@@ -138,8 +138,8 @@ func (uc *HarvestUsecaseImpl) GetHarvestByLandCommodityID(ctx context.Context, i
 	return harvests, nil
 }
 
-func (uc *HarvestUsecaseImpl) GetHarvestByRegionID(ctx context.Context, id uuid.UUID) ([]*domain.Harvest, error) {
-	harvests, err := uc.harvestRepo.FindByRegionID(ctx, id)
+func (uc *HarvestUsecaseImpl) GetHarvestByCityID(ctx context.Context, id int64) ([]*domain.Harvest, error) {
+	harvests, err := uc.harvestRepo.FindByCityID(ctx, id)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

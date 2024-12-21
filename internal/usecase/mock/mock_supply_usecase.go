@@ -81,6 +81,21 @@ func (mr *MockSupplyUsecaseMockRecorder) GetAllSupply(ctx interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSupply", reflect.TypeOf((*MockSupplyUsecase)(nil).GetAllSupply), ctx)
 }
 
+// GetSupplyByCityID mocks base method.
+func (m *MockSupplyUsecase) GetSupplyByCityID(ctx context.Context, cityID int64) ([]*domain.Supply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSupplyByCityID", ctx, cityID)
+	ret0, _ := ret[0].([]*domain.Supply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSupplyByCityID indicates an expected call of GetSupplyByCityID.
+func (mr *MockSupplyUsecaseMockRecorder) GetSupplyByCityID(ctx, cityID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupplyByCityID", reflect.TypeOf((*MockSupplyUsecase)(nil).GetSupplyByCityID), ctx, cityID)
+}
+
 // GetSupplyByCommodityID mocks base method.
 func (m *MockSupplyUsecase) GetSupplyByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Supply, error) {
 	m.ctrl.T.Helper()
@@ -111,34 +126,19 @@ func (mr *MockSupplyUsecaseMockRecorder) GetSupplyByID(ctx, id interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupplyByID", reflect.TypeOf((*MockSupplyUsecase)(nil).GetSupplyByID), ctx, id)
 }
 
-// GetSupplyByRegionID mocks base method.
-func (m *MockSupplyUsecase) GetSupplyByRegionID(ctx context.Context, regionID uuid.UUID) ([]*domain.Supply, error) {
+// GetSupplyHistoryByCommodityIDAndCityID mocks base method.
+func (m *MockSupplyUsecase) GetSupplyHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.SupplyHistory, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSupplyByRegionID", ctx, regionID)
-	ret0, _ := ret[0].([]*domain.Supply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSupplyByRegionID indicates an expected call of GetSupplyByRegionID.
-func (mr *MockSupplyUsecaseMockRecorder) GetSupplyByRegionID(ctx, regionID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupplyByRegionID", reflect.TypeOf((*MockSupplyUsecase)(nil).GetSupplyByRegionID), ctx, regionID)
-}
-
-// GetSupplyHistoryByCommodityIDAndRegionID mocks base method.
-func (m *MockSupplyUsecase) GetSupplyHistoryByCommodityIDAndRegionID(ctx context.Context, commodityID, regionID uuid.UUID) ([]*domain.SupplyHistory, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSupplyHistoryByCommodityIDAndRegionID", ctx, commodityID, regionID)
+	ret := m.ctrl.Call(m, "GetSupplyHistoryByCommodityIDAndCityID", ctx, commodityID, cityID)
 	ret0, _ := ret[0].([]*domain.SupplyHistory)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSupplyHistoryByCommodityIDAndRegionID indicates an expected call of GetSupplyHistoryByCommodityIDAndRegionID.
-func (mr *MockSupplyUsecaseMockRecorder) GetSupplyHistoryByCommodityIDAndRegionID(ctx, commodityID, regionID interface{}) *gomock.Call {
+// GetSupplyHistoryByCommodityIDAndCityID indicates an expected call of GetSupplyHistoryByCommodityIDAndCityID.
+func (mr *MockSupplyUsecaseMockRecorder) GetSupplyHistoryByCommodityIDAndCityID(ctx, commodityID, cityID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupplyHistoryByCommodityIDAndRegionID", reflect.TypeOf((*MockSupplyUsecase)(nil).GetSupplyHistoryByCommodityIDAndRegionID), ctx, commodityID, regionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSupplyHistoryByCommodityIDAndCityID", reflect.TypeOf((*MockSupplyUsecase)(nil).GetSupplyHistoryByCommodityIDAndCityID), ctx, commodityID, cityID)
 }
 
 // UpdateSupply mocks base method.

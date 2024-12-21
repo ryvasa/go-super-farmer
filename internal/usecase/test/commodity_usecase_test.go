@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	"github.com/ryvasa/go-super-farmer/internal/repository/mock"
+	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
@@ -20,7 +20,7 @@ import (
 )
 
 type CommodityRepoMock struct {
-	Commodity *mock.MockCommodityRepository
+	Commodity *mock_repo.MockCommodityRepository
 	Cache     *mock_pkg.MockCache
 }
 
@@ -90,7 +90,7 @@ func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *Commo
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	commodityRepo := mock.NewMockCommodityRepository(ctrl)
+	commodityRepo := mock_repo.NewMockCommodityRepository(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
 	uc := usecase_implementation.NewCommodityUsecase(commodityRepo, cache)
 	ctx := context.TODO()
