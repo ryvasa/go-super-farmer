@@ -6,12 +6,12 @@ package wire_excel
 import (
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/cmd/excel/app"
-	"github.com/ryvasa/go-super-farmer/cmd/excel/internal/handler"
-	"github.com/ryvasa/go-super-farmer/cmd/excel/internal/repository"
-	"github.com/ryvasa/go-super-farmer/cmd/excel/internal/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	"github.com/ryvasa/go-super-farmer/service_excel/handler"
+	"github.com/ryvasa/go-super-farmer/service_excel/repository"
+	"github.com/ryvasa/go-super-farmer/service_excel/usecase"
 )
 
 var allSet = wire.NewSet(

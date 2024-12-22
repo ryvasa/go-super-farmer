@@ -1,6 +1,7 @@
 package app
 
 import (
+	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
@@ -9,13 +10,13 @@ import (
 type MailApp struct {
 	Env      *env.Env
 	RabbitMQ messages.RabbitMQ
-	Handler  MailHandler
+	Handler  mail_handler.MailHandler
 }
 
 func NewApp(
 	env *env.Env,
 	rabbitMQ messages.RabbitMQ,
-	handler MailHandler,
+	handler mail_handler.MailHandler,
 ) *MailApp {
 	defer rabbitMQ.Close()
 	err := handler.ConsumerHandler()

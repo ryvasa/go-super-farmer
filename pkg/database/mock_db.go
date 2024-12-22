@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/ryvasa/go-super-farmer/internal/repository"
+	"github.com/ryvasa/go-super-farmer/service_api/repository"
 	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

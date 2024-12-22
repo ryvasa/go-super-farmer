@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/internal/model/dto"
+	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	"gorm.io/gorm"
 )
 
