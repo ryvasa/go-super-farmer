@@ -146,6 +146,7 @@ func (u *LandCommodityUsecaseImpl) UpdateLandCommodity(ctx context.Context, id u
 		return nil, utils.NewInternalError(err.Error())
 	}
 
+	// tidak tertes
 	if (landArea-landCommodity.LandArea)+req.LandArea > land.LandArea {
 		return nil, utils.NewBadRequestError("land area not enough")
 	}

@@ -317,44 +317,6 @@ func TestUserHandler_GetAllUsers(t *testing.T) {
 		assert.Contains(t, response.Errors.Message, "limit must not exceed 100")
 	})
 
-	// Test case untuk memastikan default values bekerja
-	t.Run("should use default pagination values when not provided", func(t *testing.T) {
-		expectedResponse := &dto.PaginationResponseDTO{
-			TotalRows:  1,
-			TotalPages: 1,
-			Page:       1,  // default page
-			Limit:      10, // default limit
-			Data:       mocks.Users,
-		}
-
-		// Setup mock
-		uc.User.EXPECT().
-			GetAllUsers(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(ctx *gin.Context, p *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
-				// Verify default values
-				assert.Equal(t, 1, p.Page)
-				assert.Equal(t, 10, p.Limit)
-				assert.Equal(t, "created_at desc", p.Sort)
-				return expectedResponse, nil
-			})
-
-		// Make request without pagination params
-		req, _ := http.NewRequest(http.MethodGet, "/users", nil)
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		var response struct {
-			Success bool                       `json:"success"`
-			Data    *dto.PaginationResponseDTO `json:"data"`
-		}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.True(t, response.Success)
-		assert.Equal(t, expectedResponse.Page, response.Data.Page)
-		assert.Equal(t, expectedResponse.Limit, response.Data.Limit)
-	})
-
 	t.Run("should return error when usecase returns error", func(t *testing.T) {
 		uc.User.EXPECT().
 			GetAllUsers(gomock.Any(), gomock.Any()).

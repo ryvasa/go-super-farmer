@@ -39,7 +39,12 @@ func (h *PriceHandlerImpl) CreatePrice(c *gin.Context) {
 }
 
 func (h *PriceHandlerImpl) GetAllPrices(c *gin.Context) {
-	prices, err := h.uc.GetAllPrices(c)
+	pagination, err := utils.GetPaginationParams(c)
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
+	}
+	prices, err := h.uc.GetAllPrices(c, pagination)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

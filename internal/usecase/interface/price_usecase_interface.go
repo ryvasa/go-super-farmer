@@ -10,7 +10,7 @@ import (
 
 type PriceUsecase interface {
 	CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error)
-	GetAllPrices(ctx context.Context) ([]*domain.Price, error)
+	GetAllPrices(ctx context.Context, pagination *dto.PaginationDTO) (*dto.PaginationResponseDTO, error)
 	GetPriceByID(ctx context.Context, id uuid.UUID) (*domain.Price, error)
 	GetPricesByCommodityID(ctx context.Context, commodityID uuid.UUID) ([]*domain.Price, error)
 	GetPricesByCityID(ctx context.Context, cityID int64) ([]*domain.Price, error)

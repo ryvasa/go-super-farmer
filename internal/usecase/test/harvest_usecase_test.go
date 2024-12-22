@@ -847,7 +847,10 @@ func TestHarvestUsecase_GetHarvestExcelFile(t *testing.T) {
 	defer os.RemoveAll(reportsDir) // Hapus direktori setelah tes selesai
 
 	// Buat file dummy Excel di ./public/reports
-	file := fmt.Sprintf("harvests_%s_%s_%s_*.xlsx", ids.LandCommodityID, domains.Harvests[0].HarvestDate.Format("2006-01-02"), domains.Harvests[0].HarvestDate.Format("2006-01-02"))
+	file := fmt.Sprintf("harvests_%s_%s_%s_*.xlsx",
+		ids.LandCommodityID,
+		domains.Harvests[0].HarvestDate.Format("2006-01-02"),
+		domains.Harvests[0].HarvestDate.Format("2006-01-02"))
 
 	dummyFilePath := fmt.Sprintf("%s/%s", reportsDir, file)
 	err = os.WriteFile(dummyFilePath, []byte("Dummy Excel content"), 0644)

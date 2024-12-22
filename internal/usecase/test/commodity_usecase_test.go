@@ -79,6 +79,7 @@ func CommodityUsecaseUtils(t *testing.T) (*CommodityIDs, *CommodityMocks, *Commo
 			Name:        "test commodity",
 			Description: "test commodity description",
 			Code:        "12345",
+			Duration:    "20000",
 		},
 		Update: &dto.CommodityUpdateDTO{
 			Name:        &updateName,

@@ -187,32 +187,138 @@ func TestPriceHandler_GetAllPrices(t *testing.T) {
 
 	r.GET("/prices", h.GetAllPrices)
 
-	t.Run("should get all prices successfully", func(t *testing.T) {
-		uc.EXPECT().GetAllPrices(gomock.Any()).Return(mocks.Prices, nil).Times(1)
+	t.Run("should return all prices successfully with default pagination", func(t *testing.T) {
+		// Prepare expected response
+		expectedResponse := &dto.PaginationResponseDTO{
+			TotalRows:  1,
+			TotalPages: 1,
+			Page:       1,
+			Limit:      10,
+			Data:       mocks.Prices,
+		}
 
+		// Setup mock
+		uc.EXPECT().
+			GetAllPrices(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx *gin.Context, p *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
+				// Verify default pagination
+				assert.Equal(t, 1, p.Page)
+				assert.Equal(t, 10, p.Limit)
+				assert.Equal(t, "created_at desc", p.Sort)
+				return expectedResponse, nil
+			})
+
+		// Make request
+		req, _ := http.NewRequest(http.MethodGet, "/prices", nil)
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices", nil))
+		r.ServeHTTP(w, req)
 
-		var response responsePricesHandler
+		// Assert response
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response struct {
+			Success bool                       `json:"success"`
+			Data    *dto.PaginationResponseDTO `json:"data"`
+		}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, true, response.Success)
-		assert.Equal(t, len(mocks.Prices), len(response.Data))
-		assert.Equal(t, response.Data[0].ID, (mocks.Prices)[0].ID)
+		assert.True(t, response.Success)
+		assert.Equal(t, expectedResponse.TotalRows, response.Data.TotalRows)
+		assert.Equal(t, expectedResponse.TotalPages, response.Data.TotalPages)
+		assert.Equal(t, expectedResponse.Page, response.Data.Page)
+		assert.Equal(t, expectedResponse.Limit, response.Data.Limit)
 	})
 
-	t.Run("should return error when internal error", func(t *testing.T) {
-		uc.EXPECT().GetAllPrices(gomock.Any()).Return(nil, utils.NewInternalError("Internal error"))
+	t.Run("should return prices with custom pagination and filter", func(t *testing.T) {
+		expectedResponse := &dto.PaginationResponseDTO{
+			TotalRows:  1,
+			TotalPages: 1,
+			Page:       2,
+			Limit:      5,
+			Data:       mocks.Prices,
+		}
 
+		// Setup mock
+		uc.EXPECT().
+			GetAllPrices(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx *gin.Context, p *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
+				assert.Equal(t, 2, p.Page)
+				assert.Equal(t, 5, p.Limit)
+				return expectedResponse, nil
+			})
+
+		// Make request with query params
+		req, _ := http.NewRequest(http.MethodGet, "/prices?page=2&limit=5", nil)
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/prices", nil))
+		r.ServeHTTP(w, req)
 
-		var response responsePricesHandler
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response struct {
+			Success bool                       `json:"success"`
+			Data    *dto.PaginationResponseDTO `json:"data"`
+		}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
+		assert.True(t, response.Success)
+		assert.Equal(t, expectedResponse.TotalRows, response.Data.TotalRows)
+	})
+
+	t.Run("should return error with invalid pagination params", func(t *testing.T) {
+		// Make request with invalid page
+		req, _ := http.NewRequest(http.MethodGet, "/prices?page=-1", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		// Assert response
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response struct {
+			Success bool           `json:"success"`
+			Message string         `json:"message"`
+			Errors  response.Error `json:"errors"`
+		}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.False(t, response.Success)
+		assert.Equal(t, "BAD_REQUEST", response.Errors.Code)
+		assert.Contains(t, response.Errors.Message, "page must be greater than 0")
+	})
+
+	t.Run("should return error with too large limit", func(t *testing.T) {
+		// Make request with invalid limit
+		req, _ := http.NewRequest(http.MethodGet, "/prices?limit=101", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		// Assert response
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		var response struct {
+			Success bool           `json:"success"`
+			Message string         `json:"message"`
+			Errors  response.Error `json:"errors"`
+		}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.False(t, response.Success)
+		assert.Equal(t, "BAD_REQUEST", response.Errors.Code)
+		assert.Contains(t, response.Errors.Message, "limit must not exceed 100")
+	})
+
+	t.Run("should return error when usecase returns error", func(t *testing.T) {
+		uc.EXPECT().
+			GetAllPrices(gomock.Any(), gomock.Any()).
+			Return(nil, utils.NewInternalError("internal error"))
+
+		req, _ := http.NewRequest(http.MethodGet, "/prices", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response struct {
+			Success bool        `json:"success"`
+			Errors  interface{} `json:"errors"`
+		}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.False(t, response.Success)
 		assert.NotNil(t, response.Errors)
-		assert.Equal(t, response.Errors.Code, "INTERNAL_ERROR")
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 }

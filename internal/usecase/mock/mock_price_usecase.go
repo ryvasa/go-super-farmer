@@ -82,18 +82,18 @@ func (mr *MockPriceUsecaseMockRecorder) DownloadPriceHistoryByCommodityIDAndCity
 }
 
 // GetAllPrices mocks base method.
-func (m *MockPriceUsecase) GetAllPrices(ctx context.Context) ([]*domain.Price, error) {
+func (m *MockPriceUsecase) GetAllPrices(ctx context.Context, pagination *dto.PaginationDTO) (*dto.PaginationResponseDTO, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPrices", ctx)
-	ret0, _ := ret[0].([]*domain.Price)
+	ret := m.ctrl.Call(m, "GetAllPrices", ctx, pagination)
+	ret0, _ := ret[0].(*dto.PaginationResponseDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllPrices indicates an expected call of GetAllPrices.
-func (mr *MockPriceUsecaseMockRecorder) GetAllPrices(ctx interface{}) *gomock.Call {
+func (mr *MockPriceUsecaseMockRecorder) GetAllPrices(ctx, pagination interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPrices", reflect.TypeOf((*MockPriceUsecase)(nil).GetAllPrices), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPrices", reflect.TypeOf((*MockPriceUsecase)(nil).GetAllPrices), ctx, pagination)
 }
 
 // GetPriceByCommodityIDAndCityID mocks base method.

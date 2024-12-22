@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
+	mock_utils "github.com/ryvasa/go-super-farmer/utils/mock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,6 +30,7 @@ type PriceRepoMock struct {
 	TxManager    *mock_pkg.MockTransactionManager
 	RabbitMQ     *mock_pkg.MockRabbitMQ
 	Cache        *mock_pkg.MockCache
+	Glob         *mock_utils.MockGlobFunc
 }
 
 type PriceIDs struct {
@@ -144,8 +148,9 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
 	rabbitMQ := mock_pkg.NewMockRabbitMQ(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
+	glob := mock_utils.NewMockGlobFunc(ctrl)
 
-	uc := usecase_implementation.NewPriceUsecase(priceRepo, priceHostoryRepo, cityRepo, commodityRepo, rabbitMQ, txRepo, cache)
+	uc := usecase_implementation.NewPriceUsecase(priceRepo, priceHostoryRepo, cityRepo, commodityRepo, rabbitMQ, txRepo, cache, glob)
 	ctx := context.Background()
 
 	repo := &PriceRepoMock{
@@ -156,6 +161,7 @@ func PriceUsecaseUtils(t *testing.T) (*PriceIDs, *Pricemocks, *PriceDTOmocks, *P
 		TxManager:    txRepo,
 		RabbitMQ:     rabbitMQ,
 		Cache:        cache,
+		Glob:         glob,
 	}
 
 	return ids, mocks, dtos, repo, uc, ctx
@@ -246,93 +252,102 @@ func TestPriceUsecase_CreatePrice(t *testing.T) {
 
 func TestPriceUsecase_GetAllPrices(t *testing.T) {
 	_, mocks, _, repo, uc, ctx := PriceUsecaseUtils(t)
-	key := fmt.Sprintf("price_%s", "all")
+
+	queryParams := &dto.PaginationDTO{
+		Limit:  10,
+		Page:   1,
+		Filter: dto.PaginationFilterDTO{},
+	}
+
+	cacheKey := fmt.Sprintf("price_list_page_%d_limit_%d",
+		queryParams.Page,
+		queryParams.Limit,
+	)
 
 	t.Run("should return prices from cache when cache hit", func(t *testing.T) {
 		// Setup
-		expectedResponse := mocks.Prices
-		cachedJSON, err := json.Marshal(expectedResponse)
+		mockedResponse := &dto.PaginationResponseDTO{
+			TotalRows:  10,
+			TotalPages: 1,
+			Page:       1,
+			Limit:      10,
+			Data:       mocks.Prices,
+		}
+		cachedJSON, err := json.Marshal(mockedResponse)
 		assert.NoError(t, err)
 
 		// Mock expectations
-		repo.Cache.EXPECT().Get(ctx, key).Return(cachedJSON, nil)
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return(cachedJSON, nil)
 
 		// Execute
-		resp, err := uc.GetAllPrices(ctx)
+		resp, err := uc.GetAllPrices(ctx, queryParams)
 
 		// Assert
 		assert.NoError(t, err)
-		assert.NotNil(t, resp)
-		assert.Equal(t, len(expectedResponse), len(resp))
-		for i, price := range resp {
-			assert.Equal(t, expectedResponse[i].ID, price.ID)
-			assert.Equal(t, expectedResponse[i].Price, price.Price)
-			assert.Equal(t, expectedResponse[i].CommodityID, price.CommodityID)
-			assert.Equal(t, expectedResponse[i].CityID, price.CityID)
-		}
+		assert.Equal(t, mockedResponse.TotalRows, resp.TotalRows)
+		assert.Equal(t, mockedResponse.TotalPages, resp.TotalPages)
+		assert.Equal(t, mockedResponse.Page, resp.Page)
+		assert.Equal(t, mockedResponse.Limit, resp.Limit)
+		assert.Equal(t, mockedResponse.Data, resp.Data)
 	})
 
 	t.Run("should return prices from repository when cache miss", func(t *testing.T) {
 		// Mock expectations in order
-		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
-		repo.Price.EXPECT().FindAll(ctx).Return(mocks.Prices, nil)
-		repo.Cache.EXPECT().Set(ctx, key, gomock.Any(), 4*time.Minute).DoAndReturn(
-			func(ctx context.Context, key string, value []byte, duration time.Duration) error {
-				var cached []*domain.Price
-				err := json.Unmarshal(value, &cached)
-				assert.NoError(t, err)
-				assert.Equal(t, len(mocks.Prices), len(cached))
-				return nil
-			})
-
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return(nil, nil)
+		repo.Price.EXPECT().FindAll(ctx, queryParams).Return(mocks.Prices, nil)
+		repo.Price.EXPECT().Count(ctx, &queryParams.Filter).Return(int64(10), nil).Times(1)
+		repo.Cache.EXPECT().Set(ctx, cacheKey, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		// Execute
-		resp, err := uc.GetAllPrices(ctx)
+		resp, err := uc.GetAllPrices(ctx, queryParams)
 
 		// Assert
 		assert.NoError(t, err)
-		assert.NotNil(t, resp)
-		assert.Equal(t, len(mocks.Prices), len(resp))
-		for i, price := range resp {
-			assert.Equal(t, mocks.Prices[i].ID, price.ID)
-			assert.Equal(t, mocks.Prices[i].Price, price.Price)
-		}
+		assert.Equal(t, len(mocks.Prices), len(resp.Data.([]*domain.Price)))
+		assert.Equal(t, int64(10), resp.TotalRows)
 	})
 
-	// t.Run("should return error when cache get fails", func(t *testing.T) {
-	// 	// Mock expectations
-	// 	repo.Cache.EXPECT().Get(ctx, key).Return(nil, fmt.Errorf("cache error"))
+	t.Run("should return validation error", func(t *testing.T) {
+		invalidQueryParams := &dto.PaginationDTO{
+			Limit: -1, // Invalid limit
+			Page:  1,
+		}
 
-	// 	// Execute
-	// 	resp, err := uc.GetAllPrices(ctx)
+		resp, err := uc.GetAllPrices(ctx, invalidQueryParams)
 
-	// 	// Assert
-	// 	assert.Error(t, err)
-	// 	assert.Nil(t, resp)
-	// 	assert.Contains(t, err.Error(), "cache error")
-	// })
-
-	t.Run("should return error when repository fails", func(t *testing.T) {
-		// Mock expectations
-		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
-		repo.Price.EXPECT().FindAll(ctx).Return(nil, fmt.Errorf("repository error"))
-
-		// Execute
-		resp, err := uc.GetAllPrices(ctx)
-
-		// Assert
 		assert.Error(t, err)
 		assert.Nil(t, resp)
-		assert.Contains(t, err.Error(), "repository error")
+		assert.EqualError(t, err, "limit must be greater than 0")
+	})
+
+	t.Run("should return error when cache is invalid", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return([]byte("invalid data"), nil).Times(1)
+
+		resp, err := uc.GetAllPrices(ctx, queryParams)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+	})
+
+	t.Run("should return error when database call fails", func(t *testing.T) {
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return(nil, nil).Times(1)
+		repo.Price.EXPECT().FindAll(ctx, queryParams).Return(nil, utils.NewInternalError("db error")).Times(1)
+
+		resp, err := uc.GetAllPrices(ctx, queryParams)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "db error")
 	})
 
 	t.Run("should return error when cache set fails", func(t *testing.T) {
 		// Mock expectations
-		repo.Cache.EXPECT().Get(ctx, key).Return(nil, nil)
-		repo.Price.EXPECT().FindAll(ctx).Return(mocks.Prices, nil)
-		repo.Cache.EXPECT().Set(ctx, key, gomock.Any(), 4*time.Minute).Return(fmt.Errorf("cache set error"))
+		repo.Cache.EXPECT().Get(ctx, cacheKey).Return(nil, nil)
+		repo.Price.EXPECT().FindAll(ctx, queryParams).Return(mocks.Prices, nil)
+		repo.Price.EXPECT().Count(ctx, &queryParams.Filter).Return(int64(10), nil).Times(1)
+		repo.Cache.EXPECT().Set(ctx, cacheKey, gomock.Any(), 4*time.Minute).Return(fmt.Errorf("cache set error"))
 
 		// Execute
-		resp, err := uc.GetAllPrices(ctx)
+		resp, err := uc.GetAllPrices(ctx, queryParams)
 
 		// Assert
 		assert.Error(t, err)
@@ -782,4 +797,78 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 		assert.EqualError(t, err, "publish error")
 	})
 
+}
+
+func TestPriceUsecase_GetPriceExcelFile(t *testing.T) {
+	ids, domains, _, repo, uc, ctx := PriceUsecaseUtils(t)
+
+	// Buat direktori ./public/reports jika belum ada
+	reportsDir := "./public/reports"
+	err := os.MkdirAll(reportsDir, 0755) // 0755 adalah permission untuk direktori
+	if err != nil {
+		t.Fatalf("Failed to create reports directory: %v", err)
+	}
+	defer os.RemoveAll(reportsDir) // Hapus direktori setelah tes selesai
+
+	// Buat file dummy Excel di ./public/reports
+	file := fmt.Sprintf("price_history_%s_%d_%s_%s_*.xlsx",
+		ids.CommodityID,
+		ids.CityID,
+		domains.Prices[0].CreatedAt.Format("2006-01-02"), domains.Prices[0].CreatedAt.Format("2006-01-02"),
+	)
+
+	dummyFilePath := fmt.Sprintf("%s/%s", reportsDir, file)
+	err = os.WriteFile(dummyFilePath, []byte("Dummy Excel content"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create dummy Excel file: %v", err)
+	}
+
+	t.Run("should get price excel file successfully", func(t *testing.T) {
+
+		repo.Glob.EXPECT().Glob(dummyFilePath).Return([]string{dummyFilePath}, nil)
+
+		resp, err := uc.GetPriceExcelFile(ctx, &dto.PriceParamsDTO{
+			CommodityID: ids.CommodityID,
+			CityID:      ids.CityID,
+			StartDate:   domains.Prices[0].CreatedAt,
+			EndDate:     domains.Prices[0].CreatedAt,
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, dummyFilePath, *resp)
+	})
+
+	t.Run("should return error when glob fails", func(t *testing.T) {
+		repo.Glob.EXPECT().Glob(dummyFilePath).Return(nil, utils.NewInternalError("Error finding report file"))
+
+		resp, err := uc.GetPriceExcelFile(ctx, &dto.PriceParamsDTO{
+			CommodityID: ids.CommodityID,
+			CityID:      ids.CityID,
+			StartDate:   domains.Prices[0].CreatedAt,
+			EndDate:     domains.Prices[0].CreatedAt,
+		})
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "Error finding report file")
+	})
+
+	t.Run("should return error when no matching files", func(t *testing.T) {
+
+		repo.Glob.EXPECT().Glob(dummyFilePath).Return([]string{}, nil)
+
+		resp, err := uc.GetPriceExcelFile(ctx, &dto.PriceParamsDTO{
+			CommodityID: ids.CommodityID,
+			CityID:      ids.CityID,
+			StartDate:   domains.Prices[0].CreatedAt,
+			EndDate:     domains.Prices[0].CreatedAt,
+		})
+
+		logrus.Info(resp)
+		logrus.Info(err)
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "Report file not found")
+	})
 }

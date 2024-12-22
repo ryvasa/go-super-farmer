@@ -78,6 +78,8 @@ func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.Pag
 		queryParams.Filter.UserName,
 	)
 	var response *dto.PaginationResponseDTO
+
+	// get from cache
 	cached, err := uc.cache.Get(ctx, cacheKey)
 	if err == nil && cached != nil {
 		err := json.Unmarshal(cached, &response)
@@ -104,6 +106,7 @@ func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.Pag
 		return response, nil
 	}
 
+	// get from db
 	users, err := uc.repo.FindAll(ctx, queryParams)
 	if err != nil {
 		logrus.Log.Errorf("Error: %v", err)

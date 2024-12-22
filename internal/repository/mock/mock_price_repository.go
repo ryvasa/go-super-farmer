@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	domain "github.com/ryvasa/go-super-farmer/internal/model/domain"
+	dto "github.com/ryvasa/go-super-farmer/internal/model/dto"
 )
 
 // MockPriceRepository is a mock of PriceRepository interface.
@@ -34,6 +35,21 @@ func NewMockPriceRepository(ctrl *gomock.Controller) *MockPriceRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockPriceRepository) EXPECT() *MockPriceRepositoryMockRecorder {
 	return m.recorder
+}
+
+// Count mocks base method.
+func (m *MockPriceRepository) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockPriceRepositoryMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockPriceRepository)(nil).Count), ctx, filter)
 }
 
 // Create mocks base method.
@@ -65,18 +81,18 @@ func (mr *MockPriceRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.C
 }
 
 // FindAll mocks base method.
-func (m *MockPriceRepository) FindAll(ctx context.Context) ([]*domain.Price, error) {
+func (m *MockPriceRepository) FindAll(ctx context.Context, queryParams *dto.PaginationDTO) ([]*domain.Price, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindAll", ctx)
+	ret := m.ctrl.Call(m, "FindAll", ctx, queryParams)
 	ret0, _ := ret[0].([]*domain.Price)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindAll indicates an expected call of FindAll.
-func (mr *MockPriceRepositoryMockRecorder) FindAll(ctx interface{}) *gomock.Call {
+func (mr *MockPriceRepositoryMockRecorder) FindAll(ctx, queryParams interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockPriceRepository)(nil).FindAll), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockPriceRepository)(nil).FindAll), ctx, queryParams)
 }
 
 // FindByCityID mocks base method.
