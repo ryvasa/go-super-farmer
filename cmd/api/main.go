@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/ryvasa/go-super-farmer/cmd/api/pkg/wire"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
-	"github.com/ryvasa/go-super-farmer/pkg/wire"
 )
 
 func main() {

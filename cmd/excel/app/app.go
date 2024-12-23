@@ -1,10 +1,10 @@
 package app
 
 import (
-	"github.com/ryvasa/go-super-farmer/cmd/excel/internal/handler"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	"github.com/ryvasa/go-super-farmer/service_excel/handler"
 	"gorm.io/gorm"
 )
 
