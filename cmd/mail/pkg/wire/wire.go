@@ -6,6 +6,8 @@ package wire_excel
 import (
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/cmd/mail/app"
+	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
+	mail_usecase "github.com/ryvasa/go-super-farmer/service_mail/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 )
@@ -13,8 +15,8 @@ import (
 var allSet = wire.NewSet(
 	env.LoadEnv,
 	messages.NewRabbitMQ,
-	app.NewMailService,
-	app.NewMailHandler,
+	mail_usecase.NewMailUsecase,
+	mail_handler.NewMailHandler,
 	app.NewApp,
 )
 

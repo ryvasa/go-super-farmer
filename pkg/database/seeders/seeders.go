@@ -2,12 +2,12 @@ package seeders
 
 import (
 	"log"
-	"time"
+	"strconv"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
+	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +65,7 @@ func SeedCommodities(db *gorm.DB, count int) []domain.Commodity {
 			Name:        uniqueName,
 			Description: gofakeit.Sentence(10),
 			Code:        gofakeit.LetterN(8),
-			Duration:    time.Duration(gofakeit.Number(1, 100)).String(),
+			Duration:    strconv.Itoa(gofakeit.Number(1, 100)),
 		})
 	}
 
