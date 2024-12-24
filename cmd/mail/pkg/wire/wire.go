@@ -6,10 +6,10 @@ package wire_excel
 import (
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/cmd/mail/app"
-	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
-	mail_usecase "github.com/ryvasa/go-super-farmer/service_mail/usecase"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
+	mail_usecase "github.com/ryvasa/go-super-farmer/service_mail/usecase"
 )
 
 var allSet = wire.NewSet(

@@ -1,9 +1,7 @@
 package handler_implementation
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -222,45 +220,4 @@ func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, res)
-}
-
-func (h *HarvestHandlerImpl) GetHarvestExcelFile(c *gin.Context) {
-	params := &dto.HarvestParamsDTO{}
-
-	startDateStr := c.Query("start_date")
-	if startDateStr != "" {
-		startDate, err := time.Parse("2006-01-02", startDateStr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		params.StartDate = startDate
-	}
-	endDatestr := c.Query("end_date")
-	if endDatestr != "" {
-		endDate, err := time.Parse("2006-01-02", endDatestr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		params.EndDate = endDate
-	}
-
-	id, err := uuid.Parse(c.Param("id"))
-	params.LandCommodityID = id
-	// Get the latest file (assuming filename contains timestamp)
-	latestFile, err := h.uc.GetHarvestExcelFile(c, params)
-	if err != nil {
-		utils.ErrorResponse(c, err)
-		return
-	}
-
-	// Set headers for file download
-	c.Header("Content-Description", "File Transfer")
-	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(*latestFile)))
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-	// Serve the file
-	c.File(*latestFile)
 }

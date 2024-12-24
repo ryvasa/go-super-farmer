@@ -22,11 +22,3 @@ func NewApp(router *gin.Engine, env *env.Env, db *gorm.DB, rabbitMQ messages.Rab
 		RabbitMQ: rabbitMQ,
 	}
 }
-func (a *App) Start() error {
-	defer a.RabbitMQ.Close()
-
-	a.Router.Use(gin.Recovery())
-	a.Router.Use(gin.Logger())
-
-	return a.Router.Run(a.Env.Server.Port)
-}

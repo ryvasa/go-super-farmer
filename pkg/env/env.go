@@ -40,6 +40,9 @@ type Env struct {
 		From     string
 		Password string
 	}
+	Report struct {
+		Port string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -82,6 +85,9 @@ func LoadEnv() (*Env, error) {
 	// Email
 	env.Email.From = os.Getenv("EMAIL_FROM")
 	env.Email.Password = os.Getenv("EMAIL_PASSWORD")
+
+	// Report
+	env.Report.Port = os.Getenv("REPORT_PORT")
 
 	return env, nil
 }
