@@ -8,14 +8,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
-	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -35,10 +36,11 @@ type PriceUsecaseImpl struct {
 	txManager        transaction.TransactionManager
 	cache            cache.Cache
 	globFunc         utils.GlobFunc
+	env              *env.Env
 }
 
-func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache, globFunc utils.GlobFunc) usecase_interface.PriceUsecase {
-	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, cityRepo, commodityRepo, rabbitMQ, txManager, cache, globFunc}
+func NewPriceUsecase(priceRepo repository_interface.PriceRepository, priceHistoryRepo repository_interface.PriceHistoryRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, rabbitMQ messages.RabbitMQ, txManager transaction.TransactionManager, cache cache.Cache, globFunc utils.GlobFunc, env *env.Env) usecase_interface.PriceUsecase {
+	return &PriceUsecaseImpl{priceRepo, priceHistoryRepo, cityRepo, commodityRepo, rabbitMQ, txManager, cache, globFunc, env}
 }
 
 func (u *PriceUsecaseImpl) CreatePrice(ctx context.Context, req *dto.PriceCreateDTO) (*domain.Price, error) {
@@ -327,42 +329,24 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndCityID(ctx context.Con
 }
 
 func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndCityID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
+	_, err := u.priceRepo.FindByCommodityIDAndCityID(ctx, params.CommodityID, params.CityID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 	msg := PriceMessage{
 		CommodityID: params.CommodityID,
 		CityID:      params.CityID,
 		StartDate:   params.StartDate,
 		EndDate:     params.EndDate,
 	}
-	err := u.rabbitMQ.PublishJSON(ctx, "report-exchange", "price-history", msg)
+	err = u.rabbitMQ.PublishJSON(ctx, "report-exchange", "price-history", msg)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	response := dto.DownloadResponseDTO{
 		Message: "Price history report generation in progress. Please check back in a few moments.",
-		DownloadURL: fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
-			params.CommodityID, params.CityID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02")),
+		DownloadURL: fmt.Sprintf("http://localhost%s/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
+			u.env.Report.Port, params.CommodityID, params.CityID, params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02")),
 	}
 	return &response, nil
-}
-
-func (u *PriceUsecaseImpl) GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error) {
-	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/price_history_%s_%d_%s_%s_*.xlsx",
-		params.CommodityID,
-		params.CityID,
-		params.StartDate.Format("2006-01-02"), params.EndDate.Format("2006-01-02"),
-	)
-
-	matches, err := u.globFunc.Glob(filePath) // Gunakan globFunc yang bisa dimock
-	if err != nil {
-		return nil, utils.NewInternalError("Error finding report file")
-	}
-
-	if len(matches) == 0 {
-		return nil, utils.NewNotFoundError("Report file not found")
-	}
-
-	latestFile := matches[len(matches)-1]
-
-	return &latestFile, nil
 }

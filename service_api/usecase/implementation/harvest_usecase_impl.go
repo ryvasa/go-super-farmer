@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -28,10 +29,11 @@ type HarvestUsecaseImpl struct {
 	rabbitMQ          messages.RabbitMQ
 	cache             cache.Cache
 	globFunc          utils.GlobFunc
+	env               *env.Env
 }
 
-func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, cityRepo repository_interface.CityRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc) usecase_interface.HarvestUsecase {
-	return &HarvestUsecaseImpl{harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, globFunc}
+func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, cityRepo repository_interface.CityRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc, env *env.Env) usecase_interface.HarvestUsecase {
+	return &HarvestUsecaseImpl{harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, globFunc, env}
 }
 
 func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
@@ -239,40 +241,26 @@ func (uc *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid
 }
 
 func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) (*dto.DownloadResponseDTO, error) {
-
+	_, err := uc.harvestRepo.FindByLandCommodityID(ctx, harvestParams.LandCommodityID)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
 	msg := HarvestMessage{
 		LandCommodityID: harvestParams.LandCommodityID,
 		StartDate:       harvestParams.StartDate,
 		EndDate:         harvestParams.EndDate,
 	}
 
-	err := uc.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)
+	err = uc.rabbitMQ.PublishJSON(ctx, "report-exchange", "harvest", msg)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
 	res := &dto.DownloadResponseDTO{
 		Message: "Report generation in progress. Please check back in a few moments.",
-		DownloadURL: fmt.Sprintf("http://localhost:8080/api/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
+		DownloadURL: fmt.Sprintf("http://localhost%s/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
+			uc.env.Report.Port,
 			harvestParams.LandCommodityID, harvestParams.StartDate.Format("2006-01-02"), harvestParams.EndDate.Format("2006-01-02")),
 	}
 
 	return res, nil
-}
-
-func (uc *HarvestUsecaseImpl) GetHarvestExcelFile(ctx context.Context, harvestParams *dto.HarvestParamsDTO) (*string, error) {
-	// Get the latest excel file
-	filePath := fmt.Sprintf("./public/reports/harvests_%s_%s_%s_*.xlsx", harvestParams.LandCommodityID, harvestParams.StartDate.Format("2006-01-02"), harvestParams.EndDate.Format("2006-01-02"))
-	matches, err := uc.globFunc.Glob(filePath) // Gunakan globFunc yang bisa dimock
-	if err != nil {
-		return nil, utils.NewInternalError("Error finding report file")
-	}
-
-	if len(matches) == 0 {
-		return nil, utils.NewNotFoundError("Report file not found")
-	}
-
-	// Get the latest file (assuming filename contains timestamp)
-	latestFile := matches[len(matches)-1]
-
-	return &latestFile, nil
 }

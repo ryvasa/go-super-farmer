@@ -1,17 +1,23 @@
 package main
 
 import (
+	"log"
+
+	"github.com/gin-gonic/gin"
 	"github.com/ryvasa/go-super-farmer/cmd/api/pkg/wire"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 )
 
 func main() {
+	logrus.Log.Info("Starting API service...")
 	app, err := wire.InitializeApp()
 	if err != nil {
-		logrus.Log.Fatal("failed to initialize app", err)
+		log.Fatal(err)
+		logrus.Log.Fatalf("failed to initialize app: %v", err)
 	}
 
-	if err := app.Start(); err != nil {
-		logrus.Log.Fatal("failed to initialize app", err)
-	}
+	defer app.RabbitMQ.Close()
+	app.Router.Use(gin.Recovery())
+	app.Router.Use(gin.Logger())
+	app.Router.Run(app.Env.Server.Port)
 }

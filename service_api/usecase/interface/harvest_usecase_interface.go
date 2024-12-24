@@ -22,5 +22,4 @@ type HarvestUsecase interface {
 	GetAllDeletedHarvest(ctx context.Context) ([]*domain.Harvest, error)
 	GetHarvestDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Harvest, error)
 	DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) (*dto.DownloadResponseDTO, error)
-	GetHarvestExcelFile(ctx context.Context, params *dto.HarvestParamsDTO) (*string, error)
 }

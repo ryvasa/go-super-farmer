@@ -1,18 +1,16 @@
 package handler_implementation
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -229,56 +227,4 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Co
 	}
 	utils.SuccessResponse(c, http.StatusOK, response)
 
-}
-
-func (h *PriceHandlerImpl) GetPriceHistoryExcelFile(c *gin.Context) {
-	commodityID, err := uuid.Parse(c.Param("commodity_id"))
-	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-		return
-	}
-	logrus.Log.Info("Commodity ID is valid ")
-
-	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
-	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-		return
-	}
-	logrus.Log.Info("City ID is  valid")
-
-	startDateStr := c.Query("start_date")
-	startDate, err := time.Parse("2006-01-02", startDateStr)
-	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-		return
-	}
-	endDatestr := c.Query("end_date")
-	endDate, err := time.Parse("2006-01-02", endDatestr)
-	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-		return
-	}
-
-	params := &dto.PriceParamsDTO{
-		CommodityID: commodityID,
-		CityID:      cityID,
-		StartDate:   startDate,
-		EndDate:     endDate,
-	}
-
-	// Get the latest file (assuming filename contains timestamp)
-	latestFile, err := h.uc.GetPriceExcelFile(c, params)
-	if err != nil {
-		utils.ErrorResponse(c, err)
-		return
-	}
-
-	// Set headers for file download
-	c.Header("Content-Description", "File Transfer")
-	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(*latestFile)))
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-	// Serve the file
-	c.File(*latestFile)
 }

@@ -16,5 +16,4 @@ type PriceHandler interface {
 	GetPriceByCommodityIDAndCityID(c *gin.Context)
 	GetPricesHistoryByCommodityIDAndCityID(c *gin.Context)
 	DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Context)
-	GetPriceHistoryExcelFile(c *gin.Context)
 }
