@@ -20,7 +20,7 @@ var allSet = wire.NewSet(
 	app.NewApp,
 )
 
-func InitializeExcelApp() (*app.MailApp, error) {
+func InitializeMailApp() (*app.MailApp, error) {
 	wire.Build(allSet)
 	return nil, nil
 }

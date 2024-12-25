@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	app, err := wire_excel.InitializeExcelApp()
+	app, err := wire_excel.InitializeMailApp()
 	defer app.RabbitMQ.Close()
 
 	if err != nil {

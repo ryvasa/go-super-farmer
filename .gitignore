@@ -3,3 +3,4 @@ coverage.*
 *.jpg
 *.xlsx
 *.log
+**/tmp

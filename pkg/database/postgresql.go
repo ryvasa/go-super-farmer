@@ -44,6 +44,7 @@ func NewPostgres(env *env.Env) (*gorm.DB, error) {
 		&domain.Demand{},
 		&domain.DemandHistory{},
 		&domain.Harvest{},
+		&domain.Sale{},
 	)
 
 	// seeders.Seeders(db)

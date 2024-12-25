@@ -1,37 +1,40 @@
-
-FROM golang:1.23.4-alpine AS builder
+# Base stage
+FROM golang:1.23.4-alpine AS base
 
 RUN apk add --no-cache git
+WORKDIR /app
 
-RUN mkdir /app
+# Copy dependencies
+COPY go.* ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Development stage
+FROM base AS development
+
+# Install air for hot reloading
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /app/cmd/report
+
+# Use air for development
+CMD ["air", "-c", ".air.toml"]
+
+# Production stage
+FROM base AS production
+
+RUN go build -o report_app cmd/report/main.go
+
+# Runner stage
+FROM alpine:latest AS runner
 
 WORKDIR /app
 
-COPY go.* ./
+COPY --from=production /app/report_app .
 
-RUN go mod download
+RUN chmod +x ./report_app
 
-COPY . .
-
-RUN mkdir /build
-
-RUN go build -o build/service_report cmd/report/main.go
-
-# RUN chmod +x build/service_report
-
-# CMD ["build/service_report"]
-
-# Stage 2 running
-FROM alpine:latest AS runner
-
-RUN mkdir /app
-
-COPY --from=builder app/build/service_report /app
-
-RUN chmod +x app/service_report
-
-RUN mkdir /public
-
-RUN mkdir /public/reports
-
-CMD ["app/service_report"]
+# Command to run the production binary
+CMD ["./report_app"]
