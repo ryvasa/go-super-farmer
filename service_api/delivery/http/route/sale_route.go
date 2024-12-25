@@ -15,10 +15,10 @@ func NewSaleRoute(handler handler_interface.SaleHandler) *SaleRoute {
 
 func (r *SaleRoute) Register(public, protected *gin.RouterGroup) {
 	protected.POST("/sales", r.handler.CreateSale)
-	protected.GET("/sales", r.handler.GetAllSales)
-	protected.GET("/sales/:id", r.handler.GetSaleByID)
-	protected.GET("/sales/commodity/:id", r.handler.GetSalesByCommodityID)
-	protected.GET("/sales/city/:id", r.handler.GetSalesByCityID)
+	public.GET("/sales", r.handler.GetAllSales)
+	public.GET("/sales/:id", r.handler.GetSaleByID)
+	public.GET("/sales/commodity/:id", r.handler.GetSalesByCommodityID)
+	public.GET("/sales/city/:id", r.handler.GetSalesByCityID)
 	protected.PUT("/sales/:id", r.handler.UpdateSale)
 	protected.DELETE("/sales/:id", r.handler.DeleteSale)
 	protected.POST("/sales/:id/restore", r.handler.RestoreSale)

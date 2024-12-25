@@ -10,6 +10,7 @@ p, Admin, /api/cities*, *
 p, Admin, /api/demands*, *
 p, Admin, /api/supplies*, *
 p, Admin, /api/harvests*, *
+p, Admin, /api/sales*, *
 
 p, Farmer, /api/users*, PATCH
 p, Farmer, /api/users/*, GET

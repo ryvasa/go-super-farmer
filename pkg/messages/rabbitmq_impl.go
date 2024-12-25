@@ -8,6 +8,7 @@ import (
 
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 )
 
 type RabbitMQImpl struct {
@@ -30,6 +31,10 @@ func connectRabbitMQ(url string) (*amqp091.Connection, error) {
 }
 
 func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
+	logrus.Log.Info(env.RabbitMQ.User,
+		env.RabbitMQ.Password,
+		env.RabbitMQ.Host,
+		env.RabbitMQ.Port)
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		env.RabbitMQ.User,
 		env.RabbitMQ.Password,
