@@ -37,6 +37,21 @@ func (m *MockSaleRepository) EXPECT() *MockSaleRepositoryMockRecorder {
 	return m.recorder
 }
 
+// Count mocks base method.
+func (m *MockSaleRepository) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockSaleRepositoryMockRecorder) Count(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockSaleRepository)(nil).Count), ctx, filter)
+}
+
 // Create mocks base method.
 func (m *MockSaleRepository) Create(ctx context.Context, sale *domain.Sale) error {
 	m.ctrl.T.Helper()
@@ -63,6 +78,21 @@ func (m *MockSaleRepository) Delete(ctx context.Context, id uuid.UUID) error {
 func (mr *MockSaleRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSaleRepository)(nil).Delete), ctx, id)
+}
+
+// DeletedCount mocks base method.
+func (m *MockSaleRepository) DeletedCount(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletedCount", ctx, filter)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeletedCount indicates an expected call of DeletedCount.
+func (mr *MockSaleRepositoryMockRecorder) DeletedCount(ctx, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletedCount", reflect.TypeOf((*MockSaleRepository)(nil).DeletedCount), ctx, filter)
 }
 
 // FindAll mocks base method.

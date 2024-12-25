@@ -37,7 +37,7 @@ type responseUsersHandler struct {
 
 type UserHandlerMocks struct {
 	User  *dto.UserResponseDTO
-	Users *[]dto.UserResponseDTO
+	Users []*dto.UserResponseDTO
 }
 
 type UserHandlerIDs struct {
@@ -68,7 +68,7 @@ func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler,
 			Name:  "Test",
 			Email: "test@example.com",
 		},
-		Users: &[]dto.UserResponseDTO{
+		Users: []*dto.UserResponseDTO{
 			{
 				ID:    ids.UserID,
 				Name:  "Test",

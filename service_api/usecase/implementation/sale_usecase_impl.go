@@ -51,7 +51,7 @@ func (uc *SaleUsecaseImpl) CreateSale(ctx context.Context, req *dto.SaleCreateDT
 
 	parseDate, err := time.Parse("2006-01-02", req.SaleDate)
 	if err != nil {
-		return nil, utils.NewBadRequestError("harvest date format is invalid")
+		return nil, utils.NewBadRequestError("sale date format is invalid")
 	}
 
 	sale.CityID = req.CityID
@@ -176,7 +176,7 @@ func (uc *SaleUsecaseImpl) UpdateSale(ctx context.Context, id uuid.UUID, req *dt
 	if req.SaleDate != "" {
 		parseDate, err := time.Parse("2006-01-02", req.SaleDate)
 		if err != nil {
-			return nil, utils.NewBadRequestError("harvest date format is invalid")
+			return nil, utils.NewBadRequestError("sale date format is invalid")
 		}
 		sale.SaleDate = parseDate
 	}
