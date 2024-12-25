@@ -48,6 +48,7 @@ var repositorySet = wire.NewSet(
 	repository_implementation.NewDemandHistoryRepository,
 	repository_implementation.NewSupplyHistoryRepository,
 	repository_implementation.NewHarvestRepository,
+	repository_implementation.NewSaleRepository,
 )
 
 var usecaseSet = wire.NewSet(
@@ -63,6 +64,7 @@ var usecaseSet = wire.NewSet(
 	usecase_implementation.NewDemandUsecase,
 	usecase_implementation.NewSupplyUsecase,
 	usecase_implementation.NewHarvestUsecase,
+	usecase_implementation.NewSaleUsecase,
 )
 
 var handlerSet = wire.NewSet(
@@ -78,6 +80,7 @@ var handlerSet = wire.NewSet(
 	handler_implementation.NewDemandHandler,
 	handler_implementation.NewSupplyHandler,
 	handler_implementation.NewHarvestHandler,
+	handler_implementation.NewSaleHandler,
 )
 
 var rabbitMQSet = wire.NewSet(

@@ -2,11 +2,11 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	handler "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler"
-	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/middleware"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/casbin"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	handler "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler"
+	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/middleware"
 )
 
 type Router interface {
@@ -25,7 +25,7 @@ func NewRouter(handlers *handler.Handlers) *gin.Engine {
 	}
 
 	// Setup middleware
-	enforcer, err := casbin.Init("./pkg/auth/casbin/model.conf", "./pkg/auth/casbin/policy.csv")
+	enforcer, err := casbin.Init(env.Casbin.ModelPath, env.Casbin.PolicyPath)
 	if err != nil {
 		panic(err)
 	}
@@ -50,6 +50,7 @@ func NewRouter(handlers *handler.Handlers) *gin.Engine {
 		NewHarvestRoute(handlers.HarvestHandler),
 		NewLandCommodityRoute(handlers.LandCommodityHandler),
 		NewRoleRoute(handlers.RoleHandler),
+		NewSaleRoute(handlers.SaleHandler),
 	}
 
 	// Register all routes

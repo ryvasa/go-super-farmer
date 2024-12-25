@@ -2,8 +2,6 @@ package env
 
 import (
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Env struct {
@@ -43,14 +41,13 @@ type Env struct {
 	Report struct {
 		Port string
 	}
+	Casbin struct {
+		ModelPath  string
+		PolicyPath string
+	}
 }
 
 func LoadEnv() (*Env, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
-
 	env := &Env{}
 
 	// Load Server Config
@@ -88,6 +85,10 @@ func LoadEnv() (*Env, error) {
 
 	// Report
 	env.Report.Port = os.Getenv("REPORT_PORT")
+
+	// Casbin
+	env.Casbin.ModelPath = os.Getenv("CASBIN_MODEL_PATH")
+	env.Casbin.PolicyPath = os.Getenv("CASBIN_POLICY_PATH")
 
 	return env, nil
 }

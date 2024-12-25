@@ -15,9 +15,22 @@ type Handlers struct {
 	DemandHandler        handler_interface.DemandHandler
 	SupplyHandler        handler_interface.SupplyHandler
 	HarvestHandler       handler_interface.HarvestHandler
+	SaleHandler          handler_interface.SaleHandler
 }
 
-func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_interface.UserHandler, landHandler handler_interface.LandHandler, authHandler handler_interface.AuthHandler, commodityHandler handler_interface.CommodityHandler, landCommodityHandler handler_interface.LandCommodityHandler, priceHandler handler_interface.PriceHandler, provinceHandler handler_interface.ProvinceHandler, cityHandler handler_interface.CityHandler, demandHandler handler_interface.DemandHandler, supplyHandler handler_interface.SupplyHandler, harvestHandler handler_interface.HarvestHandler) *Handlers {
+func NewHandlers(
+	roleHandler handler_interface.RoleHandler,
+	userHandler handler_interface.UserHandler,
+	landHandler handler_interface.LandHandler,
+	authHandler handler_interface.AuthHandler, commodityHandler handler_interface.CommodityHandler, landCommodityHandler handler_interface.LandCommodityHandler,
+	priceHandler handler_interface.PriceHandler,
+	provinceHandler handler_interface.ProvinceHandler,
+	cityHandler handler_interface.CityHandler,
+	demandHandler handler_interface.DemandHandler,
+	supplyHandler handler_interface.SupplyHandler,
+	harvestHandler handler_interface.HarvestHandler,
+	saleHandler handler_interface.SaleHandler,
+) *Handlers {
 	return &Handlers{
 		RoleHandler:          roleHandler,
 		UserHandler:          userHandler,
@@ -31,5 +44,6 @@ func NewHandlers(roleHandler handler_interface.RoleHandler, userHandler handler_
 		DemandHandler:        demandHandler,
 		SupplyHandler:        supplyHandler,
 		HarvestHandler:       harvestHandler,
+		SaleHandler:          saleHandler,
 	}
 }

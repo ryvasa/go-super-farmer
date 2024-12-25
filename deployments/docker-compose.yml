@@ -19,9 +19,9 @@ services:
     image: postgres:latest
     container_name: postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123
-      - POSTGRES_DB=go_super_farmer
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "5432:5432"
     networks:
@@ -47,10 +47,36 @@ services:
       - postgres
       - redis
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     networks:
       - app-network
     restart: unless-stopped
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_TIMEZONE=${DB_TIMEZONE}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - REPORT_PORT=${REPORT_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+      - CASBIN_MODEL_PATH=/configs/model.conf
+      - CASBIN_POLICY_PATH=/configs/policy.csv
+    volumes:
+      - ../pkg/auth/casbin/model.conf:/configs/model.conf
+      - ../pkg/auth/casbin/policy.csv:/configs/policy.csv
 
   mail:
     build:
@@ -61,6 +87,11 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    environment:
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
 
   report:
     build:
@@ -73,7 +104,19 @@ services:
       - app-network
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "${REPORT_PORT}:-8081}:${API_PORT:-8081}"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_TIMEZONE=${DB_TIMEZONE}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - REPORT_PORT=${REPORT_PORT}
 
 volumes:
   rabbitmq_data:

@@ -26,8 +26,6 @@ FROM alpine:latest AS runner
 
 RUN mkdir /app
 
-COPY .env .
-
 COPY --from=builder app/build/service_report /app
 
 RUN chmod +x app/service_report

@@ -22,5 +22,5 @@ func main() {
 	defer app.RabbitMQ.Close()
 	app.Router.Use(gin.Recovery())
 	app.Router.Use(gin.Logger())
-	app.Router.Run(app.Env.Report.Port)
+	app.Router.Run(":" + app.Env.Report.Port)
 }
