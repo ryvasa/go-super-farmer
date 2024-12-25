@@ -36,6 +36,12 @@ func ApplyFilters(filter *dto.PaginationFilterDTO) func(db *gorm.DB) *gorm.DB {
 		if filter.CityName != "" {
 			db = db.Where("name LIKE ?", "%"+filter.CityName+"%")
 		}
+		if filter.CityID != nil {
+			db = db.Where("city_id = ?", filter.CityID)
+		}
+		if filter.CommodityID != nil {
+			db = db.Where("commodity_id = ?", filter.CommodityID)
+		}
 		if !filter.StartDate.IsZero() {
 			db = db.Where("created_at >= ?", filter.StartDate)
 		}

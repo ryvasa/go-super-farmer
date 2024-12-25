@@ -86,7 +86,10 @@ func InitializeApp() (*app.App, error) {
 	harvestRepository := repository_implementation.NewHarvestRepository(db)
 	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, cityRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc, envEnv)
 	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
-	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, demandHandler, supplyHandler, harvestHandler)
+	saleRepository := repository_implementation.NewSaleRepository(baseRepository)
+	saleUsecase := usecase_implementation.NewSaleUsecase(saleRepository, cityRepository, commodityRepository, cacheCache)
+	saleHandler := handler_implementation.NewSaleHandler(saleUsecase)
+	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, demandHandler, supplyHandler, harvestHandler, saleHandler)
 	engine := route.NewRouter(handlers)
 	appApp := app.NewApp(engine, envEnv, db, rabbitMQ)
 	return appApp, nil
@@ -98,11 +101,11 @@ var tokenSet = wire.NewSet(token.NewToken)
 
 var utilSet = wire.NewSet(utils.NewAuthUtil, utils.NewHasher, utils.NewOTPGenerator, utils.NewGlobFunc)
 
-var repositorySet = wire.NewSet(repository.NewBaseRepository, repository_implementation.NewRoleRepository, repository_implementation.NewUserRepository, repository_implementation.NewLandRepository, repository_implementation.NewCommodityRepository, repository_implementation.NewLandCommodityRepository, repository_implementation.NewPriceRepository, repository_implementation.NewProvinceRepository, repository_implementation.NewCityRepository, repository_implementation.NewPriceHistoryRepository, repository_implementation.NewDemandRepository, repository_implementation.NewSupplyRepository, repository_implementation.NewDemandHistoryRepository, repository_implementation.NewSupplyHistoryRepository, repository_implementation.NewHarvestRepository)
+var repositorySet = wire.NewSet(repository.NewBaseRepository, repository_implementation.NewRoleRepository, repository_implementation.NewUserRepository, repository_implementation.NewLandRepository, repository_implementation.NewCommodityRepository, repository_implementation.NewLandCommodityRepository, repository_implementation.NewPriceRepository, repository_implementation.NewProvinceRepository, repository_implementation.NewCityRepository, repository_implementation.NewPriceHistoryRepository, repository_implementation.NewDemandRepository, repository_implementation.NewSupplyRepository, repository_implementation.NewDemandHistoryRepository, repository_implementation.NewSupplyHistoryRepository, repository_implementation.NewHarvestRepository, repository_implementation.NewSaleRepository)
 
-var usecaseSet = wire.NewSet(usecase_implementation.NewRoleUsecase, usecase_implementation.NewUserUsecase, usecase_implementation.NewLandUsecase, usecase_implementation.NewAuthUsecase, usecase_implementation.NewCommodityUsecase, usecase_implementation.NewLandCommodityUsecase, usecase_implementation.NewPriceUsecase, usecase_implementation.NewProvinceUsecase, usecase_implementation.NewCityUsecase, usecase_implementation.NewDemandUsecase, usecase_implementation.NewSupplyUsecase, usecase_implementation.NewHarvestUsecase)
+var usecaseSet = wire.NewSet(usecase_implementation.NewRoleUsecase, usecase_implementation.NewUserUsecase, usecase_implementation.NewLandUsecase, usecase_implementation.NewAuthUsecase, usecase_implementation.NewCommodityUsecase, usecase_implementation.NewLandCommodityUsecase, usecase_implementation.NewPriceUsecase, usecase_implementation.NewProvinceUsecase, usecase_implementation.NewCityUsecase, usecase_implementation.NewDemandUsecase, usecase_implementation.NewSupplyUsecase, usecase_implementation.NewHarvestUsecase, usecase_implementation.NewSaleUsecase)
 
-var handlerSet = wire.NewSet(handler_implementation.NewRoleHandler, handler_implementation.NewUserHandler, handler_implementation.NewLandHandler, handler_implementation.NewAuthHandler, handler_implementation.NewCommodityHandler, handler_implementation.NewLandCommodityHandler, handler_implementation.NewPriceHandler, handler_implementation.NewProvinceHandler, handler_implementation.NewCityHandler, handler_implementation.NewDemandHandler, handler_implementation.NewSupplyHandler, handler_implementation.NewHarvestHandler)
+var handlerSet = wire.NewSet(handler_implementation.NewRoleHandler, handler_implementation.NewUserHandler, handler_implementation.NewLandHandler, handler_implementation.NewAuthHandler, handler_implementation.NewCommodityHandler, handler_implementation.NewLandCommodityHandler, handler_implementation.NewPriceHandler, handler_implementation.NewProvinceHandler, handler_implementation.NewCityHandler, handler_implementation.NewDemandHandler, handler_implementation.NewSupplyHandler, handler_implementation.NewHarvestHandler, handler_implementation.NewSaleHandler)
 
 var rabbitMQSet = wire.NewSet(messages.NewRabbitMQ)
 

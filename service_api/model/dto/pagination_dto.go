@@ -3,6 +3,8 @@ package dto
 import (
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type PaginationDTO struct {
@@ -12,11 +14,13 @@ type PaginationDTO struct {
 	Filter PaginationFilterDTO `json:"filter" form:"filter"`
 }
 type PaginationFilterDTO struct {
-	UserName      string    `json:"user_name" form:"user_name"`
-	CommodityName string    `json:"commodity_name" form:"commodity_name"`
-	CityName      string    `json:"city_name" form:"city_name"`
-	StartDate     time.Time `json:"start_date" form:"start_date"`
-	EndDate       time.Time `json:"end_date" form:"end_date"`
+	UserName      string     `json:"user_name" form:"user_name"`
+	CommodityName string     `json:"commodity_name" form:"commodity_name"`
+	CityName      string     `json:"city_name" form:"city_name"`
+	CityID        *int64     `json:"city_id" form:"city_id"`
+	CommodityID   *uuid.UUID `json:"commodity_id" form:"commodity_id"`
+	StartDate     time.Time  `json:"start_date" form:"start_date"`
+	EndDate       time.Time  `json:"end_date" form:"end_date"`
 }
 
 type PaginationResponseDTO struct {
