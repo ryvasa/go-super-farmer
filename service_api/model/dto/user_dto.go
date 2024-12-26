@@ -18,6 +18,7 @@ type UserUpdateDTO struct {
 	Email    string `json:"email" validate:"omitempty,email"`
 	Password string `json:"password" validate:"omitempty,min=6,max=255"`
 	Phone    string `json:"phone" validate:"omitempty,min=3,max=20"`
+	RoleID   int64  `json:"role_id" validate:"omitempty,min=1,max=2"`
 }
 
 type UserResponseDTO struct {
@@ -26,7 +27,7 @@ type UserResponseDTO struct {
 	Email     string     `json:"email"`
 	Phone     *string    `json:"phone,omitempty"`
 	Password  string     `json:"password,omitempty"`
-	RoleID    int        `json:"role_id,omitempty"`
+	RoleID    int64      `json:"role_id,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`

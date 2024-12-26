@@ -38,6 +38,7 @@ func (h *SaleHandlerImpl) GetAllSales(c *gin.Context) {
 	params, err := utils.GetPaginationParams(c)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
 	}
 
 	sales, err := h.uc.GetAllSales(c, params)
@@ -133,7 +134,7 @@ func (h *SaleHandlerImpl) DeleteSale(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, nil)
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Sale deleted successfully"})
 }
 
 func (h *SaleHandlerImpl) RestoreSale(c *gin.Context) {
@@ -154,6 +155,7 @@ func (h *SaleHandlerImpl) GetAllDeletedSales(c *gin.Context) {
 	params, err := utils.GetPaginationParams(c)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		return
 	}
 
 	sales, err := h.uc.GetAllDeletedSales(c, params)
@@ -170,7 +172,7 @@ func (h *SaleHandlerImpl) GetDeletedSaleByID(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	sale, err := h.uc.GetSaleByID(c, id)
+	sale, err := h.uc.GetDeletedSaleByID(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return

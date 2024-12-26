@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
@@ -30,6 +31,8 @@ func (h *CityHandlerImpl) CreateCity(c *gin.Context) {
 		utils.ErrorResponse(c, err)
 		return
 	}
+	logrus.Log.Info("API service started successfully")
+
 	utils.SuccessResponse(c, http.StatusCreated, city)
 }
 

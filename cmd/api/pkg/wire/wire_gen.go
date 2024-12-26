@@ -50,10 +50,10 @@ func InitializeApp() (*app.App, error) {
 	}
 	otp := utils.NewOTPGenerator()
 	authUsecase := usecase_implementation.NewAuthUsecase(userRepository, tokenToken, hasher, rabbitMQ, cacheCache, otp)
-	userHandler := handler_implementation.NewUserHandler(userUsecase, authUsecase)
+	authUtil := utils.NewAuthUtil()
+	userHandler := handler_implementation.NewUserHandler(userUsecase, authUsecase, authUtil)
 	landRepository := repository_implementation.NewLandRepository(db)
 	landUsecase := usecase_implementation.NewLandUsecase(landRepository, userRepository)
-	authUtil := utils.NewAuthUtil()
 	landHandler := handler_implementation.NewLandHandler(landUsecase, authUtil)
 	authHandler := handler_implementation.NewAuthHandler(authUsecase)
 	commodityRepository := repository_implementation.NewCommodityRepository(db)
