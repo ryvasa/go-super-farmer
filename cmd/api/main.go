@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 		logrus.Log.Fatalf("failed to initialize app: %v", err)
 	}
-
+	logrus.Log.Info("API service started successfully")
 	defer app.RabbitMQ.Close()
 	app.Router.Use(gin.Recovery())
 	app.Router.Use(gin.Logger())

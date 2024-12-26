@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
@@ -12,12 +13,13 @@ import (
 )
 
 type UserHandlerImpl struct {
-	uc     usecase_interface.UserUsecase
-	ucAuth usecase_interface.AuthUsecase
+	uc        usecase_interface.UserUsecase
+	ucAuth    usecase_interface.AuthUsecase
+	utilsAuth utils.AuthUtil
 }
 
-func NewUserHandler(uc usecase_interface.UserUsecase, ucAuth usecase_interface.AuthUsecase) handler_interface.UserHandler {
-	return &UserHandlerImpl{uc, ucAuth}
+func NewUserHandler(uc usecase_interface.UserUsecase, ucAuth usecase_interface.AuthUsecase, utilsAuth utils.AuthUtil) handler_interface.UserHandler {
+	return &UserHandlerImpl{uc, ucAuth, utilsAuth}
 }
 
 func (h *UserHandlerImpl) RegisterUser(c *gin.Context) {
@@ -75,12 +77,19 @@ func (h *UserHandlerImpl) UpdateUser(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	// Ambil data pengguna dari konteks
+	role, err := h.utilsAuth.GetAuthRole(c)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+
 	var req dto.UserUpdateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	updatedUser, err := h.uc.UpdateUser(c, id, &req)
+	updatedUser, err := h.uc.UpdateUser(c, id, role, &req)
 	if err != nil {
 		utils.ErrorResponse(c, err)
 		return
@@ -107,6 +116,7 @@ func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	logrus.Log.Info(id)
 	restoredUser, err := h.uc.RestoreUser(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)

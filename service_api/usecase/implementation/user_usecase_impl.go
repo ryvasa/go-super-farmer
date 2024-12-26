@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -31,6 +31,12 @@ func (uc *UserUsecaseImpl) Register(ctx context.Context, req *dto.UserCreateDTO)
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
+	}
+
+	existUser, err := uc.repo.FindByEmail(ctx, req.Email)
+	if existUser.Email == req.Email {
+		logrus.Log.Info("Email already exists")
+		return nil, utils.NewBadRequestError("email already exists")
 	}
 	user.Name = req.Name
 	user.Email = req.Email
@@ -145,7 +151,7 @@ func (uc *UserUsecaseImpl) GetAllUsers(ctx context.Context, queryParams *dto.Pag
 	return response, nil
 }
 
-func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
+func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, authRole string, req *dto.UserUpdateDTO) (*dto.UserResponseDTO, error) {
 	user := domain.User{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
@@ -153,6 +159,15 @@ func (uc *UserUsecaseImpl) UpdateUser(ctx context.Context, id uuid.UUID, req *dt
 	_, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, utils.NewNotFoundError(err.Error())
+	}
+	logrus.Log.Info(authRole)
+
+	if req.RoleID != 0 {
+		if authRole != "Admin" {
+			logrus.Log.Info("Forbidden")
+			return nil, utils.NewForbiddenError("forbidden")
+		}
+		user.RoleID = req.RoleID
 	}
 
 	user.Name = req.Name

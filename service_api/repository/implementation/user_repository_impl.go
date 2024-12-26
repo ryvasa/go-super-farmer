@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
@@ -72,15 +73,15 @@ func (r *UserRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) 
 }
 
 func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+	logrus.Log.Info("Find by email")
+
 	var user domain.User
 	err := r.db.WithContext(ctx).
 		Where("email = ?", email).
 		Preload("Role").
 		First(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+
+	return &user, err
 }
 
 func (r *UserRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {

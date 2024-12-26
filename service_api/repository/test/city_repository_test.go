@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	repository_implementation "github.com/ryvasa/go-super-farmer/service_api/repository/implementation"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
