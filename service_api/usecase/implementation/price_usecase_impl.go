@@ -343,6 +343,9 @@ func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndCityID(ctx contex
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+	if u.env.Report.Port == "" {
+		u.env.Report.Port = ":8081"
+	}
 	response := dto.DownloadResponseDTO{
 		Message: "Price history report generation in progress. Please check back in a few moments.",
 		DownloadURL: fmt.Sprintf("http://localhost%s/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",

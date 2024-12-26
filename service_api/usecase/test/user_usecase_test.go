@@ -111,6 +111,7 @@ func TestUserUsecase_Register(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := UserUsecaseUtils(t)
 
 	t.Run("should register successfully", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(&domain.User{}, nil).Times(1)
 		// Mock hashing password
 		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
 		// Mock create user
@@ -143,7 +144,19 @@ func TestUserUsecase_Register(t *testing.T) {
 		assert.Equal(t, err.Error(), "Validation failed")
 	})
 
+	t.Run("should return error when user email exists", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(mocks.User, nil).Times(1)
+
+		resp, err := uc.Register(ctx, dtos.Create)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "email already exists")
+	})
+
 	t.Run("should return error when hashing password", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(&domain.User{}, nil).Times(1)
+
 		// Mock hashing password failure
 		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("", utils.NewInternalError("hashing error")).Times(1)
 
@@ -157,6 +170,8 @@ func TestUserUsecase_Register(t *testing.T) {
 	})
 
 	t.Run("should return error when creating user", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(&domain.User{}, nil).Times(1)
+
 		// Mock hashing password
 		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
 		// Mock create user failure
@@ -172,6 +187,8 @@ func TestUserUsecase_Register(t *testing.T) {
 	})
 
 	t.Run("should return error when finding created user by ID", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(&domain.User{}, nil).Times(1)
+
 		// Mock hashing password
 		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
 		// Mock create user
@@ -192,6 +209,8 @@ func TestUserUsecase_Register(t *testing.T) {
 	})
 
 	t.Run("should return error when cache delete fails", func(t *testing.T) {
+		repo.User.EXPECT().FindByEmail(ctx, dtos.Create.Email).Return(&domain.User{}, nil).Times(1)
+
 		// Mock hashing password
 		repo.Hash.EXPECT().HashPassword(dtos.Create.Password).Return("hashed_password", nil).Times(1)
 		// Mock create user

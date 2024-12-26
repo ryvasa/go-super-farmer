@@ -255,6 +255,10 @@ func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Conte
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
+
+	if uc.env.Report.Port == "" {
+		uc.env.Report.Port = ":8081"
+	}
 	res := &dto.DownloadResponseDTO{
 		Message: "Report generation in progress. Please check back in a few moments.",
 		DownloadURL: fmt.Sprintf("http://localhost%s/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
