@@ -6,18 +6,18 @@ package wire
 import (
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/cmd/api/app"
-	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler"
-	handler_implementation "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/implementation"
-	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/route"
-	"github.com/ryvasa/go-super-farmer/service_api/repository"
-	repository_implementation "github.com/ryvasa/go-super-farmer/service_api/repository/implementation"
-	usecase_implementation "github.com/ryvasa/go-super-farmer/service_api/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler"
+	handler_implementation "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/implementation"
+	"github.com/ryvasa/go-super-farmer/service_api/delivery/http/route"
+	"github.com/ryvasa/go-super-farmer/service_api/repository"
+	repository_implementation "github.com/ryvasa/go-super-farmer/service_api/repository/implementation"
+	usecase_implementation "github.com/ryvasa/go-super-farmer/service_api/usecase/implementation"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -48,6 +48,7 @@ var repositorySet = wire.NewSet(
 	repository_implementation.NewDemandHistoryRepository,
 	repository_implementation.NewSupplyHistoryRepository,
 	repository_implementation.NewHarvestRepository,
+	repository_implementation.NewSaleRepository,
 )
 
 var usecaseSet = wire.NewSet(
@@ -63,6 +64,7 @@ var usecaseSet = wire.NewSet(
 	usecase_implementation.NewDemandUsecase,
 	usecase_implementation.NewSupplyUsecase,
 	usecase_implementation.NewHarvestUsecase,
+	usecase_implementation.NewSaleUsecase,
 )
 
 var handlerSet = wire.NewSet(
@@ -78,6 +80,7 @@ var handlerSet = wire.NewSet(
 	handler_implementation.NewDemandHandler,
 	handler_implementation.NewSupplyHandler,
 	handler_implementation.NewHarvestHandler,
+	handler_implementation.NewSaleHandler,
 )
 
 var rabbitMQSet = wire.NewSet(

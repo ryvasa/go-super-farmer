@@ -17,7 +17,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeExcelApp() (*app.MailApp, error) {
+func InitializeMailApp() (*app.MailApp, error) {
 	envEnv, err := env.LoadEnv()
 	if err != nil {
 		return nil, err

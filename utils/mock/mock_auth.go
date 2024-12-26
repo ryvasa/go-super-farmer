@@ -35,6 +35,21 @@ func (m *MockAuthUtil) EXPECT() *MockAuthUtilMockRecorder {
 	return m.recorder
 }
 
+// GetAuthRole mocks base method.
+func (m *MockAuthUtil) GetAuthRole(c *gin.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAuthRole", c)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAuthRole indicates an expected call of GetAuthRole.
+func (mr *MockAuthUtilMockRecorder) GetAuthRole(c interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthRole", reflect.TypeOf((*MockAuthUtil)(nil).GetAuthRole), c)
+}
+
 // GetAuthUserID mocks base method.
 func (m *MockAuthUtil) GetAuthUserID(c *gin.Context) (uuid.UUID, error) {
 	m.ctrl.T.Helper()

@@ -1,10 +1,10 @@
 package app
 
 import (
-	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	mail_handler "github.com/ryvasa/go-super-farmer/service_mail/handler"
 )
 
 type MailApp struct {
@@ -18,7 +18,6 @@ func NewApp(
 	rabbitMQ messages.RabbitMQ,
 	handler mail_handler.MailHandler,
 ) *MailApp {
-	defer rabbitMQ.Close()
 	err := handler.ConsumerHandler()
 	if err != nil {
 		logrus.Log.Fatalf("failed to initiate consumer handler: %v", err)

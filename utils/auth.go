@@ -8,6 +8,7 @@ import (
 
 type AuthUtil interface {
 	GetAuthUserID(c *gin.Context) (uuid.UUID, error)
+	GetAuthRole(c *gin.Context) (string, error)
 }
 
 type AuthUtilImpl struct{}
@@ -36,4 +37,22 @@ func (a *AuthUtilImpl) GetAuthUserID(c *gin.Context) (uuid.UUID, error) {
 	}
 
 	return id, nil
+}
+
+func (a *AuthUtilImpl) GetAuthRole(c *gin.Context) (string, error) {
+	value, exists := c.Get("user")
+	if !exists {
+		return "", NewUnauthorizedError("unauthorized")
+	}
+	claims, ok := value.(jwt.MapClaims)
+	if !ok {
+		return "", NewUnauthorizedError("invalid claims type")
+	}
+
+	role, ok := claims["role"].(string)
+	if !ok {
+		return "", NewUnauthorizedError("invalid role")
+	}
+
+	return role, nil
 }

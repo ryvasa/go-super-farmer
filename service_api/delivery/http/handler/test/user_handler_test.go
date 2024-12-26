@@ -16,6 +16,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	mock_usecase "github.com/ryvasa/go-super-farmer/service_api/usecase/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
+	mock_utils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +38,7 @@ type responseUsersHandler struct {
 
 type UserHandlerMocks struct {
 	User  *dto.UserResponseDTO
-	Users *[]dto.UserResponseDTO
+	Users []*dto.UserResponseDTO
 }
 
 type UserHandlerIDs struct {
@@ -45,8 +46,9 @@ type UserHandlerIDs struct {
 	RoleID int64
 }
 type UserUCMOcks struct {
-	Auth *mock_usecase.MockAuthUsecase
-	User *mock_usecase.MockUserUsecase
+	Auth    *mock_usecase.MockAuthUsecase
+	User    *mock_usecase.MockUserUsecase
+	AutUtil *mock_utils.MockAuthUtil
 }
 
 func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler, *UserUCMOcks, UserHandlerIDs, UserHandlerMocks) {
@@ -55,7 +57,8 @@ func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler,
 	defer ctrl.Finish()
 	ucUser := mock_usecase.NewMockUserUsecase(ctrl)
 	ucAut := mock_usecase.NewMockAuthUsecase(ctrl)
-	h := handler_implementation.NewUserHandler(ucUser, ucAut)
+	authUtil := mock_utils.NewMockAuthUtil(ctrl)
+	h := handler_implementation.NewUserHandler(ucUser, ucAut, authUtil)
 	r := gin.Default()
 
 	ids := UserHandlerIDs{
@@ -68,7 +71,7 @@ func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler,
 			Name:  "Test",
 			Email: "test@example.com",
 		},
-		Users: &[]dto.UserResponseDTO{
+		Users: []*dto.UserResponseDTO{
 			{
 				ID:    ids.UserID,
 				Name:  "Test",
@@ -76,9 +79,11 @@ func UserHandlerSetup(t *testing.T) (*gin.Engine, handler_interface.UserHandler,
 			},
 		},
 	}
+
 	uc := &UserUCMOcks{
-		Auth: ucAut,
-		User: ucUser,
+		Auth:    ucAut,
+		User:    ucUser,
+		AutUtil: authUtil,
 	}
 	return r, h, uc, ids, mocks
 
@@ -343,9 +348,10 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	r.PATCH("/users/:id", h.UpdateUser)
 
 	t.Run("should update user successfully", func(t *testing.T) {
-		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, gomock.Any()).Return(mocks.User, nil).Times(1)
+		uc.AutUtil.EXPECT().GetAuthRole(gomock.Any()).Return("Admin", nil).Times(1)
+		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, "Admin", gomock.Any()).Return(mocks.User, nil).Times(1)
 
-		reqBody := `{"name":"updated"}`
+		reqBody := `{"name":"city","role_id":1}`
 		req, _ := http.NewRequest(http.MethodPatch, "/users/"+ids.UserID.String(), bytes.NewReader([]byte(reqBody)))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -361,7 +367,8 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	})
 
 	t.Run("should return error when usecase error", func(t *testing.T) {
-		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, gomock.Any()).Return(nil, utils.NewInternalError("service_api error")).Times(1)
+		uc.AutUtil.EXPECT().GetAuthRole(gomock.Any()).Return("Admin", nil).Times(1)
+		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, "Admin", gomock.Any()).Return(nil, utils.NewInternalError("service_api error")).Times(1)
 
 		// Gunakan payload valid
 		reqBody := `{"name":"updated"}`
@@ -379,7 +386,8 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	})
 
 	t.Run("should return error when bind error", func(t *testing.T) {
-		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, gomock.Any()).Times(0)
+		uc.AutUtil.EXPECT().GetAuthRole(gomock.Any()).Return("Admin", nil).Times(1)
+		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, "Admin", gomock.Any()).Times(0)
 		req, _ := http.NewRequest(http.MethodPatch, "/users/"+ids.UserID.String(), bytes.NewReader([]byte(`invalid-json`)))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -404,6 +412,38 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
+	t.Run("should return error when auth error", func(t *testing.T) {
+		uc.AutUtil.EXPECT().GetAuthRole(gomock.Any()).Return("", utils.NewUnauthorizedError("unauthorized")).Times(1)
+		req, _ := http.NewRequest(http.MethodPatch, "/users/"+ids.UserID.String(), bytes.NewReader([]byte(`invalid-json`)))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		var response responseUserHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, response.Errors.Code, "UNAUTHORIZED")
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("should return error when auth role not Admin", func(t *testing.T) {
+		uc.AutUtil.EXPECT().GetAuthRole(gomock.Any()).Return("Farmer", nil).Times(1)
+		uc.User.EXPECT().UpdateUser(gomock.Any(), ids.UserID, "Farmer", gomock.Any()).Return(nil, utils.NewForbiddenError("forbidden")).Times(1)
+
+		reqBody := `{"name":"city","role_id":1}`
+		req, _ := http.NewRequest(http.MethodPatch, "/users/"+ids.UserID.String(), bytes.NewReader([]byte(reqBody)))
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+
+		r.ServeHTTP(w, req)
+
+		var response responseUserHandler
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, response.Errors.Code, "FORBIDDEN")
+		assert.Equal(t, http.StatusForbidden, w.Code)
+	})
 }
 
 func TestUserHandler_DeleteUser(t *testing.T) {

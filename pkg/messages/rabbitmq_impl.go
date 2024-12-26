@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 )
 
 type RabbitMQImpl struct {
@@ -15,7 +17,24 @@ type RabbitMQImpl struct {
 	env        *env.Env
 }
 
+func connectRabbitMQ(url string) (*amqp091.Connection, error) {
+	retries := 5
+	for i := 0; i < retries; i++ {
+		conn, err := amqp091.Dial(url)
+		if err == nil {
+			return conn, nil
+		}
+		fmt.Printf("RabbitMQ connection failed (attempt %d/%d): %v\n", i+1, retries, err)
+		time.Sleep(5 * time.Second) // Tunggu beberapa saat sebelum mencoba lagi
+	}
+	return nil, fmt.Errorf("failed to connect to RabbitMQ after %d retries", retries)
+}
+
 func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
+	logrus.Log.Info(env.RabbitMQ.User,
+		env.RabbitMQ.Password,
+		env.RabbitMQ.Host,
+		env.RabbitMQ.Port)
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		env.RabbitMQ.User,
 		env.RabbitMQ.Password,
@@ -23,7 +42,7 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 		env.RabbitMQ.Port,
 	)
 
-	conn, err := amqp091.Dial(url)
+	conn, err := connectRabbitMQ(url)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to RabbitMQ: %v", err)
 	}

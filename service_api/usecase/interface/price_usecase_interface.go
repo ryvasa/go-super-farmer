@@ -20,5 +20,4 @@ type PriceUsecase interface {
 	GetPriceByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Price, error)
 	GetPriceHistoryByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) ([]*domain.PriceHistory, error)
 	DownloadPriceHistoryByCommodityIDAndCityID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error)
-	GetPriceExcelFile(ctx context.Context, params *dto.PriceParamsDTO) (*string, error)
 }

@@ -9,12 +9,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	mock_repo "github.com/ryvasa/go-super-farmer/service_api/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/service_api/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	mockUtils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
@@ -339,7 +339,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock cache delete
 		repo.Cache.EXPECT().DeleteByPattern(ctx, "user").Return(nil).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.Update)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.Update)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -359,7 +359,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock cache delete
 		repo.Cache.EXPECT().DeleteByPattern(ctx, "user").Return(nil).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.UpdateWithPassword)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -368,7 +368,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 	})
 
 	t.Run("should return validation error", func(t *testing.T) {
-		resp, err := uc.UpdateUser(ctx, ids.UserID, &dto.UserUpdateDTO{Name: "1", Email: "", Password: ""})
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", &dto.UserUpdateDTO{Name: "1", Email: "", Password: ""})
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -381,7 +381,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock hash password error
 		repo.Hash.EXPECT().HashPassword(dtos.UpdateWithPassword.Password).Return("", errors.New("hashing error")).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.UpdateWithPassword)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -392,7 +392,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock find user by ID returns not found error
 		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewNotFoundError("user not found")).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.UpdateWithPassword)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -409,7 +409,7 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock find updated user returns service_api error
 		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(nil, utils.NewInternalError("user not found")).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.UpdateWithPassword)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -428,11 +428,22 @@ func TestUserUsecase_UpdateUser(t *testing.T) {
 		// Mock cache delete error
 		repo.Cache.EXPECT().DeleteByPattern(ctx, "user").Return(utils.NewInternalError("cache delete error")).Times(1)
 
-		resp, err := uc.UpdateUser(ctx, ids.UserID, dtos.UpdateWithPassword)
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Admin", dtos.UpdateWithPassword)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "cache delete error")
+	})
+
+	t.Run("should return error when forbidden", func(t *testing.T) {
+		// Mock find user by ID
+		repo.User.EXPECT().FindByID(ctx, ids.UserID).Return(mocks.User, nil).Times(1)
+		dtos.Update.RoleID = 1
+		resp, err := uc.UpdateUser(ctx, ids.UserID, "Farmer", dtos.Update)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "forbidden")
 	})
 }
 
