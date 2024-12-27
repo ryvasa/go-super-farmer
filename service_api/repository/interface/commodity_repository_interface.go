@@ -16,5 +16,5 @@ type CommodityRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID) error
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Commodity, error)
-	Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error)
+	Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
 }

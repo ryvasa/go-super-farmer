@@ -19,6 +19,6 @@ type SaleRepository interface {
 	Restore(ctx context.Context, id uuid.UUID) error
 	FindAllDeleted(ctx context.Context, params *dto.PaginationDTO) ([]*domain.Sale, error)
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Sale, error)
-	Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error)
-	DeletedCount(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error)
+	Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
+	DeletedCount(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
 }

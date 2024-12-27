@@ -142,7 +142,7 @@ func (r *PriceRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, co
 	return &price, nil
 }
 
-func (r *PriceRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (r *PriceRepositoryImpl) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	var count int64
 	err := r.DB(ctx).
 		Model(&domain.Price{}).

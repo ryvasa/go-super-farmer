@@ -5,9 +5,23 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
+	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	"gorm.io/gorm"
 )
+
+func applyFilters2(filter *dto.LandAreaParamsDTO) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if filter.CityID != 0 {
+			db = db.Joins("JOIN lands ON lands.id = land_commodities.land_id").
+				Where("lands.city_id = ?", filter.CityID)
+		}
+		if filter.CommodityID != uuid.Nil {
+			db = db.Where("commodity_id = ?", filter.CommodityID)
+		}
+		return db
+	}
+}
 
 type LandCommodityRepositoryImpl struct {
 	db *gorm.DB
@@ -106,6 +120,21 @@ func (r *LandCommodityRepositoryImpl) SumLandAreaByLandID(ctx context.Context, i
 func (r *LandCommodityRepositoryImpl) SumLandAreaByCommodityID(ctx context.Context, id uuid.UUID) (float64, error) {
 	var landArea float64
 	err := r.db.WithContext(ctx).Model(&domain.LandCommodity{}).Where("commodity_id = ?", id).Select("SUM(land_area)").Scan(&landArea).Error
+	if err != nil {
+		return 0, err
+	}
+	return landArea, nil
+}
+
+func (r *LandCommodityRepositoryImpl) SumAllLandCommodityArea(ctx context.Context, params *dto.LandAreaParamsDTO) (float64, error) {
+	var landArea float64
+	err := r.db.WithContext(ctx).
+		Scopes(
+			applyFilters2(params),
+		).
+		Model(&domain.LandCommodity{}).
+		Select("COALESCE(SUM(land_commodities.land_area), 0)").
+		Scan(&landArea).Error
 	if err != nil {
 		return 0, err
 	}

@@ -199,7 +199,7 @@ func TestCommodityHandler_GetAllCommodities(t *testing.T) {
 		expectedPagination := &dto.PaginationDTO{
 			Page:  2,
 			Limit: 5,
-			Filter: dto.PaginationFilterDTO{
+			Filter: dto.ParamFilterDTO{
 				CommodityName: "test",
 			},
 		}

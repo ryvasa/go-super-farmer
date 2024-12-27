@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	domain "github.com/ryvasa/go-super-farmer/service_api/model/domain"
+	dto "github.com/ryvasa/go-super-farmer/service_api/model/dto"
 )
 
 // MockLandCommodityRepository is a mock of LandCommodityRepository interface.
@@ -151,6 +152,21 @@ func (m *MockLandCommodityRepository) Restore(ctx context.Context, id uuid.UUID)
 func (mr *MockLandCommodityRepositoryMockRecorder) Restore(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Restore", reflect.TypeOf((*MockLandCommodityRepository)(nil).Restore), ctx, id)
+}
+
+// SumAllLandCommodityArea mocks base method.
+func (m *MockLandCommodityRepository) SumAllLandCommodityArea(ctx context.Context, params *dto.LandAreaParamsDTO) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SumAllLandCommodityArea", ctx, params)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SumAllLandCommodityArea indicates an expected call of SumAllLandCommodityArea.
+func (mr *MockLandCommodityRepositoryMockRecorder) SumAllLandCommodityArea(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SumAllLandCommodityArea", reflect.TypeOf((*MockLandCommodityRepository)(nil).SumAllLandCommodityArea), ctx, params)
 }
 
 // SumLandAreaByCommodityID mocks base method.

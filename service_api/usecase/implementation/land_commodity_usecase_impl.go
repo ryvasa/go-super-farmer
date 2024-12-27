@@ -7,23 +7,25 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type LandCommodityUsecaseImpl struct {
 	landCommodityRepo repository_interface.LandCommodityRepository
 	landRepo          repository_interface.LandRepository
+	cityRepo          repository_interface.CityRepository
 	commodityRepo     repository_interface.CommodityRepository
 	cache             cache.Cache
 }
 
-func NewLandCommodityUsecase(landCommodityRepo repository_interface.LandCommodityRepository, landRepo repository_interface.LandRepository, commodityRepo repository_interface.CommodityRepository, cache cache.Cache) usecase_interface.LandCommodityUsecase {
-	return &LandCommodityUsecaseImpl{landCommodityRepo, landRepo, commodityRepo, cache}
+func NewLandCommodityUsecase(landCommodityRepo repository_interface.LandCommodityRepository, landRepo repository_interface.LandRepository, cityRepo repository_interface.CityRepository, commodityRepo repository_interface.CommodityRepository, cache cache.Cache) usecase_interface.LandCommodityUsecase {
+	return &LandCommodityUsecaseImpl{landCommodityRepo, landRepo, cityRepo, commodityRepo, cache}
 }
 
 func (u *LandCommodityUsecaseImpl) CreateLandCommodity(ctx context.Context, req *dto.LandCommodityCreateDTO) (*domain.LandCommodity, error) {
@@ -211,4 +213,44 @@ func (u *LandCommodityUsecaseImpl) RestoreLandCommodity(ctx context.Context, id 
 	}
 
 	return restoredLandCommodity, nil
+}
+
+func (u *LandCommodityUsecaseImpl) GetLandArea(ctx context.Context, params *dto.LandAreaParamsDTO) (*dto.LandAreaResponseDTO, error) {
+	var landAreaResponseDTO dto.LandAreaResponseDTO
+	if err := utils.ValidateStruct(params); len(err) > 0 {
+		return nil, utils.NewValidationError(err)
+	}
+	logrus.Log.Info(params, "from usecase")
+	if params.CityID != 0 {
+		city, err := u.cityRepo.FindByID(ctx, params.CityID)
+		if err != nil {
+			return nil, utils.NewNotFoundError("city not found")
+		}
+		landAreaResponseDTO.City = city
+	}
+
+	if params.CommodityID != uuid.Nil {
+		commodity, err := u.commodityRepo.FindByID(ctx, params.CommodityID)
+		if err != nil {
+			return nil, utils.NewNotFoundError("commodity not found")
+		}
+		landAreaResponseDTO.Commodity = commodity
+	}
+
+	landArea, err := u.landRepo.SumAllLandArea(ctx, params)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	landAreaResponseDTO.LandArea = landArea
+	logrus.Log.Info(landAreaResponseDTO.LandArea)
+
+	landAreaActive, err := u.landCommodityRepo.SumAllLandCommodityArea(ctx, params)
+	if err != nil {
+		return nil, utils.NewInternalError(err.Error())
+	}
+	landAreaResponseDTO.LandAreaActive = landAreaActive
+
+	landAreaResponseDTO.Unit = "ha"
+
+	return &landAreaResponseDTO, nil
 }

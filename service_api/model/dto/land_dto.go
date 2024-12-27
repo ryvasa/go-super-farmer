@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 )
 
 type LandCreateDTO struct {
@@ -23,4 +24,17 @@ type LandResponseDTO struct {
 	UserID      uuid.UUID `json:"user_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type LandAreaParamsDTO struct {
+	CommodityID uuid.UUID `json:"commodity_id" validate:"gte=0,omitempty" form:"commodity_id"`
+	CityID      int64     `json:"city_id" validate:"gte=0,omitempty" form:"city_id"`
+}
+
+type LandAreaResponseDTO struct {
+	LandArea       float64           `json:"land_area"`
+	LandAreaActive float64           `json:"land_area_active"`
+	Unit           string            `json:"unit"`
+	City           *domain.City      `json:"city,omitempty"`
+	Commodity      *domain.Commodity `json:"commodity,omitempty"`
 }

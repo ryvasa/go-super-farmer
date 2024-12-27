@@ -33,7 +33,7 @@ type UserRepositoryMocDomain struct {
 
 type UserDTO struct {
 	Pagination *dto.PaginationDTO
-	Filter     *dto.PaginationFilterDTO
+	Filter     *dto.ParamFilterDTO
 }
 
 func UserRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.UserRepository, UserRepositoryIDs, UserRepositoryMockRows, UserRepositoryMocDomain, UserDTO) {
@@ -74,7 +74,7 @@ func UserRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.U
 			Limit: 10,
 			Sort:  "created_at desc",
 		},
-		Filter: &dto.PaginationFilterDTO{},
+		Filter: &dto.ParamFilterDTO{},
 	}
 
 	return mockDB, repo, ids, rows, domains, dtos

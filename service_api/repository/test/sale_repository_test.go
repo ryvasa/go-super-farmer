@@ -38,7 +38,7 @@ type SaleRepoDomain struct {
 
 type SaleDTO struct {
 	Pagination *dto.PaginationDTO
-	Filter     *dto.PaginationFilterDTO
+	Filter     *dto.ParamFilterDTO
 	Sale       *domain.Sale
 }
 
@@ -84,7 +84,7 @@ func SaleRepoSetup(t *testing.T) (*database.MockDB, repository_interface.SaleRep
 			Limit: 10,
 			Sort:  "created_at desc",
 		},
-		Filter: &dto.PaginationFilterDTO{},
+		Filter: &dto.ParamFilterDTO{},
 	}
 
 	return mockDB, repo, ids, rows, domain, dto

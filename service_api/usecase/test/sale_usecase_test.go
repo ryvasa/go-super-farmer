@@ -41,7 +41,7 @@ type SaleDtos struct {
 	Create             *dto.SaleCreateDTO
 	Update             *dto.SaleUpdateDTO
 	Pagination         *dto.PaginationDTO
-	Filter             *dto.PaginationFilterDTO
+	Filter             *dto.ParamFilterDTO
 	PaginationResponse *dto.PaginationResponseDTO
 }
 
@@ -102,14 +102,14 @@ func SaleUsecaseSetup(t *testing.T) (*SaleIDs, *SaleDomains, *SaleDtos, *SaleRep
 			Price:    float64(20),
 			SaleDate: date,
 		},
-		Filter: &dto.PaginationFilterDTO{
+		Filter: &dto.ParamFilterDTO{
 			CommodityID: &ids.CommodityID,
 			CityID:      &ids.CityID,
 		},
 		Pagination: &dto.PaginationDTO{
 			Page:  1,
 			Limit: 10,
-			Filter: dto.PaginationFilterDTO{
+			Filter: dto.ParamFilterDTO{
 				CommodityID: &ids.CommodityID,
 				CityID:      &ids.CityID,
 			},

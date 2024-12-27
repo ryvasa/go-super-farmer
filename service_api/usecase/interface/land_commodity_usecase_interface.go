@@ -17,4 +17,5 @@ type LandCommodityUsecase interface {
 	UpdateLandCommodity(ctx context.Context, id uuid.UUID, req *dto.LandCommodityUpdateDTO) (*domain.LandCommodity, error)
 	DeleteLandCommodity(ctx context.Context, id uuid.UUID) error
 	RestoreLandCommodity(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error)
+	GetLandArea(ctx context.Context, params *dto.LandAreaParamsDTO) (*dto.LandAreaResponseDTO, error)
 }

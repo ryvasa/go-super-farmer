@@ -256,7 +256,7 @@ func TestPriceUsecase_GetAllPrices(t *testing.T) {
 	queryParams := &dto.PaginationDTO{
 		Limit:  10,
 		Page:   1,
-		Filter: dto.PaginationFilterDTO{},
+		Filter: dto.ParamFilterDTO{},
 	}
 
 	cacheKey := fmt.Sprintf("price_list_page_%d_limit_%d",

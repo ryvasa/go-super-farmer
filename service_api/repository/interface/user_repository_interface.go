@@ -17,5 +17,5 @@ type UserRepository interface {
 	Update(ctx context.Context, id uuid.UUID, user *domain.User) error
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
-	Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error)
+	Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
 }

@@ -38,7 +38,7 @@ func (m *MockPriceRepository) EXPECT() *MockPriceRepositoryMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockPriceRepository) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (m *MockPriceRepository) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Count", ctx, filter)
 	ret0, _ := ret[0].(int64)

@@ -266,7 +266,7 @@ func TestUserUsecase_GetAllUsers(t *testing.T) {
 	queryParams := &dto.PaginationDTO{
 		Limit: 10,
 		Page:  1,
-		Filter: dto.PaginationFilterDTO{
+		Filter: dto.ParamFilterDTO{
 			UserName: "test",
 		},
 	}

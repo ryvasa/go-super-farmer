@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
+	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 )
 
 type LandRepository interface {
@@ -16,4 +17,5 @@ type LandRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID) error
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Land, error)
+	SumAllLandArea(ctx context.Context, params *dto.LandAreaParamsDTO) (float64, error)
 }

@@ -81,6 +81,21 @@ func (mr *MockLandCommodityUsecaseMockRecorder) GetAllLandCommodity(ctx interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllLandCommodity", reflect.TypeOf((*MockLandCommodityUsecase)(nil).GetAllLandCommodity), ctx)
 }
 
+// GetLandArea mocks base method.
+func (m *MockLandCommodityUsecase) GetLandArea(ctx context.Context, params *dto.LandAreaParamsDTO) (*dto.LandAreaResponseDTO, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLandArea", ctx, params)
+	ret0, _ := ret[0].(*dto.LandAreaResponseDTO)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLandArea indicates an expected call of GetLandArea.
+func (mr *MockLandCommodityUsecaseMockRecorder) GetLandArea(ctx, params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLandArea", reflect.TypeOf((*MockLandCommodityUsecase)(nil).GetLandArea), ctx, params)
+}
+
 // GetLandCommodityByCommodityID mocks base method.
 func (m *MockLandCommodityUsecase) GetLandCommodityByCommodityID(ctx context.Context, id uuid.UUID) ([]*domain.LandCommodity, error) {
 	m.ctrl.T.Helper()

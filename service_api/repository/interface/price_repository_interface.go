@@ -19,5 +19,5 @@ type PriceRepository interface {
 	Restore(ctx context.Context, id uuid.UUID) error
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Price, error)
 	FindByCommodityIDAndCityID(ctx context.Context, commodityID uuid.UUID, cityID int64) (*domain.Price, error)
-	Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error)
+	Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
 }
