@@ -7,7 +7,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
-	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"gorm.io/gorm"
 )
 
