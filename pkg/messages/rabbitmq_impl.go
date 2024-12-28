@@ -57,7 +57,7 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 		"direct",          // type
 		true,              // durable
 		false,             // auto-deleted
-		false,             // service_api
+		false,             // internal
 		false,             // no-wait
 		nil,               // arguments
 	)
@@ -70,7 +70,7 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 		"direct",        // type
 		true,            // durable
 		false,           // auto-deleted
-		false,           // service_api
+		false,           // internal
 		false,           // no-wait
 		nil,             // arguments
 	)

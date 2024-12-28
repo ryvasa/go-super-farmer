@@ -41,7 +41,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: deployments/service_api/Dockerfile
+      dockerfile: deployments/internal/Dockerfile
       target: runner
     depends_on:
       - rabbitmq
