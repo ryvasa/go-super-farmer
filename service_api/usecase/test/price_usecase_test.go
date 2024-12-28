@@ -256,7 +256,7 @@ func TestPriceUsecase_GetAllPrices(t *testing.T) {
 	queryParams := &dto.PaginationDTO{
 		Limit:  10,
 		Page:   1,
-		Filter: dto.PaginationFilterDTO{},
+		Filter: dto.ParamFilterDTO{},
 	}
 
 	cacheKey := fmt.Sprintf("price_list_page_%d_limit_%d",
@@ -763,6 +763,7 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 	_, mocks, dtos, repo, uc, ctx := PriceUsecaseUtils(t)
 
 	t.Run("should publish message successfully", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(context.Background(), dtos.Params.CommodityID, dtos.Params.CityID).Return(mocks.Price, nil).Times(1)
 
 		// Mock RabbitMQ publish
 		repo.RabbitMQ.EXPECT().
@@ -772,7 +773,7 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 		// Execute
 		res, err := uc.DownloadPriceHistoryByCommodityIDAndCityID(ctx, dtos.Params)
 
-		url := fmt.Sprintf("http://localhost:8080/api/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
+		url := fmt.Sprintf("http://localhost:8081/prices/history/commodity/%s/city/%d/download/file?start_date=%s&end_date=%s",
 			dtos.Params.CommodityID, dtos.Params.CityID, dtos.Params.StartDate.Format("2006-01-02"), dtos.Params.EndDate.Format("2006-01-02"))
 
 		// Assert
@@ -783,6 +784,7 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 	})
 
 	t.Run("should return error when publish fails", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(context.Background(), dtos.Params.CommodityID, dtos.Params.CityID).Return(mocks.Price, nil).Times(1)
 
 		repo.RabbitMQ.EXPECT().
 			PublishJSON(ctx, "report-exchange", "price-history", mocks.Message).
@@ -797,6 +799,15 @@ func TestPriceUsecase_DownloadPriceHistoryByCommodityIDAndCityID(t *testing.T) {
 		assert.EqualError(t, err, "publish error")
 	})
 
+	t.Run("should return error when get price by commodity id and city id", func(t *testing.T) {
+		repo.Price.EXPECT().FindByCommodityIDAndCityID(context.Background(), dtos.Params.CommodityID, dtos.Params.CityID).Return(nil, utils.NewInternalError("service_api error")).Times(1)
+
+		resp, err := uc.DownloadPriceHistoryByCommodityIDAndCityID(ctx, dtos.Params)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "service_api error")
+	})
 }
 
 // func TestPriceUsecase_GetPriceExcelFile(t *testing.T) {

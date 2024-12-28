@@ -2,9 +2,11 @@ package handler_implementation
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/service_api/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
@@ -132,4 +134,34 @@ func (h *LandCommodityHandlerImpl) RestoreLandCommodity(c *gin.Context) {
 		return
 	}
 	utils.SuccessResponse(c, http.StatusOK, restoredLandCommodity)
+}
+
+func (h *LandCommodityHandlerImpl) GetSumLandArea(c *gin.Context) {
+	params := &dto.LandAreaParamsDTO{}
+	logrus.Log.Info(params)
+	cityID := c.Query("city_id")
+	commodityID := c.Query("commodity_id")
+	if cityID != "" {
+		id, err := strconv.ParseInt(cityID, 10, 64)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		params.CityID = int64(id)
+	}
+	if commodityID != "" {
+		id, err := uuid.Parse(commodityID)
+		if err != nil {
+			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+			return
+		}
+		params.CommodityID = id
+	}
+	logrus.Log.Info(params)
+	landAreaResponseDTO, err := h.uc.GetLandArea(c, params)
+	if err != nil {
+		utils.ErrorResponse(c, err)
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, landAreaResponseDTO)
 }

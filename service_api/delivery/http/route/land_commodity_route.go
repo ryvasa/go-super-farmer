@@ -16,6 +16,7 @@ func NewLandCommodityRoute(handler handler_interface.LandCommodityHandler) *Land
 func (r *LandCommodityRoute) Register(public, protected *gin.RouterGroup) {
 	protected.POST("/land_commodities", r.handler.CreateLandCommodity)
 	protected.GET("/land_commodities", r.handler.GetAllLandCommodity)
+	protected.GET("/land_commodities/area", r.handler.GetSumLandArea)
 	protected.GET("/land_commodities/:id", r.handler.GetLandCommodityByID)
 	protected.GET("/land_commodities/land/:id", r.handler.GetLandCommodityByLandID)
 	protected.GET("/land_commodities/commodity/:id", r.handler.GetLandCommodityByCommodityID)

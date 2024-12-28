@@ -84,7 +84,7 @@ func (r *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*do
 	return &user, err
 }
 
-func (r *UserRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (r *UserRepositoryImpl) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.User{}).

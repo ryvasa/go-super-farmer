@@ -9,11 +9,11 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_implementation "github.com/ryvasa/go-super-farmer/service_api/repository/implementation"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -37,7 +37,7 @@ type PriceRepositoryMocDomain struct {
 
 type PrivcePaginationDTO struct {
 	Pagination *dto.PaginationDTO
-	Filter     *dto.PaginationFilterDTO
+	Filter     *dto.ParamFilterDTO
 }
 
 func PriceRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.PriceRepository, PriceRepositoryIDs, PriceRepositoryMockRows, PriceRepositoryMocDomain, PrivcePaginationDTO) {
@@ -84,7 +84,7 @@ func PriceRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.
 			Limit: 10,
 			Sort:  "created_at desc",
 		},
-		Filter: &dto.PaginationFilterDTO{},
+		Filter: &dto.ParamFilterDTO{},
 	}
 
 	return mockDB, repo, ids, rows, domains, dtos

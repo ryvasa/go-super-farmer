@@ -11,4 +11,5 @@ type LandCommodityHandler interface {
 	UpdateLandCommodity(c *gin.Context)
 	DeleteLandCommodity(c *gin.Context)
 	RestoreLandCommodity(c *gin.Context)
+	GetSumLandArea(c *gin.Context)
 }

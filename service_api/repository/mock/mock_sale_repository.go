@@ -38,7 +38,7 @@ func (m *MockSaleRepository) EXPECT() *MockSaleRepositoryMockRecorder {
 }
 
 // Count mocks base method.
-func (m *MockSaleRepository) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (m *MockSaleRepository) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Count", ctx, filter)
 	ret0, _ := ret[0].(int64)
@@ -81,7 +81,7 @@ func (mr *MockSaleRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.Ca
 }
 
 // DeletedCount mocks base method.
-func (m *MockSaleRepository) DeletedCount(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (m *MockSaleRepository) DeletedCount(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeletedCount", ctx, filter)
 	ret0, _ := ret[0].(int64)

@@ -8,12 +8,12 @@ import (
 )
 
 type PaginationDTO struct {
-	Limit  int                 `json:"limit" form:"limit"`
-	Page   int                 `json:"page" form:"page"`
-	Sort   string              `json:"sort" form:"sort"`
-	Filter PaginationFilterDTO `json:"filter" form:"filter"`
+	Limit  int            `json:"limit" form:"limit"`
+	Page   int            `json:"page" form:"page"`
+	Sort   string         `json:"sort" form:"sort"`
+	Filter ParamFilterDTO `json:"filter" form:"filter"`
 }
-type PaginationFilterDTO struct {
+type ParamFilterDTO struct {
 	UserName      string     `json:"user_name" form:"user_name"`
 	CommodityName string     `json:"commodity_name" form:"commodity_name"`
 	CityName      string     `json:"city_name" form:"city_name"`

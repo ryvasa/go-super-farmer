@@ -39,12 +39,13 @@ type HarvestIDs struct {
 }
 
 type HarvestDomainMock struct {
-	Harvest        *domain.Harvest
-	Harvests       []*domain.Harvest
-	UpdatedHarvest *domain.Harvest
-	City           *domain.City
-	LandCommodity  *domain.LandCommodity
-	Message        usecase_implementation.HarvestMessage
+	Harvest         *domain.Harvest
+	Harvests        []*domain.Harvest
+	UpdatedHarvest  *domain.Harvest
+	City            *domain.City
+	LandCommodity   *domain.LandCommodity
+	LandCommodities []*domain.LandCommodity
+	Message         usecase_implementation.HarvestMessage
 }
 
 type HarvestDTOMock struct {
@@ -103,6 +104,11 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 		},
 		LandCommodity: &domain.LandCommodity{
 			ID: landCommodityID,
+		},
+		LandCommodities: []*domain.LandCommodity{
+			{
+				ID: landCommodityID,
+			},
 		},
 		Message: usecase_implementation.HarvestMessage{
 			LandCommodityID: landCommodityID,
@@ -807,13 +813,14 @@ func TestHarvestUsecase_DownloadHarvestByLandCommodityID(t *testing.T) {
 	_, domains, dtos, repo, uc, ctx := HarvestUsecaseSetup(t)
 
 	t.Run("should publish harvests to rabbitmq successfully", func(t *testing.T) {
+		repo.Harvest.EXPECT().FindByLandCommodityID(context.TODO(), dtos.Params.LandCommodityID).Return(domains.Harvests, nil).Times(1)
 		repo.RabbitMQ.EXPECT().
 			PublishJSON(ctx, "report-exchange", "harvest", domains.Message).
 			Return(nil)
 
 		res, err := uc.DownloadHarvestByLandCommodityID(ctx, dtos.Params)
 
-		url := fmt.Sprintf("http://localhost:8080/api/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
+		url := fmt.Sprintf("http://localhost:8081/harvests/land_commodity/%s/download/file?start_date=%s&end_date=%s",
 			dtos.Params.LandCommodityID, dtos.Params.StartDate.Format("2006-01-02"), dtos.Params.EndDate.Format("2006-01-02"))
 
 		assert.NoError(t, err)
@@ -823,9 +830,21 @@ func TestHarvestUsecase_DownloadHarvestByLandCommodityID(t *testing.T) {
 	})
 
 	t.Run("should return error when publish harvests to rabbitmq fails", func(t *testing.T) {
+		repo.Harvest.EXPECT().FindByLandCommodityID(context.TODO(), dtos.Params.LandCommodityID).Return(domains.Harvests, nil).Times(1)
+
 		repo.RabbitMQ.EXPECT().
 			PublishJSON(ctx, "report-exchange", "harvest", domains.Message).
 			Return(utils.NewInternalError("service_api error"))
+
+		resp, err := uc.DownloadHarvestByLandCommodityID(ctx, dtos.Params)
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "service_api error")
+	})
+
+	t.Run("should return error when get harvests by land commodity id fails", func(t *testing.T) {
+		repo.Harvest.EXPECT().FindByLandCommodityID(context.TODO(), dtos.Params.LandCommodityID).Return(nil, utils.NewInternalError("service_api error")).Times(1)
 
 		resp, err := uc.DownloadHarvestByLandCommodityID(ctx, dtos.Params)
 

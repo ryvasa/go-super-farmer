@@ -5,9 +5,24 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
+	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/service_api/repository/interface"
 	"gorm.io/gorm"
 )
+
+func applyFilters(filter *dto.LandAreaParamsDTO) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if filter.CityID != 0 {
+			db = db.Where("city_id = ?", filter.CityID)
+		}
+		if filter.CommodityID != uuid.Nil {
+			db = db.
+				Joins("JOIN land_commodities ON land_commodities.land_id = lands.id").
+				Where("land_commodities.commodity_id = ?", filter.CommodityID)
+		}
+		return db
+	}
+}
 
 type LandRepositoryImpl struct {
 	db *gorm.DB
@@ -80,4 +95,19 @@ func (r *LandRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) 
 		return nil, err
 	}
 	return &land, nil
+}
+
+func (r *LandRepositoryImpl) SumAllLandArea(ctx context.Context, params *dto.LandAreaParamsDTO) (float64, error) {
+	var landArea float64
+	err := r.db.WithContext(ctx).
+		Scopes(
+			applyFilters(params),
+		).
+		Model(&domain.Land{}).
+		Select("COALESCE(SUM(lands.land_area), 0)"). // Gunakan COALESCE
+		Scan(&landArea).Error
+	if err != nil {
+		return 0, err
+	}
+	return landArea, nil
 }

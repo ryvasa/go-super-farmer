@@ -75,18 +75,20 @@ func SeedCommodities(db *gorm.DB, count int) []domain.Commodity {
 	return commodities
 }
 
-func SeedLands(db *gorm.DB, users []domain.User, count int) []domain.Land {
+func SeedLands(db *gorm.DB, users []domain.User, cities []domain.City, count int) []domain.Land {
 	gofakeit.Seed(0)
 	var lands []domain.Land
 
 	for i := 0; i < count; i++ {
 		user := users[gofakeit.Number(0, len(users)-1)]
+		city := cities[gofakeit.Number(0, len(cities)-1)]
 		lands = append(lands, domain.Land{
 			ID:          uuid.New(),
 			UserID:      user.ID,
 			LandArea:    gofakeit.Float64Range(1.0, 100.0),
 			Unit:        "ha",
 			Certificate: gofakeit.Word() + "-" + gofakeit.LetterN(4),
+			CityID:      city.ID,
 		})
 	}
 
@@ -312,10 +314,10 @@ func Seeders(db *gorm.DB) {
 	roles := SeedRoles(db)
 	users := SeedUsers(db, roles, 5)
 	commodities := SeedCommodities(db, 10)
-	lands := SeedLands(db, users, 10)
-	landCommodities := SeedLandCommodities(db, lands, commodities, 10)
 	provinces := SeedProvinces(db, 10)
 	cities := SeedCities(db, provinces, 5)
+	lands := SeedLands(db, users, cities, 10)
+	landCommodities := SeedLandCommodities(db, lands, commodities, 10)
 	demand := SeedDemand(db, commodities, cities, 10)
 	SeedDemandHistory(db, demand, 10)
 	prices := SeedPrices(db, commodities, cities, 10)

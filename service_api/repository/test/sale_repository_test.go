@@ -38,7 +38,7 @@ type SaleRepoDomain struct {
 
 type SaleDTO struct {
 	Pagination *dto.PaginationDTO
-	Filter     *dto.PaginationFilterDTO
+	Filter     *dto.ParamFilterDTO
 	Sale       *domain.Sale
 }
 
@@ -84,7 +84,7 @@ func SaleRepoSetup(t *testing.T) (*database.MockDB, repository_interface.SaleRep
 			Limit: 10,
 			Sort:  "created_at desc",
 		},
-		Filter: &dto.PaginationFilterDTO{},
+		Filter: &dto.ParamFilterDTO{},
 	}
 
 	return mockDB, repo, ids, rows, domain, dto
@@ -208,11 +208,11 @@ func TestSaleRepo_FindByCommodityID(t *testing.T) {
 	mockDB, repo, ids, rows, _, dtos := SaleRepoSetup(t)
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `SELECT * FROM "sales" WHERE commodity_id = $1 AND "sales"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "sales" WHERE commodity_id = $1 AND "sales"."deleted_at" IS NULL ORDER BY created_at desc LIMIT $2`
 
 	t.Run("should return sales successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID).
+			WithArgs(ids.CommodityID, dtos.Pagination.Limit).
 			WillReturnRows(rows.Sale)
 
 		result, err := repo.FindByCommodityID(context.TODO(), dtos.Pagination, ids.CommodityID)
@@ -229,7 +229,7 @@ func TestSaleRepo_FindByCommodityID(t *testing.T) {
 
 	t.Run("should return an error if find by commodity id fails", func(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CommodityID).
+			WithArgs(ids.CommodityID, dtos.Pagination.Limit).
 			WillReturnError(utils.NewInternalError("internal error"))
 
 		result, err := repo.FindByCommodityID(context.TODO(), dtos.Pagination, ids.CommodityID)
@@ -244,11 +244,11 @@ func TestSaleRepo_FindByCityID(t *testing.T) {
 	mockDB, repo, ids, rows, _, dtos := SaleRepoSetup(t)
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `SELECT * FROM "sales" WHERE city_id = $1 AND "sales"."deleted_at" IS NULL`
+	expectedSQL := `SELECT * FROM "sales" WHERE city_id = $1 AND "sales"."deleted_at" IS NULL ORDER BY created_at desc LIMIT $2`
 
 	t.Run("should return sales successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CityID).
+			WithArgs(ids.CityID, dtos.Pagination.Limit).
 			WillReturnRows(rows.Sale)
 
 		result, err := repo.FindByCityID(context.TODO(), dtos.Pagination, ids.CityID)
@@ -265,7 +265,7 @@ func TestSaleRepo_FindByCityID(t *testing.T) {
 
 	t.Run("should return an error if find by city id fails", func(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.CityID).
+			WithArgs(ids.CityID, dtos.Pagination.Limit).
 			WillReturnError(utils.NewInternalError("internal error"))
 
 		result, err := repo.FindByCityID(context.TODO(), dtos.Pagination, ids.CityID)

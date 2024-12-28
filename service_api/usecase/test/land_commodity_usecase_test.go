@@ -9,12 +9,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	mock_repo "github.com/ryvasa/go-super-farmer/service_api/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/service_api/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -110,6 +110,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 	landCommodity := mock_repo.NewMockLandCommodityRepository(ctrl)
 	land := mock_repo.NewMockLandRepository(ctrl)
 	commodity := mock_repo.NewMockCommodityRepository(ctrl)
+	city := mock_repo.NewMockCityRepository(ctrl)
 	cache := mock_pkg.NewMockCache(ctrl)
 
 	repoMock := &LandCommodityRepoMock{
@@ -119,7 +120,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 		Cache:         cache,
 	}
 
-	uc := usecase_implementation.NewLandCommodityUsecase(landCommodity, land, commodity, cache)
+	uc := usecase_implementation.NewLandCommodityUsecase(landCommodity, land, city, commodity, cache)
 	ctx := context.Background()
 
 	return ids, mocks, dtoMocks, repoMock, uc, ctx

@@ -25,7 +25,7 @@ func GetPaginationParams(c *gin.Context) (*dto.PaginationDTO, error) {
 	return pagination, nil
 }
 
-func ApplyFilters(filter *dto.PaginationFilterDTO) func(db *gorm.DB) *gorm.DB {
+func ApplyFilters(filter *dto.ParamFilterDTO) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if filter.UserName != "" {
 			db = db.Where("name LIKE ?", "%"+filter.UserName+"%")

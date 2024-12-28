@@ -69,7 +69,7 @@ func (r *CommodityRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.U
 	return &commodity, nil
 }
 
-func (r *CommodityRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (r *CommodityRepositoryImpl) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&domain.Commodity{}).

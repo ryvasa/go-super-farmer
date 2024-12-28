@@ -111,7 +111,7 @@ func (r *SaleRepositoryImpl) FindDeletedByID(ctx context.Context, id uuid.UUID) 
 	return &sale, nil
 }
 
-func (r *SaleRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (r *SaleRepositoryImpl) Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	var count int64
 	err := r.DB(ctx).Model(&domain.Sale{}).
 		Scopes(
@@ -120,7 +120,7 @@ func (r *SaleRepositoryImpl) Count(ctx context.Context, filter *dto.PaginationFi
 	return count, err
 }
 
-func (r *SaleRepositoryImpl) DeletedCount(ctx context.Context, filter *dto.PaginationFilterDTO) (int64, error) {
+func (r *SaleRepositoryImpl) DeletedCount(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error) {
 	var count int64
 	err := r.DB(ctx).Model(&domain.Sale{}).
 		Scopes(

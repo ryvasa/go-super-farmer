@@ -9,12 +9,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
 	mock_repo "github.com/ryvasa/go-super-farmer/service_api/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/service_api/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/service_api/usecase/interface"
-	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -175,7 +175,7 @@ func TestCommodityUsecase_GetAllCommodities(t *testing.T) {
 	queryParams := &dto.PaginationDTO{
 		Limit: 10,
 		Page:  1,
-		Filter: dto.PaginationFilterDTO{
+		Filter: dto.ParamFilterDTO{
 			CommodityName: "test",
 		},
 	}
