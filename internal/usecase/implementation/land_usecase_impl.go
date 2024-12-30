@@ -28,6 +28,7 @@ func (u *LandUsecaseImpl) CreateLand(ctx context.Context, userId uuid.UUID, req 
 
 	land.LandArea = req.LandArea
 	land.Certificate = req.Certificate
+	land.CityID = req.CityID
 	land.UserID = userId
 	land.ID = uuid.New()
 

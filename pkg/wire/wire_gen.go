@@ -89,7 +89,7 @@ func InitializeApp() (*app.App, error) {
 	saleRepository := repository_implementation.NewSaleRepository(baseRepository)
 	saleUsecase := usecase_implementation.NewSaleUsecase(saleRepository, cityRepository, commodityRepository, cacheCache)
 	saleHandler := handler_implementation.NewSaleHandler(saleUsecase)
-	forecastsUsecase := usecase_implementation.NewForecastsUsecase(landCommodityRepository, cityRepository, priceRepository, priceHistoryRepository, demandRepository, demandHistoryRepository, supplyRepository, supplyHistoryRepository, saleRepository, harvestRepository, commodityRepository)
+	forecastsUsecase := usecase_implementation.NewForecastsUsecase(landCommodityRepository, cityRepository, priceRepository, priceHistoryRepository, demandRepository, demandHistoryRepository, supplyRepository, supplyHistoryRepository, saleRepository, harvestRepository, commodityRepository, rabbitMQ)
 	forecastsHandler := handler_implementation.NewForecastsHandler(forecastsUsecase)
 	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, demandHandler, supplyHandler, harvestHandler, saleHandler, forecastsHandler)
 	engine := route.NewRouter(handlers)

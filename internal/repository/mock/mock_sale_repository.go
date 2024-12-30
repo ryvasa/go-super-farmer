@@ -155,6 +155,21 @@ func (mr *MockSaleRepositoryMockRecorder) FindByCommodityID(ctx, params, id inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityID", reflect.TypeOf((*MockSaleRepository)(nil).FindByCommodityID), ctx, params, id)
 }
 
+// FindByCommodityIDAndCityID mocks base method.
+func (m *MockSaleRepository) FindByCommodityIDAndCityID(ctx context.Context, id uuid.UUID, cityID int64) ([]*domain.Sale, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByCommodityIDAndCityID", ctx, id, cityID)
+	ret0, _ := ret[0].([]*domain.Sale)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByCommodityIDAndCityID indicates an expected call of FindByCommodityIDAndCityID.
+func (mr *MockSaleRepositoryMockRecorder) FindByCommodityIDAndCityID(ctx, id, cityID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCommodityIDAndCityID", reflect.TypeOf((*MockSaleRepository)(nil).FindByCommodityIDAndCityID), ctx, id, cityID)
+}
+
 // FindByID mocks base method.
 func (m *MockSaleRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Sale, error) {
 	m.ctrl.T.Helper()

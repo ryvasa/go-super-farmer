@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -48,7 +49,7 @@ func (uc *SaleUsecaseImpl) CreateSale(ctx context.Context, req *dto.SaleCreateDT
 	if err != nil {
 		return nil, utils.NewNotFoundError("commodity not found")
 	}
-
+	logrus.Log.Info(req)
 	parseDate, err := time.Parse("2006-01-02", req.SaleDate)
 	if err != nil {
 		return nil, utils.NewBadRequestError("sale date format is invalid")

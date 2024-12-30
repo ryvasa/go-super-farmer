@@ -2,6 +2,8 @@ package env
 
 import (
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Env struct {
@@ -49,10 +51,10 @@ type Env struct {
 
 func LoadEnv() (*Env, error) {
 	// GODOTENV for development only
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
 	env := &Env{}
 
 	// Load Server Config
