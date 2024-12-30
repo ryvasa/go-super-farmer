@@ -14,5 +14,5 @@ func NewForecastsRoute(handler handler_interface.ForecastsHandler) *ForecastsRou
 }
 
 func (r *ForecastsRoute) Register(public, protected *gin.RouterGroup) {
-	protected.GET("/forecasts/city/:city_id/commodity/:commodity_id", r.handler.GetForecastsByCommodityIDAndCityID)
+	protected.GET("/forecasts/city/:city_id/land_commodity/:land_commodity_id", r.handler.GetForecastsByCommodityIDAndCityID)
 }

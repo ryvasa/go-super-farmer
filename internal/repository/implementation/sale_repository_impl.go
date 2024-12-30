@@ -129,3 +129,9 @@ func (r *SaleRepositoryImpl) DeletedCount(ctx context.Context, filter *dto.Param
 		Count(&count).Error
 	return count, err
 }
+
+func (r *SaleRepositoryImpl) FindByCommodityIDAndCityID(ctx context.Context, id uuid.UUID, cityID int64) ([]*domain.Sale, error) {
+	var sales []*domain.Sale
+	err := r.DB(ctx).Where("commodity_id = ? AND city_id = ?", id, cityID).Find(&sales).Limit(50).Error
+	return sales, err
+}

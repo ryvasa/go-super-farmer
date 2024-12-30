@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -26,12 +27,14 @@ func (h *ForecastsHandlerImpl) GetForecastsByCommodityIDAndCityID(c *gin.Context
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	commodityIDStr := c.Param("commodity_id")
+	commodityIDStr := c.Param("land_commodity_id")
 	commodityID, err := uuid.Parse(commodityIDStr)
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
+	logrus.Log.Info("forecasts handle request")
+
 	forecasts, err := h.usecase.GetForecastsByCommodityIDAndCityID(c, commodityID, cityID)
 	if err != nil {
 		utils.ErrorResponse(c, err)

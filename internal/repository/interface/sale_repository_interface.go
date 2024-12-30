@@ -21,4 +21,5 @@ type SaleRepository interface {
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.Sale, error)
 	Count(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
 	DeletedCount(ctx context.Context, filter *dto.ParamFilterDTO) (int64, error)
+	FindByCommodityIDAndCityID(ctx context.Context, id uuid.UUID, cityID int64) ([]*domain.Sale, error)
 }

@@ -10,11 +10,13 @@ import (
 type LandCreateDTO struct {
 	LandArea    float64 `json:"land_area" validate:"required,min=1,max=10000"`
 	Certificate string  `json:"certificate" validate:"required,min=1,max=255"`
+	CityID      int64   `json:"city_id" validate:"required,gte=0"`
 }
 
 type LandUpdateDTO struct {
 	LandArea    float64 `json:"land_area,omitempty" validate:"omitempty,min=1,max=10000"`
 	Certificate string  `json:"certificate,omitempty" validate:"omitempty,min=1,max=255"`
+	CityID      int64   `json:"city_id,omitempty" validate:"omitempty,gte=0"`
 }
 
 type LandResponseDTO struct {
