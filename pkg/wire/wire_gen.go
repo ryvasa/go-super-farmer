@@ -84,7 +84,7 @@ func InitializeApp() (*app.App, error) {
 	supplyUsecase := usecase_implementation.NewSupplyUsecase(supplyRepository, supplyHistoryRepository, commodityRepository, cityRepository, transactionManager)
 	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
 	harvestRepository := repository_implementation.NewHarvestRepository(db)
-	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, cityRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc, envEnv)
+	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, cityRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc, envEnv, transactionManager)
 	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
 	saleRepository := repository_implementation.NewSaleRepository(baseRepository)
 	saleUsecase := usecase_implementation.NewSaleUsecase(saleRepository, cityRepository, commodityRepository, cacheCache)

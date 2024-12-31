@@ -463,21 +463,21 @@ func TestLandCommodityRepository_SumLandAreaByCommodityID(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `SELECT SUM(land_area) FROM "land_commodities" WHERE commodity_id = $1 AND "land_commodities"."deleted_at" IS NULL`
+	expectedSQL := `SELECT SUM(land_area) FROM "land_commodities" WHERE (commodity_id = $1 AND harvested = $2) AND "land_commodities"."deleted_at" IS NULL`
 
 	t.Run("should return land commodity when sum land area by commodity id successfully", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID).WillReturnRows(rows.Count)
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, false).WillReturnRows(rows.Count)
 
-		result, err := repo.SumLandAreaByCommodityID(context.TODO(), ids.CommodityID)
+		result, err := repo.SumNotHarvestedLandAreaByLandID(context.TODO(), ids.CommodityID)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, float64(1), result)
 		assert.Nil(t, mockDB.Mock.ExpectationsWereMet())
 	})
 	t.Run("should return ) when sum land area by commodity id failed", func(t *testing.T) {
-		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID).WillReturnError(errors.New("database error"))
+		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL)).WithArgs(ids.CommodityID, false).WillReturnError(errors.New("database error"))
 
-		result, err := repo.SumLandAreaByCommodityID(context.TODO(), ids.CommodityID)
+		result, err := repo.SumNotHarvestedLandAreaByLandID(context.TODO(), ids.CommodityID)
 		assert.Equal(t, float64(0), result)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "database error")

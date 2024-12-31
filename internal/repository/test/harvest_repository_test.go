@@ -75,7 +75,6 @@ func HarvestRepositorySetup(t *testing.T) (*database.MockDB, repository_interfac
 		Harvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        float64(100),
 			Unit:            "kg",
 			HarvestDate:     date,
@@ -133,7 +132,6 @@ func TestHarvestRepository_FindByID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.HarvestID, result.ID)
 		assert.Equal(t, ids.LandCommodityID, result.LandCommodityID)
-		assert.Equal(t, ids.CityID, result.CityID)
 		assert.Equal(t, float64(100), result.Quantity)
 		assert.Equal(t, "kg", result.Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, result.HarvestDate)
@@ -174,7 +172,6 @@ func TestHarvestRepository_FindAll(t *testing.T) {
 		assert.Equal(t, 1, len(result))
 		assert.Equal(t, ids.HarvestID, (result)[0].ID)
 		assert.Equal(t, ids.LandCommodityID, (result)[0].LandCommodityID)
-		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, float64(100), (result)[0].Quantity)
 		assert.Equal(t, "kg", (result)[0].Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, (result)[0].HarvestDate)
@@ -206,7 +203,6 @@ func TestHarvestRepository_FindByLandCommodityID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.HarvestID, (result)[0].ID)
 		assert.Equal(t, ids.LandCommodityID, (result)[0].LandCommodityID)
-		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, float64(100), (result)[0].Quantity)
 		assert.Equal(t, "kg", (result)[0].Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, (result)[0].HarvestDate)
@@ -239,7 +235,6 @@ func TestHarvestRepository_FindByCityID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.HarvestID, (result)[0].ID)
 		assert.Equal(t, ids.LandCommodityID, (result)[0].LandCommodityID)
-		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, float64(100), (result)[0].Quantity)
 		assert.Equal(t, "kg", (result)[0].Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, (result)[0].HarvestDate)
@@ -489,7 +484,6 @@ func TestHarvestRepository_FindAllDeleted(t *testing.T) {
 		assert.Equal(t, 1, len(result))
 		assert.Equal(t, ids.HarvestID, (result)[0].ID)
 		assert.Equal(t, ids.LandCommodityID, (result)[0].LandCommodityID)
-		assert.Equal(t, ids.CityID, (result)[0].CityID)
 		assert.Equal(t, float64(100), (result)[0].Quantity)
 		assert.Equal(t, "kg", (result)[0].Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, (result)[0].HarvestDate)
@@ -521,7 +515,6 @@ func TestHarvestRepository_FindDeletedByID(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.HarvestID, result.ID)
 		assert.Equal(t, ids.LandCommodityID, result.LandCommodityID)
-		assert.Equal(t, ids.CityID, result.CityID)
 		assert.Equal(t, float64(100), result.Quantity)
 		assert.Equal(t, "kg", result.Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, result.HarvestDate)

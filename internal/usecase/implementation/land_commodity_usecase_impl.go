@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -44,7 +44,7 @@ func (u *LandCommodityUsecaseImpl) CreateLandCommodity(ctx context.Context, req 
 		return nil, utils.NewNotFoundError("land not found")
 	}
 
-	landArea, err := u.landCommodityRepo.SumLandAreaByLandID(ctx, land.ID)
+	landArea, err := u.landCommodityRepo.SumNotHarvestedLandAreaByLandID(ctx, land.ID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
@@ -133,6 +133,10 @@ func (u *LandCommodityUsecaseImpl) UpdateLandCommodity(ctx context.Context, id u
 		return nil, utils.NewNotFoundError("land commodity not found")
 	}
 
+	if landCommodity.Harvested == true {
+		return nil, utils.NewBadRequestError("land commodity already harvested")
+	}
+
 	_, err = u.commodityRepo.FindByID(ctx, req.CommodityID)
 	if err != nil {
 		return nil, utils.NewNotFoundError("commodity not found")
@@ -143,7 +147,7 @@ func (u *LandCommodityUsecaseImpl) UpdateLandCommodity(ctx context.Context, id u
 		return nil, utils.NewNotFoundError("land not found")
 	}
 
-	landArea, err := u.landCommodityRepo.SumLandAreaByLandID(ctx, land.ID)
+	landArea, err := u.landCommodityRepo.SumNotHarvestedLandAreaByLandID(ctx, land.ID)
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}

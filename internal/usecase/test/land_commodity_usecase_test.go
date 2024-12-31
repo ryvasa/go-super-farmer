@@ -9,12 +9,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -353,6 +353,17 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 		assert.EqualError(t, err, "land commodity not found")
+	})
+
+	t.Run("should return error when land commodity already harvested", func(t *testing.T) {
+		mocks.LandCommodity.Harvested = true
+		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.LandCommodity, nil).Times(1)
+
+		resp, err := uc.UpdateLandCommodity(ctx, ids.LandCommodityID, dtos.Update)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		assert.EqualError(t, err, "land commodity already harvested")
 	})
 
 	t.Run("should return error when commodity not found", func(t *testing.T) {

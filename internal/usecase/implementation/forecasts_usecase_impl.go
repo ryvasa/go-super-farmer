@@ -17,6 +17,11 @@ import (
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
+func dayOfYear() int {
+	now := time.Now()
+	return now.YearDay()
+}
+
 type FrecastsMessageReq struct {
 	Area         float64 `json:"area"`
 	HarvestTime  int     `json:"harvest_time"`
@@ -174,6 +179,8 @@ func (f *ForecastsUsecaseImpl) GetForecastsByCommodityIDAndCityID(ctx context.Co
 	sale = sale / float64(len(sales))
 	logrus.Log.Info("forecasts message sent", "saleQuantity")
 
+	day := dayOfYear()
+
 	message := FrecastsMessageReq{
 		Area:         landCommodity.LandArea,
 		HarvestTime:  daysUntilHarvest,
@@ -182,7 +189,7 @@ func (f *ForecastsUsecaseImpl) GetForecastsByCommodityIDAndCityID(ctx context.Co
 		Supply:       supply.Quantity,
 		Sale:         sale,
 		Price:        price.Price,
-		Day:          1,
+		Day:          day,
 	}
 
 	logrus.Log.Info("forecasts message sent", message)

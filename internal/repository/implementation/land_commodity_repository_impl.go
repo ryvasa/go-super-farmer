@@ -117,9 +117,9 @@ func (r *LandCommodityRepositoryImpl) SumLandAreaByLandID(ctx context.Context, i
 	return landArea, nil
 }
 
-func (r *LandCommodityRepositoryImpl) SumLandAreaByCommodityID(ctx context.Context, id uuid.UUID) (float64, error) {
+func (r *LandCommodityRepositoryImpl) SumNotHarvestedLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error) {
 	var landArea float64
-	err := r.db.WithContext(ctx).Model(&domain.LandCommodity{}).Where("commodity_id = ?", id).Select("SUM(land_area)").Scan(&landArea).Error
+	err := r.db.WithContext(ctx).Model(&domain.LandCommodity{}).Where("commodity_id = ? AND harvested = ?", id, false).Select("SUM(land_area)").Scan(&landArea).Error
 	if err != nil {
 		return 0, err
 	}
