@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/env"
-	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -30,54 +32,63 @@ type HarvestUsecaseImpl struct {
 	cache             cache.Cache
 	globFunc          utils.GlobFunc
 	env               *env.Env
+	txManager         transaction.TransactionManager
 }
 
-func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, cityRepo repository_interface.CityRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc, env *env.Env) usecase_interface.HarvestUsecase {
-	return &HarvestUsecaseImpl{harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, globFunc, env}
+func NewHarvestUsecase(harvestRepo repository_interface.HarvestRepository, cityRepo repository_interface.CityRepository, landCommodityRepo repository_interface.LandCommodityRepository, rabbitMQ messages.RabbitMQ, cache cache.Cache, globFunc utils.GlobFunc, env *env.Env, txManager transaction.TransactionManager) usecase_interface.HarvestUsecase {
+	return &HarvestUsecaseImpl{harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, globFunc, env, txManager}
 }
 
 func (uc *HarvestUsecaseImpl) CreateHarvest(ctx context.Context, req *dto.HarvestCreateDTO) (*domain.Harvest, error) {
-	harvest := domain.Harvest{}
 	if err := utils.ValidateStruct(req); len(err) > 0 {
 		return nil, utils.NewValidationError(err)
 	}
-	city, err := uc.cityRepo.FindByID(ctx, req.CityID)
-	if err != nil {
-		return nil, utils.NewNotFoundError("city not found")
-	}
-	commodityLand, err := uc.landCommodityRepo.FindByID(ctx, req.LandCommodityID)
-	if err != nil {
-		return nil, utils.NewNotFoundError("land commodity not found")
-	}
+	harvest := domain.Harvest{}
+	err := uc.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		logrus.Log.Info("starting create harvest transaction")
 
-	parseDate, err := time.Parse("2006-01-02", req.HarvestDate)
-	if err != nil {
-		return nil, utils.NewBadRequestError("harvest date format is invalid")
-	}
+		commodityLand, err := uc.landCommodityRepo.FindByID(txCtx, req.LandCommodityID)
+		if err != nil {
+			return utils.NewNotFoundError("land commodity not found")
+		}
 
-	harvest.CityID = city.ID
-	harvest.LandCommodityID = commodityLand.ID
-	harvest.Quantity = req.Quantity
-	harvest.Unit = req.Unit
-	harvest.HarvestDate = parseDate
-	harvest.ID = uuid.New()
+		parseDate, err := time.Parse("2006-01-02", req.HarvestDate)
+		if err != nil {
+			return utils.NewBadRequestError("harvest date format is invalid")
+		}
 
-	err = uc.harvestRepo.Create(ctx, &harvest)
+		harvest.LandCommodityID = commodityLand.ID
+		harvest.Quantity = req.Quantity
+		harvest.Unit = req.Unit
+		harvest.HarvestDate = parseDate
+		harvest.ID = uuid.New()
+
+		err = uc.harvestRepo.Create(txCtx, &harvest)
+		if err != nil {
+			return utils.NewInternalError(err.Error())
+		}
+
+		commodityLand.Harvested = true
+		err = uc.landCommodityRepo.Update(txCtx, commodityLand.ID, commodityLand)
+
+		createdHarvest, err := uc.harvestRepo.FindByID(txCtx, harvest.ID)
+		if err != nil {
+			return utils.NewInternalError(err.Error())
+		}
+
+		err = uc.cache.DeleteByPattern(txCtx, "harvest")
+		if err != nil {
+			return utils.NewInternalError(err.Error())
+		}
+
+		harvest = *createdHarvest
+		return nil
+	})
+	logrus.Log.Info("harvest transaction completed")
 	if err != nil {
 		return nil, utils.NewInternalError(err.Error())
 	}
-
-	createdHarvest, err := uc.harvestRepo.FindByID(ctx, harvest.ID)
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	err = uc.cache.DeleteByPattern(ctx, "harvest")
-	if err != nil {
-		return nil, utils.NewInternalError(err.Error())
-	}
-
-	return createdHarvest, nil
+	return &harvest, nil
 }
 
 func (uc *HarvestUsecaseImpl) GetAllHarvest(ctx context.Context) ([]*domain.Harvest, error) {

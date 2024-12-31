@@ -78,7 +78,6 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 		Harvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        quantity,
 			Unit:            unit,
 			HarvestDate:     harvestDate,
@@ -87,7 +86,6 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
-				CityID:          cityID,
 				Quantity:        quantity,
 				Unit:            unit,
 				HarvestDate:     harvestDate,
@@ -96,7 +94,6 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 		UpdatedHarvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        quantity + 1,
 			Unit:            unit,
 			HarvestDate:     harvestDate,

@@ -19,6 +19,6 @@ type LandCommodityRepository interface {
 	Restore(ctx context.Context, id uuid.UUID) error
 	FindDeletedByID(ctx context.Context, id uuid.UUID) (*domain.LandCommodity, error)
 	SumLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error)
-	SumLandAreaByCommodityID(ctx context.Context, id uuid.UUID) (float64, error)
+	SumNotHarvestedLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error)
 	SumAllLandCommodityArea(ctx context.Context, params *dto.LandAreaParamsDTO) (float64, error)
 }

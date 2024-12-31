@@ -110,6 +110,18 @@ func (u *AuthUsecaseImpl) VerifyOTP(ctx context.Context, req *dto.AuthVerifyDTO)
 		return utils.NewBadRequestError("Invalid OTP")
 	}
 
+	user, err := u.userRepo.FindByEmail(ctx, req.Email)
+	if err != nil {
+		return utils.NewInternalError("Failed to find user")
+	}
+
+	user.Verified = true
+
+	err = u.userRepo.Update(ctx, user.ID, user)
+	if err != nil {
+		return utils.NewInternalError("Failed to update user")
+	}
+
 	// Hapus OTP setelah diverifikasi
 	err = u.cache.Delete(ctx, fmt.Sprintf("otp:%s", req.Email))
 	if err != nil {

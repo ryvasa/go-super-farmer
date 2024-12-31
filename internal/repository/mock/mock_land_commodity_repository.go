@@ -169,21 +169,6 @@ func (mr *MockLandCommodityRepositoryMockRecorder) SumAllLandCommodityArea(ctx, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SumAllLandCommodityArea", reflect.TypeOf((*MockLandCommodityRepository)(nil).SumAllLandCommodityArea), ctx, params)
 }
 
-// SumLandAreaByCommodityID mocks base method.
-func (m *MockLandCommodityRepository) SumLandAreaByCommodityID(ctx context.Context, id uuid.UUID) (float64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SumLandAreaByCommodityID", ctx, id)
-	ret0, _ := ret[0].(float64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SumLandAreaByCommodityID indicates an expected call of SumLandAreaByCommodityID.
-func (mr *MockLandCommodityRepositoryMockRecorder) SumLandAreaByCommodityID(ctx, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SumLandAreaByCommodityID", reflect.TypeOf((*MockLandCommodityRepository)(nil).SumLandAreaByCommodityID), ctx, id)
-}
-
 // SumLandAreaByLandID mocks base method.
 func (m *MockLandCommodityRepository) SumLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error) {
 	m.ctrl.T.Helper()
@@ -197,6 +182,21 @@ func (m *MockLandCommodityRepository) SumLandAreaByLandID(ctx context.Context, i
 func (mr *MockLandCommodityRepositoryMockRecorder) SumLandAreaByLandID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SumLandAreaByLandID", reflect.TypeOf((*MockLandCommodityRepository)(nil).SumLandAreaByLandID), ctx, id)
+}
+
+// SumNotHarvestedLandAreaByLandID mocks base method.
+func (m *MockLandCommodityRepository) SumNotHarvestedLandAreaByLandID(ctx context.Context, id uuid.UUID) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SumNotHarvestedLandAreaByLandID", ctx, id)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SumNotHarvestedLandAreaByLandID indicates an expected call of SumNotHarvestedLandAreaByLandID.
+func (mr *MockLandCommodityRepositoryMockRecorder) SumNotHarvestedLandAreaByLandID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SumNotHarvestedLandAreaByLandID", reflect.TypeOf((*MockLandCommodityRepository)(nil).SumNotHarvestedLandAreaByLandID), ctx, id)
 }
 
 // Update mocks base method.

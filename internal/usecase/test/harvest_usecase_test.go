@@ -9,13 +9,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/env"
-	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	mock_repo "github.com/ryvasa/go-super-farmer/internal/repository/mock"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	mock_pkg "github.com/ryvasa/go-super-farmer/pkg/mock"
 	"github.com/ryvasa/go-super-farmer/utils"
 	mock_utils "github.com/ryvasa/go-super-farmer/utils/mock"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +28,7 @@ type HarvestRepoMock struct {
 	RabbitMQ      *mock_pkg.MockRabbitMQ
 	Cache         *mock_pkg.MockCache
 	Glob          *mock_utils.MockGlobFunc
+	TxManager     *mock_pkg.MockTransactionManager
 }
 
 type HarvestIDs struct {
@@ -76,7 +77,6 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 		Harvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        float64(100),
 			Unit:            "kg",
 			HarvestDate:     date,
@@ -85,7 +85,6 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 			{
 				ID:              harvestID,
 				LandCommodityID: landCommodityID,
-				CityID:          cityID,
 				Quantity:        float64(100),
 				Unit:            "kg",
 				HarvestDate:     date,
@@ -94,7 +93,6 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 		UpdatedHarvest: &domain.Harvest{
 			ID:              harvestID,
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        float64(99),
 			Unit:            "kg",
 			HarvestDate:     date,
@@ -120,7 +118,6 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 	dto := &HarvestDTOMock{
 		Create: &dto.HarvestCreateDTO{
 			LandCommodityID: landCommodityID,
-			CityID:          cityID,
 			Quantity:        float64(100),
 			Unit:            "kg",
 			HarvestDate:     "2022-01-01",
@@ -146,7 +143,9 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 	cache := mock_pkg.NewMockCache(ctrl)
 	glob := mock_utils.NewMockGlobFunc(ctrl)
 	env := env.Env{}
-	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, glob, &env)
+	txRepo := mock_pkg.NewMockTransactionManager(ctrl)
+
+	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, glob, &env, txRepo)
 	ctx := context.TODO()
 
 	repo := &HarvestRepoMock{Harvest: harvestRepo, City: cityRepo, LandCommodity: landCommodityRepo, RabbitMQ: rabbitMQ, Cache: cache, Glob: glob}
@@ -175,7 +174,6 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ids.HarvestID, resp.ID)
 		assert.Equal(t, ids.LandCommodityID, resp.LandCommodityID)
-		assert.Equal(t, ids.CityID, resp.CityID)
 		assert.Equal(t, float64(100), resp.Quantity)
 		assert.Equal(t, "kg", resp.Unit)
 		assert.Equal(t, domains.Harvest.HarvestDate, resp.HarvestDate)
@@ -186,7 +184,6 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	t.Run("should return error validation error", func(t *testing.T) {
 		resp, err := uc.CreateHarvest(ctx, &dto.HarvestCreateDTO{
 			LandCommodityID: ids.LandCommodityID,
-			CityID:          ids.CityID,
 			Quantity:        -10,
 		})
 
@@ -257,7 +254,6 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 
 		resp, err := uc.CreateHarvest(ctx, &dto.HarvestCreateDTO{
 			LandCommodityID: ids.LandCommodityID,
-			CityID:          ids.CityID,
 			HarvestDate:     "string",
 			Quantity:        float64(10),
 			Unit:            "kg",
