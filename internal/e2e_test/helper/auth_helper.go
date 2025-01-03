@@ -14,13 +14,15 @@ type AuthHelper interface {
 }
 
 type AuthHelperImpl struct {
+	dbHelper DBHelper
 }
 
-func NewAuthHelper() AuthHelper {
-	return &AuthHelperImpl{}
+func NewAuthHelper(dbHelper DBHelper) AuthHelper {
+	return &AuthHelperImpl{dbHelper}
 }
 
 func (e *AuthHelperImpl) GetTokenAdmin() string {
+	e.dbHelper.CreateRole()
 	baseURL := "http://localhost:8080/api"
 
 	// Mock request body
@@ -56,6 +58,8 @@ func (e *AuthHelperImpl) GetTokenAdmin() string {
 }
 
 func (e *AuthHelperImpl) GetTokenFarmer() string {
+	e.dbHelper.CreateRole()
+
 	baseURL := "http://localhost:8080/api"
 
 	// Mock request body

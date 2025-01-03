@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -13,6 +13,7 @@ import (
 type DBHelper interface {
 	TeardownTestDB()
 	CreateUser(id uuid.UUID, name string, email string, password string) error
+	CreateRole() error
 	FindUserByEmail(email string) (*domain.User, error)
 	DeleteUser(id uuid.UUID) error
 }
@@ -72,10 +73,36 @@ func (e *DBHelperImpl) TeardownTestDB() {
 		panic(err) // Atau penanganan error yang lebih sesuai
 	}
 
+	err = tx.Exec("DELETE FROM roles").Error
+	if err != nil {
+		tx.Rollback()
+		panic(err) // Atau penanganan error yang lebih sesuai
+	}
+
 	tx.Commit()
 }
 
+func (e *DBHelperImpl) CreateRole() error {
+	db, err := connectDB()
+	if err != nil {
+		return err
+	}
+	roles := domain.Role{
+		Name: "Admin",
+		ID:   1,
+	}
+	err = db.Create(&roles).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *DBHelperImpl) CreateUser(id uuid.UUID, name string, email string, password string) error {
+	err := e.CreateRole()
+	if err != nil {
+		return err
+	}
 	db, err := connectDB()
 	if err != nil {
 		return err
