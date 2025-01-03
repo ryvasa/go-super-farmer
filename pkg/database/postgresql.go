@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
-	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

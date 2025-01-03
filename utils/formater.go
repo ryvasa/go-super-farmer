@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/ryvasa/go-super-farmer/service_api/model/domain"
-	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 )
 
 func UserDtoFormat(data *domain.User) *dto.UserResponseDTO {

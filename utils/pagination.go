@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/ryvasa/go-super-farmer/service_api/model/dto"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +25,7 @@ func GetPaginationParams(c *gin.Context) (*dto.PaginationDTO, error) {
 	return pagination, nil
 }
 
-func ApplyFilters(filter *dto.PaginationFilterDTO) func(db *gorm.DB) *gorm.DB {
+func ApplyFilters(filter *dto.ParamFilterDTO) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if filter.UserName != "" {
 			db = db.Where("name LIKE ?", "%"+filter.UserName+"%")

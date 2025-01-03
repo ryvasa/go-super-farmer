@@ -11,6 +11,7 @@ p, Admin, /api/demands*, *
 p, Admin, /api/supplies*, *
 p, Admin, /api/harvests*, *
 p, Admin, /api/sales*, *
+p, Admin, /api/forecasts*, *
 
 p, Farmer, /users/:id, PATCH
 p, Farmer, /users/:id/restore, DENY
@@ -25,3 +26,5 @@ p, Farmer, /api/cities*, GET
 p, Farmer, /api/demands*, GET
 p, Farmer, /api/supplies*, GET
 p, Farmer, /api/harvests/*, GET
+p, Farmer, /api/sales*, GET
+p, Farmer, /api/forecasts*, GET
