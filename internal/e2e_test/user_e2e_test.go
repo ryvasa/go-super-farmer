@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/internal/e2e_test/helper"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,6 +28,7 @@ func TestRegisterUserE2E(t *testing.T) {
 
 	t.Run("should register user successfully", func(t *testing.T) {
 		defer DBHelper.TeardownTestDB()
+		DBHelper.CreateRole()
 
 		// Kirim request ke server nyata
 		resp, err := http.Post(baseURL+"/users", "application/json", bytes.NewBuffer(requestBody))
@@ -58,6 +59,8 @@ func TestRegisterUserE2E(t *testing.T) {
 
 	t.Run("should return error if email already exists", func(t *testing.T) {
 		defer DBHelper.TeardownTestDB()
+		DBHelper.CreateRole()
+
 		id := uuid.New()
 		DBHelper.CreateUser(id, "John Doe", "john.doe@example.com", "securepassword")
 		// Kirim request ke server nyata
@@ -88,6 +91,7 @@ func TestRegisterUserE2E(t *testing.T) {
 
 	t.Run("should return error if request body is invalid", func(t *testing.T) {
 		defer DBHelper.TeardownTestDB()
+		DBHelper.CreateRole()
 
 		// Kirim request ke server nyata
 		resp, err := http.Post(baseURL+"/users", "application/json", bytes.NewBuffer([]byte("invalid request body")))
@@ -116,14 +120,16 @@ func TestRegisterUserE2E(t *testing.T) {
 func TestGetAllUsersE2E(t *testing.T) {
 	DBHelper := helper.NewDBHelper()
 
-	autHelper := helper.NewAuthHelper()
+	autHelper := helper.NewAuthHelper(DBHelper)
 	baseURL := "http://localhost:8080/api"
-
+	logrus.Log.Info("args ...interface{}")
 	t.Run("should get all users successfully", func(t *testing.T) {
 		defer DBHelper.TeardownTestDB()
+		logrus.Log.Info("haha")
 
 		// Dapatkan token dari helper
 		token := autHelper.GetTokenAdmin()
+		logrus.Log.Info("haha")
 
 		// Setup test data
 		id := uuid.New()
@@ -151,7 +157,7 @@ func TestGetAllUsersE2E(t *testing.T) {
 		assert.True(t, responseBody.Success)
 
 		// Validasi data pengguna di dalam pagination
-		assert.Equal(t, 2, len(responseBody.Data.Data))
+		assert.Equal(t, 1, len(responseBody.Data.Data))
 		user := responseBody.Data.Data[0]
 		assert.Equal(t, "Jane Doe", user.Name)
 		assert.Equal(t, "jane.doe@example.com", user.Email)
@@ -224,7 +230,7 @@ func TestGetAllUsersE2E(t *testing.T) {
 func TestGetUserByIDE2E(t *testing.T) {
 	DBHelper := helper.NewDBHelper()
 
-	autHelper := helper.NewAuthHelper()
+	autHelper := helper.NewAuthHelper(DBHelper)
 	baseURL := "http://localhost:8080/api"
 
 	t.Run("should get user successfully", func(t *testing.T) {
@@ -307,7 +313,7 @@ func TestGetUserByIDE2E(t *testing.T) {
 func TestDeleteUserE2E(t *testing.T) {
 	DBHelper := helper.NewDBHelper()
 
-	autHelper := helper.NewAuthHelper()
+	autHelper := helper.NewAuthHelper(DBHelper)
 	baseURL := "http://localhost:8080/api"
 
 	t.Run("should delete user successfully", func(t *testing.T) {
@@ -409,7 +415,7 @@ func TestDeleteUserE2E(t *testing.T) {
 func TestUpdateUserE2E(t *testing.T) {
 	DBHelper := helper.NewDBHelper()
 
-	autHelper := helper.NewAuthHelper()
+	autHelper := helper.NewAuthHelper(DBHelper)
 	baseURL := "http://localhost:8080/api"
 
 	t.Run("should update user successfully", func(t *testing.T) {
@@ -514,7 +520,7 @@ func TestUpdateUserE2E(t *testing.T) {
 func TestRestoreUserE2E(t *testing.T) {
 	DBHelper := helper.NewDBHelper()
 
-	autHelper := helper.NewAuthHelper()
+	autHelper := helper.NewAuthHelper(DBHelper)
 	baseURL := "http://localhost:8080/api"
 
 	t.Run("should restore user successfully", func(t *testing.T) {
