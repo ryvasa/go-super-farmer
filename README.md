@@ -31,7 +31,8 @@ Directory Structure
 ├── docker compose.yml
 ├── go-super-farmer-api
 ├── go-super-farmer-report-service
-└── go-super-farmer-mail-service
+├── go-super-farmer-mail-service
+└── predict-model
 ```
 
 3. Copy the docker compose.yml file
