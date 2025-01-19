@@ -10,7 +10,6 @@ import (
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
 	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -37,8 +36,6 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req *dto.AuthDTO) (*dto.Aut
 	if err != nil {
 		return nil, utils.NewBadRequestError("invalid password or email")
 	}
-
-	logrus.Log.Infof("user: %+v", user)
 
 	res := u.hash.ValidatePassword(req.Password, user.Password)
 	if res == false {
