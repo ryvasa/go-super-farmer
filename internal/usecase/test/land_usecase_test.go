@@ -77,6 +77,7 @@ func LandUsecaseUtils(t *testing.T) (*LandIDs, *LandMocks, *LandDTOMock, *LandRe
 		Create: &dto.LandCreateDTO{
 			LandArea:    100,
 			Certificate: "cert",
+			CityID:      1,
 		},
 		Update: &dto.LandUpdateDTO{
 			LandArea:    99,
