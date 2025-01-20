@@ -62,6 +62,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 			CommodityID: commodityID,
 			LandID:      landID,
 			LandArea:    float64(100),
+			Harvested:   false,
 		},
 		LandCommodities: []*domain.LandCommodity{
 			{
@@ -69,6 +70,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 				CommodityID: commodityID,
 				LandID:      landID,
 				LandArea:    float64(100),
+				Harvested:   false,
 			},
 			{
 				ID:          landCommodityID,
@@ -82,6 +84,7 @@ func LandCommodityUtils(t *testing.T) (*LandCommodityIDs, *LandCommodityMocks, *
 			CommodityID: commodityID,
 			LandID:      landID,
 			LandArea:    float64(200),
+			Harvested:   true,
 		},
 		Land: &domain.Land{
 			ID:       landID,
@@ -132,7 +135,7 @@ func TestLandCommodityUsecase_CreateLandCommodity(t *testing.T) {
 
 		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(10), nil).Times(1)
+		repo.LandCommodity.EXPECT().SumNotHarvestedLandAreaByLandID(ctx, ids.LandID).Return(float64(10), nil).Times(1)
 
 		repo.LandCommodity.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, l *domain.LandCommodity) error {
 			l.ID = ids.LandCommodityID
@@ -154,7 +157,7 @@ func TestLandCommodityUsecase_CreateLandCommodity(t *testing.T) {
 
 		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(1000), nil).Times(1)
+		repo.LandCommodity.EXPECT().SumNotHarvestedLandAreaByLandID(ctx, ids.LandID).Return(float64(1000), nil).Times(1)
 
 		req := &dto.LandCommodityCreateDTO{LandID: ids.LandID, CommodityID: ids.CommodityID, LandArea: float64(100)}
 		resp, err := uc.CreateLandCommodity(ctx, req)
@@ -335,6 +338,7 @@ func TestLandCommodityUsecase_GetAllLandCommodity(t *testing.T) {
 	})
 }
 
+// TODO: fix this shit
 func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 	ids, mocks, dtos, repo, uc, ctx := LandCommodityUtils(t)
 
@@ -367,6 +371,7 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 	})
 
 	t.Run("should return error when commodity not found", func(t *testing.T) {
+		mocks.LandCommodity.Harvested = false
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(mocks.LandCommodity, nil).Times(1)
 
 		repo.Commodity.EXPECT().FindByID(ctx, ids.CommodityID).Return(nil, utils.NewNotFoundError("commodity not found")).Times(1)
@@ -399,7 +404,7 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 
 		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(1000), nil).Times(1)
+		repo.LandCommodity.EXPECT().SumNotHarvestedLandAreaByLandID(ctx, ids.LandID).Return(float64(1000), nil).Times(1)
 
 		resp, err := uc.UpdateLandCommodity(ctx, ids.LandCommodityID, dtos.Update)
 
@@ -415,7 +420,7 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 
 		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
+		repo.LandCommodity.EXPECT().SumNotHarvestedLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
 
 		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, mocks.LandCommodity).Return(utils.NewInternalError("internal error")).Times(1)
 
@@ -434,7 +439,7 @@ func TestLandCommodityUsecase_UpdateLandCommodity(t *testing.T) {
 
 		repo.Land.EXPECT().FindByID(ctx, ids.LandID).Return(mocks.Land, nil).Times(1)
 
-		repo.LandCommodity.EXPECT().SumLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
+		repo.LandCommodity.EXPECT().SumNotHarvestedLandAreaByLandID(ctx, ids.LandID).Return(float64(100), nil).Times(1)
 
 		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, mocks.LandCommodity).Return(nil).Times(1)
 
