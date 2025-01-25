@@ -9,11 +9,11 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/ryvasa/go-super-farmer/internal/model/domain"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -85,12 +85,12 @@ func TestUserRepository_Create(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `INSERT INTO "users" ("id","name","email","password","role_id","phone","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+	expectedSQL := `INSERT INTO "users" ("id","name","email","password","role_id","phone","verified","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", false, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -102,7 +102,7 @@ func TestUserRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.UserID, "user name", "user@email.com", "password", 1, "123456789", false, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
