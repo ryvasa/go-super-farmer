@@ -20,6 +20,7 @@ import (
 type LandIDs struct {
 	LandID uuid.UUID
 	UserID uuid.UUID
+	CityID int64
 }
 
 type LandMockRows struct {
@@ -39,19 +40,21 @@ func LandRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.L
 
 	landID := uuid.New()
 	userID := uuid.New()
+	cityID := 1
 
 	ids := LandIDs{
 		LandID: landID,
 		UserID: userID,
+		CityID: int64(cityID),
 	}
 
 	rows := LandMockRows{
-		Land: sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).
-			AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now()),
+		Land: sqlmock.NewRows([]string{"id", "user_id", "city_id", "land_area", "certificate", "created_at", "updated_at"}).
+			AddRow(landID, userID, int64(1), float64(100), "certificate", time.Now(), time.Now()),
 
-		Lands: sqlmock.NewRows([]string{"id", "user_id", "land_area", "certificate", "created_at", "updated_at"}).
-			AddRow(landID, userID, float64(100), "certificate", time.Now(), time.Now()).
-			AddRow(uuid.New(), userID, float64(100), "certificate", time.Now(), time.Now()),
+		Lands: sqlmock.NewRows([]string{"id", "user_id", "city_id", "land_area", "certificate", "created_at", "updated_at"}).
+			AddRow(landID, userID, int64(1), float64(100), "certificate", time.Now(), time.Now()).
+			AddRow(uuid.New(), userID, int64(1), float64(100), "certificate", time.Now(), time.Now()),
 	}
 
 	domains := LandMocDomain{
@@ -60,6 +63,7 @@ func LandRepositorySetup(t *testing.T) (*database.MockDB, repository_interface.L
 			UserID:      userID,
 			LandArea:    float64(100),
 			Certificate: "certificate",
+			CityID:      int64(1),
 		},
 	}
 
@@ -71,12 +75,12 @@ func TestLandRepository_Create(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `INSERT INTO "lands" ("id","user_id","land_area","unit","certificate","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
+	expectedSQL := `INSERT INTO "lands" ("id","user_id","city_id","land_area","unit","certificate","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.LandID, ids.UserID, ids.CityID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -88,7 +92,7 @@ func TestLandRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WithArgs(ids.LandID, ids.UserID, ids.CityID, float64(100), "ha", "certificate", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -210,12 +214,12 @@ func TestLandRepository_Update(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `UPDATE "lands" SET "id"=$1,"user_id"=$2,"land_area"=$3,"certificate"=$4,"updated_at"=$5 WHERE id = $6 AND "lands"."deleted_at" IS NULL`
+	expectedSQL := `UPDATE "lands" SET "id"=$1,"user_id"=$2,"city_id"=$3,"land_area"=$4,"certificate"=$5,"updated_at"=$6 WHERE id = $7 AND "lands"."deleted_at" IS NULL`
 
 	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
+			WithArgs(ids.LandID, ids.UserID, ids.CityID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -227,7 +231,7 @@ func TestLandRepository_Update(t *testing.T) {
 	t.Run("should return error when update failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
+			WithArgs(ids.LandID, ids.UserID, ids.CityID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -240,7 +244,7 @@ func TestLandRepository_Update(t *testing.T) {
 	t.Run("should return error when update not found", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandID, ids.UserID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
+			WithArgs(ids.LandID, ids.UserID, ids.CityID, float64(100), "certificate", sqlmock.AnyArg(), ids.LandID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mockDB.Mock.ExpectRollback()
 

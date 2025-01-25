@@ -89,12 +89,12 @@ func TestHarvestRepository_Create(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `INSERT INTO "harvests" ("id","land_commodity_id","city_id","quantity","unit","harvest_date","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+	expectedSQL := `INSERT INTO "harvests" ("id","land_commodity_id","quantity","unit","harvest_date","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.HarvestID, ids.LandCommodityID, ids.CityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.HarvestID, ids.LandCommodityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -106,7 +106,7 @@ func TestHarvestRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.HarvestID, ids.LandCommodityID, ids.CityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.HarvestID, ids.LandCommodityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -257,7 +257,7 @@ func TestHarvestRepository_FindByLandID(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL1 := `SELECT "harvests"."id","harvests"."land_commodity_id","harvests"."city_id","harvests"."quantity","harvests"."unit","harvests"."harvest_date","harvests"."created_at","harvests"."updated_at","harvests"."deleted_at" FROM "harvests" JOIN land_commodities ON harvests.land_commodity_id = land_commodities.id WHERE land_commodities.land_id = $1 AND "harvests"."deleted_at" IS NULL`
+	expectedSQL1 := `SELECT "harvests"."id","harvests"."land_commodity_id","harvests"."quantity","harvests"."unit","harvests"."harvest_date","harvests"."created_at","harvests"."updated_at","harvests"."deleted_at" FROM "harvests" JOIN land_commodities ON harvests.land_commodity_id = land_commodities.id WHERE land_commodities.land_id = $1 AND "harvests"."deleted_at" IS NULL`
 
 	expectedSQL2 := `SELECT * FROM "land_commodities" WHERE "land_commodities"."id" = $1 AND "land_commodities"."deleted_at" IS NULL`
 
@@ -296,7 +296,7 @@ func TestHarvestRepository_FindByCommodityID(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL1 := `SELECT "harvests"."id","harvests"."land_commodity_id","harvests"."city_id","harvests"."quantity","harvests"."unit","harvests"."harvest_date","harvests"."created_at","harvests"."updated_at","harvests"."deleted_at" FROM "harvests" JOIN land_commodities ON harvests.land_commodity_id = land_commodities.id WHERE land_commodities.commodity_id = $1 AND "harvests"."deleted_at" IS NULL`
+	expectedSQL1 := `SELECT "harvests"."id","harvests"."land_commodity_id","harvests"."quantity","harvests"."unit","harvests"."harvest_date","harvests"."created_at","harvests"."updated_at","harvests"."deleted_at" FROM "harvests" JOIN land_commodities ON harvests.land_commodity_id = land_commodities.id WHERE land_commodities.commodity_id = $1 AND "harvests"."deleted_at" IS NULL`
 
 	expectedSQL2 := `SELECT * FROM "land_commodities" WHERE "land_commodities"."id" = $1 AND "land_commodities"."deleted_at" IS NULL`
 
@@ -335,12 +335,12 @@ func TestHarvestRepository_Update(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `UPDATE "harvests" SET "id"=$1,"land_commodity_id"=$2,"city_id"=$3,"quantity"=$4,"unit"=$5,"harvest_date"=$6,"updated_at"=$7 WHERE id = $8 AND "harvests"."deleted_at" IS NULL`
+	expectedSQL := `UPDATE "harvests" SET "id"=$1,"land_commodity_id"=$2,"quantity"=$3,"unit"=$4,"harvest_date"=$5,"updated_at"=$6 WHERE id = $7 AND "harvests"."deleted_at" IS NULL`
 
 	t.Run("should not return error when update successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.HarvestID, ids.LandCommodityID, ids.CityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
+			WithArgs(ids.HarvestID, ids.LandCommodityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -352,7 +352,7 @@ func TestHarvestRepository_Update(t *testing.T) {
 	t.Run("should return error when update failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.HarvestID, ids.LandCommodityID, ids.CityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
+			WithArgs(ids.HarvestID, ids.LandCommodityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -365,7 +365,7 @@ func TestHarvestRepository_Update(t *testing.T) {
 	t.Run("should return error when update not found", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.HarvestID, ids.LandCommodityID, ids.CityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
+			WithArgs(ids.HarvestID, ids.LandCommodityID, float64(100), "kg", sqlmock.AnyArg(), sqlmock.AnyArg(), ids.HarvestID).
 			WillReturnError(gorm.ErrRecordNotFound)
 		mockDB.Mock.ExpectRollback()
 
