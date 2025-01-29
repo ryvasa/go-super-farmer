@@ -1,6 +1,8 @@
 # go-super-farmer
 
-## Environment Variables
+## Single Service
+
+### Environment Variables
 
 Create a .env file in the root directory of the project and add the following variables:
 
@@ -27,21 +29,21 @@ REPORT_PORT=8081
 SERVER_PORT=8080
 ```
 
-## Build
+### Build
 
-### With Docker
+#### With Docker
 
 ```bash
 docker build -t go-super-farmer .
 ```
 
-### Without Docker
+#### Without Docker
 
 ```bash
 go build -o go-super-farmer .
 ```
 
-## Run
+### Run
 
 ```bash
 ./go-super-farmer
