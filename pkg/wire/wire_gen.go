@@ -20,6 +20,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/grpc"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -69,7 +70,11 @@ func InitializeApp() (*app.App, error) {
 	transactionManager := transaction.NewTransactionManager(db)
 	globFunc := utils.NewGlobFunc()
 	priceUsecase := usecase_implementation.NewPriceUsecase(priceRepository, priceHistoryRepository, cityRepository, commodityRepository, rabbitMQ, transactionManager, cacheCache, globFunc, envEnv)
-	priceHandler := handler_implementation.NewPriceHandler(priceUsecase)
+	reportServiceClient, err := grpc.InitGRPCClient(envEnv)
+	if err != nil {
+		return nil, err
+	}
+	priceHandler := handler_implementation.NewPriceHandler(priceUsecase, reportServiceClient)
 	provinceRepository := repository_implementation.NewProvinceRepository(db)
 	provinceUsecase := usecase_implementation.NewProvinceUsecase(provinceRepository)
 	provinceHandler := handler_implementation.NewProvinceHandler(provinceUsecase)
@@ -85,7 +90,7 @@ func InitializeApp() (*app.App, error) {
 	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
 	harvestRepository := repository_implementation.NewHarvestRepository(db)
 	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, cityRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc, envEnv, transactionManager)
-	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase)
+	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase, reportServiceClient)
 	saleRepository := repository_implementation.NewSaleRepository(baseRepository)
 	saleUsecase := usecase_implementation.NewSaleUsecase(saleRepository, cityRepository, commodityRepository, cacheCache)
 	saleHandler := handler_implementation.NewSaleHandler(saleUsecase)
@@ -93,7 +98,7 @@ func InitializeApp() (*app.App, error) {
 	forecastsHandler := handler_implementation.NewForecastsHandler(forecastsUsecase)
 	handlers := handler.NewHandlers(roleHandler, userHandler, landHandler, authHandler, commodityHandler, landCommodityHandler, priceHandler, provinceHandler, cityHandler, demandHandler, supplyHandler, harvestHandler, saleHandler, forecastsHandler)
 	engine := route.NewRouter(handlers)
-	appApp := app.NewApp(engine, envEnv, db, rabbitMQ)
+	appApp := app.NewApp(engine, envEnv, db, rabbitMQ, reportServiceClient)
 	return appApp, nil
 }
 

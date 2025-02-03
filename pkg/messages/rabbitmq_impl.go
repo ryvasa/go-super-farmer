@@ -53,19 +53,6 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 	}
 
 	err = ch.ExchangeDeclare(
-		"report-exchange", // name
-		"direct",          // type
-		true,              // durable
-		false,             // auto-deleted
-		false,             // internal
-		false,             // no-wait
-		nil,               // arguments
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ch.ExchangeDeclare(
 		"mail-exchange", // name
 		"direct",        // type
 		true,            // durable
@@ -104,28 +91,6 @@ func NewRabbitMQ(env *env.Env) (RabbitMQ, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	err = ch.QueueBind(
-		"price-history-queue", // queue name
-		"price-history",       // routing key
-		"report-exchange",     // exchange
-		false,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ch.QueueBind(
-		"harvest-queue",   // queue name
-		"harvest",         // routing key
-		"report-exchange", // exchange
-		false,
-		nil,
-	)
-	if err != nil {
-		return nil, err
 	}
 
 	err = ch.QueueBind(
