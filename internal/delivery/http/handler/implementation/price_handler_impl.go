@@ -1,25 +1,29 @@
 package handler_implementation
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
+	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type PriceHandlerImpl struct {
-	uc usecase_interface.PriceUsecase
+	uc           usecase_interface.PriceUsecase
+	reportClient pb.ReportServiceClient
 }
 
-func NewPriceHandler(uc usecase_interface.PriceUsecase) handler_interface.PriceHandler {
-	return &PriceHandlerImpl{uc}
+func NewPriceHandler(uc usecase_interface.PriceUsecase, reportClient pb.ReportServiceClient) handler_interface.PriceHandler {
+	return &PriceHandlerImpl{uc, reportClient}
 }
 
 func (h *PriceHandlerImpl) CreatePrice(c *gin.Context) {
@@ -182,49 +186,102 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndCityID(c *gin.Context
 	utils.SuccessResponse(c, http.StatusOK, priceHistory)
 }
 
+// TODO: change to gRPC
 func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Context) {
-	logrus.Log.Info("Downloading price history")
-	priceParams := &dto.PriceParamsDTO{}
+	// logrus.Log.Info("Downloading price history")
+	// priceParams := &dto.PriceParamsDTO{}
 
-	startDateStr := c.Query("start_date")
-	if startDateStr != "" {
-		startDate, err := time.Parse("2006-01-02", startDateStr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		priceParams.StartDate = startDate
-	}
-	endDatestr := c.Query("end_date")
-	if endDatestr != "" {
-		endDate, err := time.Parse("2006-01-02", endDatestr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		priceParams.EndDate = endDate
-	}
+	// startDateStr := c.Query("start_date")
+	// if startDateStr != "" {
+	// 	startDate, err := time.Parse("2006-01-02", startDateStr)
+	// 	if err != nil {
+	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 		return
+	// 	}
+	// 	priceParams.StartDate = startDate
+	// }
+	// endDatestr := c.Query("end_date")
+	// if endDatestr != "" {
+	// 	endDate, err := time.Parse("2006-01-02", endDatestr)
+	// 	if err != nil {
+	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 		return
+	// 	}
+	// 	priceParams.EndDate = endDate
+	// }
 
+	// commodityID, err := uuid.Parse(c.Param("commodity_id"))
+	// if err != nil {
+	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 	return
+	// }
+	// priceParams.CommodityID = commodityID
+
+	// cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
+	// if err != nil {
+	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 	return
+	// }
+	// priceParams.CityID = cityID
+
+	// logrus.Log.Info("Calling download price history usecase")
+	// response, err := h.uc.DownloadPriceHistoryByCommodityIDAndCityID(c, priceParams)
+	// if err != nil {
+	// 	utils.ErrorResponse(c, err)
+	// 	return
+	// }
+	// utils.SuccessResponse(c, http.StatusOK, response)
+	// Parse request parameters
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid commodity id"))
 		return
 	}
-	priceParams.CommodityID = commodityID
 
 	cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
 	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid city id"))
 		return
 	}
-	priceParams.CityID = cityID
 
-	logrus.Log.Info("Calling download price history usecase")
-	response, err := h.uc.DownloadPriceHistoryByCommodityIDAndCityID(c, priceParams)
+	startDate, err := time.Parse("2006-01-02", c.Query("start_date"))
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid start date"))
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, response)
+
+	endDate, err := time.Parse("2006-01-02", c.Query("end_date"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid end date"))
+		return
+	}
+
+	// Prepare gRPC request
+	req := &pb.PriceParams{
+		CommodityId: commodityID.String(),
+		CityId:      cityID,
+		StartDate:   startDate.Format("2006-01-02"),
+		EndDate:     endDate.Format("2006-01-02"),
+	}
+	fmt.Printf("Type of req: %T\n", req)
+	// atau untuk field specific
+	fmt.Printf("Type of CommodityId: %T\n", req.CommodityId)
+	fmt.Printf("Type of CityId: %T\n", req.CityId)
+	fmt.Printf("Type of StartDate: %T\n", req.StartDate)
+	fmt.Printf("Type of EndDate: %T\n", req.EndDate)
+	logrus.Log.Info(req)
+	// Call report service
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.reportClient.GetReportPrice(ctx, req)
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewInternalError("failed to generate report"))
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"report_url": resp.ReportUrl,
+	})
 
 }

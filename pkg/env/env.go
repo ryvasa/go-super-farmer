@@ -47,6 +47,11 @@ type Env struct {
 		ModelPath  string
 		PolicyPath string
 	}
+
+	ReportService struct {
+		Host string
+		Port string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -91,11 +96,15 @@ func LoadEnv() (*Env, error) {
 	env.Email.Password = os.Getenv("EMAIL_PASSWORD")
 
 	// Report
-	env.Report.Port = os.Getenv("REPORT_PORT")
+	// env.Report.Port = os.Getenv("REPORT_PORT")
 
 	// Casbin
 	env.Casbin.ModelPath = os.Getenv("CASBIN_MODEL_PATH")
 	env.Casbin.PolicyPath = os.Getenv("CASBIN_POLICY_PATH")
+
+	// Report
+	env.ReportService.Host = os.Getenv("REPORT_SERVICE_HOST")
+	env.ReportService.Port = os.Getenv("REPORT_SERVICE_Port")
 
 	return env, nil
 }

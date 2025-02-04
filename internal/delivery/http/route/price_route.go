@@ -24,5 +24,6 @@ func (r *PriceRoute) Register(public, protected *gin.RouterGroup) {
 	protected.PATCH("/prices/:id/restore", r.handler.RestorePrice)
 	public.GET("/prices/current/commodity/:commodity_id/city/:city_id", r.handler.GetPriceByCommodityIDAndCityID)
 	public.GET("/prices/history/commodity/:commodity_id/city/:city_id", r.handler.GetPricesHistoryByCommodityIDAndCityID)
+	// TODO: change to gRPC
 	public.GET("/prices/history/commodity/:commodity_id/city/:city_id/download", r.handler.DownloadPricesHistoryByCommodityIDAndCityID)
 }

@@ -6,18 +6,19 @@ package wire
 import (
 	"github.com/google/wire"
 	"github.com/ryvasa/go-super-farmer/cmd/app"
-	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
-	"github.com/ryvasa/go-super-farmer/pkg/database"
-	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
-	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
-	"github.com/ryvasa/go-super-farmer/pkg/env"
-	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/handler"
 	handler_implementation "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/implementation"
 	"github.com/ryvasa/go-super-farmer/internal/delivery/http/route"
 	"github.com/ryvasa/go-super-farmer/internal/repository"
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	usecase_implementation "github.com/ryvasa/go-super-farmer/internal/usecase/implementation"
+	"github.com/ryvasa/go-super-farmer/pkg/auth/token"
+	"github.com/ryvasa/go-super-farmer/pkg/database"
+	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
+	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
+	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/grpc"
+	"github.com/ryvasa/go-super-farmer/pkg/messages"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -107,6 +108,7 @@ func InitializeApp() (*app.App, error) {
 		env.LoadEnv,
 		handler.NewHandlers,
 		route.NewRouter,
+		grpc.InitGRPCClient,
 		app.NewApp,
 		databaseSet,
 		rabbitMQSet,
