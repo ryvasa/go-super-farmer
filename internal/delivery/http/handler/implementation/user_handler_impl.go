@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
@@ -116,7 +115,6 @@ func (h *UserHandlerImpl) RestoreUser(c *gin.Context) {
 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
 		return
 	}
-	logrus.Log.Info(id)
 	restoredUser, err := h.uc.RestoreUser(c, id)
 	if err != nil {
 		utils.ErrorResponse(c, err)

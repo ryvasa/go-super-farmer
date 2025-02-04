@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryvasa/go-super-farmer/internal/model/domain"
+	"github.com/ryvasa/go-super-farmer/internal/model/dto"
+	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
+	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database/cache"
 	"github.com/ryvasa/go-super-farmer/pkg/database/transaction"
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
-	"github.com/ryvasa/go-super-farmer/internal/model/domain"
-	"github.com/ryvasa/go-super-farmer/internal/model/dto"
-	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
-	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -328,6 +328,8 @@ func (u *PriceUsecaseImpl) GetPriceHistoryByCommodityIDAndCityID(ctx context.Con
 	return newHistoryPrices, nil
 }
 
+// TODO: change to gRPC
+// Todo: implement downloading price history from MinIO
 func (u *PriceUsecaseImpl) DownloadPriceHistoryByCommodityIDAndCityID(ctx context.Context, params *dto.PriceParamsDTO) (*dto.DownloadResponseDTO, error) {
 	_, err := u.priceRepo.FindByCommodityIDAndCityID(ctx, params.CommodityID, params.CityID)
 	if err != nil {

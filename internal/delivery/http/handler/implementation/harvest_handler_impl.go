@@ -1,6 +1,7 @@
 package handler_implementation
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,15 +11,18 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
 type HarvestHandlerImpl struct {
-	uc usecase_interface.HarvestUsecase
+	uc           usecase_interface.HarvestUsecase
+	reportClient pb.ReportServiceClient
 }
 
-func NewHarvestHandler(uc usecase_interface.HarvestUsecase) handler_interface.HarvestHandler {
-	return &HarvestHandlerImpl{uc}
+func NewHarvestHandler(uc usecase_interface.HarvestUsecase,
+	reportClient pb.ReportServiceClient) handler_interface.HarvestHandler {
+	return &HarvestHandlerImpl{uc, reportClient}
 }
 
 func (h *HarvestHandlerImpl) CreateHarvest(c *gin.Context) {
@@ -186,38 +190,78 @@ func (h *HarvestHandlerImpl) GetHarvestDeletedByID(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, harvest)
 }
 
+// TODO: change to gRPC
 func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
-	harvestParams := &dto.HarvestParamsDTO{}
+	// harvestParams := &dto.HarvestParamsDTO{}
 
-	startDateStr := c.Query("start_date")
-	if startDateStr != "" {
-		startDate, err := time.Parse("2006-01-02", startDateStr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		harvestParams.StartDate = startDate
-	}
-	endDatestr := c.Query("end_date")
-	if endDatestr != "" {
-		endDate, err := time.Parse("2006-01-02", endDatestr)
-		if err != nil {
-			utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-			return
-		}
-		harvestParams.EndDate = endDate
-	}
+	// startDateStr := c.Query("start_date")
+	// if startDateStr != "" {
+	// 	startDate, err := time.Parse("2006-01-02", startDateStr)
+	// 	if err != nil {
+	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 		return
+	// 	}
+	// 	harvestParams.StartDate = startDate
+	// }
+	// endDatestr := c.Query("end_date")
+	// if endDatestr != "" {
+	// 	endDate, err := time.Parse("2006-01-02", endDatestr)
+	// 	if err != nil {
+	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 		return
+	// 	}
+	// 	harvestParams.EndDate = endDate
+	// }
 
-	id, err := uuid.Parse(c.Param("id"))
+	// id, err := uuid.Parse(c.Param("id"))
+	// if err != nil {
+	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+	// 	return
+	// }
+	// harvestParams.LandCommodityID = id
+	// res, err := h.uc.DownloadHarvestByLandCommodityID(c, harvestParams)
+	// if err != nil {
+	// 	utils.ErrorResponse(c, err)
+	// 	return
+	// }
+	// utils.SuccessResponse(c, http.StatusOK, res)
+	// Parse request parameters
+	landCommodityID, err := uuid.Parse(c.Query("land_commodity_id"))
 	if err != nil {
-		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid land commodity id"))
 		return
 	}
-	harvestParams.LandCommodityID = id
-	res, err := h.uc.DownloadHarvestByLandCommodityID(c, harvestParams)
+
+	startDate, err := time.Parse("2006-01-02", c.Query("start_date"))
 	if err != nil {
-		utils.ErrorResponse(c, err)
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid start date"))
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, res)
+
+	endDate, err := time.Parse("2006-01-02", c.Query("end_date"))
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewBadRequestError("invalid end date"))
+		return
+	}
+
+	// Prepare gRPC request
+	req := &pb.HarvestParams{
+		LandCommodityId: landCommodityID.String(),
+		StartDate:       startDate.Format("2006-01-02"),
+		EndDate:         endDate.Format("2006-01-02"),
+	}
+
+	// Call report service
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.reportClient.GetReportHarvest(ctx, req)
+	if err != nil {
+		utils.ErrorResponse(c, utils.NewInternalError("failed to generate report"))
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"report_url": resp.ReportUrl,
+	})
 }

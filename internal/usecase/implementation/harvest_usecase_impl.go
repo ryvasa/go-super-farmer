@@ -251,6 +251,8 @@ func (uc *HarvestUsecaseImpl) GetHarvestDeletedByID(ctx context.Context, id uuid
 	return harvest, nil
 }
 
+// TODO: change to gRPC
+// Todo: implement downloading price history from MinIO
 func (uc *HarvestUsecaseImpl) DownloadHarvestByLandCommodityID(ctx context.Context, harvestParams *dto.HarvestParamsDTO) (*dto.DownloadResponseDTO, error) {
 	_, err := uc.harvestRepo.FindByLandCommodityID(ctx, harvestParams.LandCommodityID)
 	if err != nil {

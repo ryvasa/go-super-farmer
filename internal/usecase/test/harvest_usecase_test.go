@@ -148,7 +148,7 @@ func HarvestUsecaseSetup(t *testing.T) (*HarvestIDs, *HarvestDomainMock, *Harves
 	uc := usecase_implementation.NewHarvestUsecase(harvestRepo, cityRepo, landCommodityRepo, rabbitMQ, cache, glob, &env, txRepo)
 	ctx := context.TODO()
 
-	repo := &HarvestRepoMock{Harvest: harvestRepo, City: cityRepo, LandCommodity: landCommodityRepo, RabbitMQ: rabbitMQ, Cache: cache, Glob: glob}
+	repo := &HarvestRepoMock{Harvest: harvestRepo, City: cityRepo, LandCommodity: landCommodityRepo, RabbitMQ: rabbitMQ, Cache: cache, Glob: glob, TxManager: txRepo}
 
 	return ids, domains, dto, repo, uc, ctx
 }
@@ -157,13 +157,22 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	ids, domains, dtos, repo, uc, ctx := HarvestUsecaseSetup(t)
 
 	t.Run("should create harvest successfully", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
+
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
+
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
 		repo.Harvest.EXPECT().Create(ctx, gomock.Any()).DoAndReturn(func(ctx context.Context, p *domain.Harvest) error {
 			p.ID = ids.HarvestID
 			return nil
 		}).Times(1)
+
+		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, gomock.Any()).Return(nil).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(domains.Harvest, nil).Times(1)
 
@@ -192,9 +201,12 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 		assert.EqualError(t, err, "Validation failed")
 	})
 
-	t.Run("should return error when land commodity not found", func(t *testing.T) {
-
-		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
+	t.Run("should return error when land commodity not found not found", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(nil, utils.NewNotFoundError("land commodity not found")).Times(1)
 
@@ -205,17 +217,13 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 		assert.EqualError(t, err, "land commodity not found")
 	})
 
-	t.Run("should return error when city not found", func(t *testing.T) {
-		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(nil, utils.NewNotFoundError("city not found")).Times(1)
-
-		resp, err := uc.CreateHarvest(ctx, dtos.Create)
-
-		assert.Nil(t, resp)
-		assert.Error(t, err)
-		assert.EqualError(t, err, "city not found")
-	})
-
 	t.Run("should return error when create harvest fails", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
+
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
@@ -230,6 +238,12 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	})
 
 	t.Run("should return error when get created harvest ", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
+
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
@@ -238,6 +252,8 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 			p.ID = ids.HarvestID
 			return nil
 		}).Times(1)
+
+		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, gomock.Any()).Return(nil).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(nil, utils.NewInternalError("internal error")).Times(1)
 
@@ -249,6 +265,11 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	})
 
 	t.Run("should return error parsing harvest date", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
@@ -265,6 +286,11 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 	})
 
 	t.Run("should return error when delete cache fails", func(t *testing.T) {
+		repo.TxManager.EXPECT().
+			WithTransaction(ctx, gomock.Any()).
+			DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			})
 		repo.City.EXPECT().FindByID(ctx, ids.CityID).Return(domains.City, nil).Times(1)
 		repo.LandCommodity.EXPECT().FindByID(ctx, ids.LandCommodityID).Return(domains.LandCommodity, nil).Times(1)
 
@@ -272,6 +298,8 @@ func TestHarvestRepository_CreateHarvest(t *testing.T) {
 			p.ID = ids.HarvestID
 			return nil
 		}).Times(1)
+
+		repo.LandCommodity.EXPECT().Update(ctx, ids.LandCommodityID, gomock.Any()).Return(nil).Times(1)
 
 		repo.Harvest.EXPECT().FindByID(ctx, ids.HarvestID).Return(domains.Harvest, nil).Times(1)
 

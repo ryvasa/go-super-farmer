@@ -13,6 +13,7 @@ import (
 	repository_implementation "github.com/ryvasa/go-super-farmer/internal/repository/implementation"
 	repository_interface "github.com/ryvasa/go-super-farmer/internal/repository/interface"
 	"github.com/ryvasa/go-super-farmer/pkg/database"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -53,14 +54,14 @@ func LandCommodityRepositorySetup(t *testing.T) (*database.MockDB, repository_in
 	}
 
 	rows := LandCommodityMockRows{
-		LandCommodity: sqlmock.NewRows([]string{"id", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).
-			AddRow(landCommodityID, float64(100), commodityID, landID, time.Now(), time.Now()),
+		LandCommodity: sqlmock.NewRows([]string{"id", "harvested", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).
+			AddRow(landCommodityID, false, float64(100), commodityID, landID, time.Now(), time.Now()),
 
-		LandCommodities: sqlmock.NewRows([]string{"id", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).
-			AddRow(landCommodityID, float64(100), commodityID, landID, time.Now(), time.Now()).
-			AddRow(uuid.New(), float64(100), commodityID, landID, time.Now(), time.Now()),
+		LandCommodities: sqlmock.NewRows([]string{"id", "harvested", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}).
+			AddRow(landCommodityID, false, float64(100), commodityID, landID, time.Now(), time.Now()).
+			AddRow(uuid.New(), false, float64(100), commodityID, landID, time.Now(), time.Now()),
 
-		Notfound: sqlmock.NewRows([]string{"id", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}),
+		Notfound: sqlmock.NewRows([]string{"id", "harvested", "land_area", "commodity_id", "land_id", "created_at", "updated_at"}),
 
 		Commodity: sqlmock.NewRows([]string{"id", "name"}).
 			AddRow(commodityID, "commodity name"),
@@ -76,6 +77,7 @@ func LandCommodityRepositorySetup(t *testing.T) (*database.MockDB, repository_in
 			LandArea:    float64(100),
 			LandID:      landID,
 			CommodityID: commodityID,
+			Harvested:   false,
 		},
 	}
 
@@ -87,12 +89,12 @@ func TestLandCommodityRepository_Create(t *testing.T) {
 
 	defer mockDB.SqlDB.Close()
 
-	expectedSQL := `INSERT INTO "land_commodities" ("id","land_area","unit","commodity_id","land_id","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
+	expectedSQL := `INSERT INTO "land_commodities" ("id","land_area","unit","commodity_id","land_id","harvested","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
 	t.Run("should not return error when create successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, false, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mockDB.Mock.ExpectCommit()
 
@@ -104,7 +106,7 @@ func TestLandCommodityRepository_Create(t *testing.T) {
 	t.Run("should return error when create failed", func(t *testing.T) {
 		mockDB.Mock.ExpectBegin()
 		mockDB.Mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
-			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
+			WithArgs(ids.LandCommodityID, float64(100), "ha", ids.CommodityID, ids.LandID, false, sqlmock.AnyArg(), sqlmock.AnyArg(), nil).
 			WillReturnError(errors.New("database error"))
 		mockDB.Mock.ExpectRollback()
 
@@ -124,7 +126,7 @@ func TestLandCommodityRepository_FindByID(t *testing.T) {
 
 	expectedSQL2 := `SELECT "commodities"."id","commodities"."name","commodities"."code","commodities"."duration" FROM "commodities" WHERE "commodities"."id" = $1 AND "commodities"."deleted_at" IS NULL`
 
-	expectedSQL3 := `SELECT "lands"."id","lands"."user_id","lands"."land_area","lands"."unit","lands"."certificate" FROM "lands" WHERE "lands"."id" = $1 AND "lands"."deleted_at" IS NULL`
+	expectedSQL3 := `SELECT "lands"."id","lands"."user_id","lands"."city_id","lands"."land_area","lands"."unit","lands"."certificate" FROM "lands" WHERE "lands"."id" = $1 AND "lands"."deleted_at" IS NULL`
 
 	t.Run("should return land commodity when find by id successfully", func(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL1)).WithArgs(ids.LandCommodityID, 1).WillReturnRows(rows.LandCommodity)
@@ -134,6 +136,8 @@ func TestLandCommodityRepository_FindByID(t *testing.T) {
 		mockDB.Mock.ExpectQuery(regexp.QuoteMeta(expectedSQL3)).WithArgs(ids.LandID).WillReturnRows(rows.Land)
 
 		result, err := repo.FindByID(context.TODO(), ids.LandCommodityID)
+
+		logrus.Log.Info(result)
 		assert.Nil(t, err)
 		assert.NotNil(t, result)
 		assert.Equal(t, ids.LandCommodityID, result.ID)

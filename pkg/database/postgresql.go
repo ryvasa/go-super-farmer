@@ -30,8 +30,8 @@ func NewPostgres(env *env.Env) (*gorm.DB, error) {
 		return nil, err
 	}
 	db.AutoMigrate(
-		&domain.User{},
 		&domain.Role{},
+		&domain.User{},
 		&domain.Land{},
 		&domain.Commodity{},
 		&domain.LandCommodity{},

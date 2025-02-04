@@ -238,6 +238,8 @@ func TestAuthUsecase_VerifyOTP(t *testing.T) {
 	t.Run("should successfully verify OTP", func(t *testing.T) {
 		key := fmt.Sprintf("otp:%s", mocks.User.Email)
 		repo.Cache.EXPECT().Get(ctx, key).Return([]byte(mocks.OTP), nil)
+		repo.User.EXPECT().FindByEmail(ctx, dtos.VerifyOTP.Email).Return(mocks.User, nil)
+		repo.User.EXPECT().Update(ctx, mocks.User.ID, mocks.User).Return(nil)
 		repo.Cache.EXPECT().Delete(ctx, key).Return(nil)
 
 		err := uc.VerifyOTP(ctx, dtos.VerifyOTP)
@@ -275,6 +277,8 @@ func TestAuthUsecase_VerifyOTP(t *testing.T) {
 	t.Run("should return error when cache delete fails", func(t *testing.T) {
 		key := fmt.Sprintf("otp:%s", dtos.VerifyOTP.Email)
 		repo.Cache.EXPECT().Get(ctx, key).Return([]byte(mocks.OTP), nil)
+		repo.User.EXPECT().FindByEmail(ctx, dtos.VerifyOTP.Email).Return(mocks.User, nil)
+		repo.User.EXPECT().Update(ctx, mocks.User.ID, mocks.User).Return(nil)
 		repo.Cache.EXPECT().Delete(ctx, key).Return(utils.NewInternalError("cache error"))
 
 		err := uc.VerifyOTP(ctx, dtos.VerifyOTP)

@@ -1,20 +1,49 @@
 # go-super-farmer
 
-## Build
+## Single Service
 
-### With Docker
+### Environment Variables
+
+Create a .env file in the root directory of the project and add the following variables:
+
+```bash
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+DB_PORT=5432
+DB_TIMEZONE=Asia/Jakarta
+JWT_SECRET_KEY=secret
+RABBITMQ_HOST=localhost
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_PORT=5672
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis
+SMTP_HOST=localhost
+SMTP_PORT=1025
+EMAIL_FROM=noreply@example.com
+EMAIL_PASSWORD=password
+REPORT_PORT=8081
+SERVER_PORT=8080
+```
+
+### Build
+
+#### With Docker
 
 ```bash
 docker build -t go-super-farmer .
 ```
 
-### Without Docker
+#### Without Docker
 
 ```bash
 go build -o go-super-farmer .
 ```
 
-## Run
+### Run
 
 ```bash
 ./go-super-farmer
@@ -31,7 +60,8 @@ Directory Structure
 ├── docker compose.yml
 ├── go-super-farmer-api
 ├── go-super-farmer-report-service
-└── go-super-farmer-mail-service
+├── go-super-farmer-mail-service
+└── predict-model
 ```
 
 3. Copy the docker compose.yml file
@@ -316,7 +346,42 @@ networks:
 
 ```
 
-4. Run docker compose file
+4. Create a .env file in the root directory of the project and add the following variables:
+
+```bash
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+DB_PORT=5432
+DB_TIMEZONE=Asia/Jakarta
+JWT_SECRET_KEY=secret
+RABBITMQ_HOST=localhost
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_PORT=5672
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis
+SMTP_HOST=localhost
+SMTP_PORT=1025
+EMAIL_FROM=noreply@example.com
+EMAIL_PASSWORD=password
+REPORT_PORT=8081
+SERVER_PORT=8080
+```
+
+Directory Structure
+```bash
+├── docker compose.yml
+├── go-super-farmer-api
+├── go-super-farmer-report-service
+├── go-super-farmer-mail-service
+├── predict-model
+└── .env
+```
+
+5. Run docker compose file
 ```bash
 #for the first time build
 docker compose up --build
