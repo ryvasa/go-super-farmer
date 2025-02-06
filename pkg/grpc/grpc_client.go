@@ -6,14 +6,15 @@ import (
 	"log"
 
 	"github.com/ryvasa/go-super-farmer/pkg/env"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var addr = flag.String("addr", "localhost:50051", "the address to connect to")
-
 func InitGRPCClient(env *env.Env) (pb.ReportServiceClient, error) {
+	var addr = flag.String("addr", env.ReportService.Host+":"+env.ReportService.Port, "the address to connect to")
+	logrus.Log.Info(env.ReportService.Host + ":" + env.ReportService.Port)
 	reportServiceAddr := fmt.Sprintf("%s:%s", env.ReportService.Host, env.ReportService.Port)
 
 	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))

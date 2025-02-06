@@ -2,8 +2,6 @@ package env
 
 import (
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Env struct {
@@ -55,11 +53,11 @@ type Env struct {
 }
 
 func LoadEnv() (*Env, error) {
-	// GODOTENV for development only
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
+	// // GODOTENV for development only
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	return nil, err
+	// }
 	env := &Env{}
 
 	// Load Server Config
@@ -104,7 +102,7 @@ func LoadEnv() (*Env, error) {
 
 	// Report
 	env.ReportService.Host = os.Getenv("REPORT_SERVICE_HOST")
-	env.ReportService.Port = os.Getenv("REPORT_SERVICE_Port")
+	env.ReportService.Port = os.Getenv("REPORT_SERVICE_PORT")
 
 	return env, nil
 }
