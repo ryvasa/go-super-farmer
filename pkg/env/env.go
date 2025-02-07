@@ -2,6 +2,8 @@ package env
 
 import (
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Env struct {
@@ -50,14 +52,19 @@ type Env struct {
 		Host string
 		Port string
 	}
+	MinIO struct {
+		ID       string
+		Secret   string
+		EndPoint string
+	}
 }
 
 func LoadEnv() (*Env, error) {
-	// // GODOTENV for development only
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	// GODOTENV for development only
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
 	env := &Env{}
 
 	// Load Server Config
@@ -103,6 +110,11 @@ func LoadEnv() (*Env, error) {
 	// Report
 	env.ReportService.Host = os.Getenv("REPORT_SERVICE_HOST")
 	env.ReportService.Port = os.Getenv("REPORT_SERVICE_PORT")
+
+	// MINIO
+	env.MinIO.ID = os.Getenv("MINIO_ID")
+	env.MinIO.Secret = os.Getenv("MINIO_SECRET")
+	env.MinIO.EndPoint = os.Getenv("MINIO_ENDPOINT")
 
 	return env, nil
 }

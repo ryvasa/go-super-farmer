@@ -2,15 +2,19 @@ package handler_implementation
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
+	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -18,11 +22,12 @@ import (
 type HarvestHandlerImpl struct {
 	uc           usecase_interface.HarvestUsecase
 	reportClient pb.ReportServiceClient
+	minioClient  *minio.Client
 }
 
 func NewHarvestHandler(uc usecase_interface.HarvestUsecase,
-	reportClient pb.ReportServiceClient) handler_interface.HarvestHandler {
-	return &HarvestHandlerImpl{uc, reportClient}
+	reportClient pb.ReportServiceClient, minioClient *minio.Client) handler_interface.HarvestHandler {
+	return &HarvestHandlerImpl{uc, reportClient, minioClient}
 }
 
 func (h *HarvestHandlerImpl) CreateHarvest(c *gin.Context) {
@@ -189,44 +194,8 @@ func (h *HarvestHandlerImpl) GetHarvestDeletedByID(c *gin.Context) {
 	}
 	utils.SuccessResponse(c, http.StatusOK, harvest)
 }
-
-// TODO: change to gRPC
-func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
-	// harvestParams := &dto.HarvestParamsDTO{}
-
-	// startDateStr := c.Query("start_date")
-	// if startDateStr != "" {
-	// 	startDate, err := time.Parse("2006-01-02", startDateStr)
-	// 	if err != nil {
-	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 		return
-	// 	}
-	// 	harvestParams.StartDate = startDate
-	// }
-	// endDatestr := c.Query("end_date")
-	// if endDatestr != "" {
-	// 	endDate, err := time.Parse("2006-01-02", endDatestr)
-	// 	if err != nil {
-	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 		return
-	// 	}
-	// 	harvestParams.EndDate = endDate
-	// }
-
-	// id, err := uuid.Parse(c.Param("id"))
-	// if err != nil {
-	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 	return
-	// }
-	// harvestParams.LandCommodityID = id
-	// res, err := h.uc.DownloadHarvestByLandCommodityID(c, harvestParams)
-	// if err != nil {
-	// 	utils.ErrorResponse(c, err)
-	// 	return
-	// }
-	// utils.SuccessResponse(c, http.StatusOK, res)
-	// Parse request parameters
-	landCommodityID, err := uuid.Parse(c.Query("land_commodity_id"))
+func (h *HarvestHandlerImpl) GetReportHarvestByLandCommodityID(c *gin.Context) {
+	landCommodityID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError("invalid land commodity id"))
 		return
@@ -251,6 +220,14 @@ func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
 		EndDate:         endDate.Format("2006-01-02"),
 	}
 
+	fmt.Printf("Type of req: %T\n", req)
+	// atau untuk field specific
+	fmt.Printf("Type of LandCommodityId: %T\n", req.LandCommodityId)
+	fmt.Printf("Type of StartDate: %T\n", req.StartDate)
+	fmt.Printf("Type of EndDate: %T\n", req.EndDate)
+	logrus.Log.Info(req)
+	// Call report service
+
 	// Call report service
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -261,7 +238,56 @@ func (h *HarvestHandlerImpl) DownloadHarvestByLandCommodityID(c *gin.Context) {
 		return
 	}
 
+	url := fmt.Sprintf("http://localhost:8080/api/harvest%s/download", resp.ReportUrl)
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"report_url": resp.ReportUrl,
+		"report_url": url,
 	})
+}
+
+func (h *HarvestHandlerImpl) DownloadFileReport(c *gin.Context) {
+	fileName := c.Param("file_report")
+	if fileName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File parameter is required"})
+		return
+	}
+
+	bucket := c.Param("bucket")
+	if bucket == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bucket parameter is required"})
+		return
+	}
+
+	// Check if file exists
+	_, err := h.minioClient.StatObject(context.Background(), bucket, fileName, minio.StatObjectOptions{})
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check file"})
+		}
+		return
+	}
+
+	// Download file from MinIO
+	obj, err := h.minioClient.GetObject(context.Background(), bucket, fileName, minio.GetObjectOptions{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download file"})
+		return
+	}
+	defer obj.Close()
+
+	// Set header for downloading file
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Transfer-Encoding", "binary")
+
+	//Send file directly to client
+	_, err = io.Copy(c.Writer, obj)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error streaming file"})
+		return
+	}
+
+	c.Writer.Flush()
 }
