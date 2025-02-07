@@ -26,6 +26,6 @@ func (r *HarvestRoute) Register(public, protected *gin.RouterGroup) {
 	protected.PATCH("/harvests/:id/restore", r.handler.RestoreHarvest)
 	protected.GET("/harvests/deleted", r.handler.GetAllDeletedHarvest)
 	protected.GET("/harvests/deleted/:id", r.handler.GetHarvestDeletedByID)
-	// TODO: change to gRPC
-	public.GET("/harvests/land_commodity/:id/download", r.handler.DownloadHarvestByLandCommodityID)
+	public.GET("/harvests/land_commodity/:id/report", r.handler.GetReportHarvestByLandCommodityID)
+	public.GET("/harvest/:bucket/:file_report/download", r.handler.DownloadFileReport)
 }

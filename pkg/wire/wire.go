@@ -19,6 +19,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/grpc"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	"github.com/ryvasa/go-super-farmer/pkg/minio"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -90,6 +91,10 @@ var rabbitMQSet = wire.NewSet(
 	messages.NewRabbitMQ,
 )
 
+var monioSet = wire.NewSet(
+	minio.NewMinioClient,
+)
+
 var cacheSet = wire.NewSet(
 	cache.NewRedisCache,
 )
@@ -119,6 +124,7 @@ func InitializeApp() (*app.App, error) {
 		handlerSet,
 		cacheSet,
 		txManagerSet,
+		monioSet,
 	)
 	return nil, nil
 }
