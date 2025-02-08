@@ -22,6 +22,7 @@ import (
 	"github.com/ryvasa/go-super-farmer/pkg/env"
 	"github.com/ryvasa/go-super-farmer/pkg/grpc"
 	"github.com/ryvasa/go-super-farmer/pkg/messages"
+	"github.com/ryvasa/go-super-farmer/pkg/minio"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
 
@@ -74,7 +75,8 @@ func InitializeApp() (*app.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	priceHandler := handler_implementation.NewPriceHandler(priceUsecase, reportServiceClient)
+	minioClient := minio.NewMinioClient(envEnv)
+	priceHandler := handler_implementation.NewPriceHandler(priceUsecase, reportServiceClient, minioClient)
 	provinceRepository := repository_implementation.NewProvinceRepository(db)
 	provinceUsecase := usecase_implementation.NewProvinceUsecase(provinceRepository)
 	provinceHandler := handler_implementation.NewProvinceHandler(provinceUsecase)
@@ -90,7 +92,7 @@ func InitializeApp() (*app.App, error) {
 	supplyHandler := handler_implementation.NewSupplyHandler(supplyUsecase)
 	harvestRepository := repository_implementation.NewHarvestRepository(db)
 	harvestUsecase := usecase_implementation.NewHarvestUsecase(harvestRepository, cityRepository, landCommodityRepository, rabbitMQ, cacheCache, globFunc, envEnv, transactionManager)
-	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase, reportServiceClient)
+	harvestHandler := handler_implementation.NewHarvestHandler(harvestUsecase, reportServiceClient, minioClient)
 	saleRepository := repository_implementation.NewSaleRepository(baseRepository)
 	saleUsecase := usecase_implementation.NewSaleUsecase(saleRepository, cityRepository, commodityRepository, cacheCache)
 	saleHandler := handler_implementation.NewSaleHandler(saleUsecase)
@@ -115,6 +117,8 @@ var usecaseSet = wire.NewSet(usecase_implementation.NewRoleUsecase, usecase_impl
 var handlerSet = wire.NewSet(handler_implementation.NewRoleHandler, handler_implementation.NewUserHandler, handler_implementation.NewLandHandler, handler_implementation.NewAuthHandler, handler_implementation.NewCommodityHandler, handler_implementation.NewLandCommodityHandler, handler_implementation.NewPriceHandler, handler_implementation.NewProvinceHandler, handler_implementation.NewCityHandler, handler_implementation.NewDemandHandler, handler_implementation.NewSupplyHandler, handler_implementation.NewHarvestHandler, handler_implementation.NewSaleHandler, handler_implementation.NewForecastsHandler)
 
 var rabbitMQSet = wire.NewSet(messages.NewRabbitMQ)
+
+var monioSet = wire.NewSet(minio.NewMinioClient)
 
 var cacheSet = wire.NewSet(cache.NewRedisCache)
 

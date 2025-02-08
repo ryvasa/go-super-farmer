@@ -68,7 +68,67 @@ Directory Structure
 ```bash
 #for production
 
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2025-01-20T14-49-07Z
+  command: server --console-address ":9001" http://minio{1...4}/data{1...2}
+  networks:
+    - app-network
+  expose:
+    - "9000"
+    - "9001"
+  environment:
+    MINIO_ROOT_USER: ryvasa
+    MINIO_ROOT_PASSWORD: Cobacoba
+  healthcheck:
+    test: ["CMD", "mc", "ready", "local"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
 services:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - data1-1:/data1
+      - data1-2:/data2
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    volumes:
+      - data2-1:/data1
+      - data2-2:/data2
+
+  minio3:
+    <<: *minio-common
+    hostname: minio3
+    volumes:
+      - data3-1:/data1
+      - data3-2:/data2
+
+  minio4:
+    <<: *minio-common
+    hostname: minio4
+    volumes:
+      - data4-1:/data1
+      - data4-2:/data2
+
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    networks:
+      - app-network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    depends_on:
+      - minio1
+      - minio2
+      - minio3
+      - minio4
   rabbitmq:
     image: "rabbitmq:4.0.5-management-alpine"
     container_name: rabbitmq
@@ -108,6 +168,33 @@ services:
       - app-network
     restart: unless-stopped
 
+  report:
+    build:
+      context: report
+      dockerfile: Dockerfile
+      target: runner
+    depends_on:
+      - postgres
+      - minio1
+      - minio2
+      - minio3
+      - minio4
+    networks:
+      - app-network
+    restart: unless-stopped
+    ports:
+      - "${REPORT_PORT:-50051}:${REPORT_PORT:-50051}"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_TIMEZONE=${DB_TIMEZONE}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ID=${MINIO_ID}
+      - MINIO_SECRET=${MINIO_SECRET}
+
   api:
     build:
       context: api
@@ -117,6 +204,7 @@ services:
       - rabbitmq
       - postgres
       - redis
+      - report
     ports:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     networks:
@@ -145,6 +233,8 @@ services:
       - SERVER_PORT=${SERVER_PORT}
       - CASBIN_MODEL_PATH=/configs/model.conf
       - CASBIN_POLICY_PATH=/configs/policy.csv
+      - REPORT_SERVICE_HOST=${REPORT_SERVICE_HOST}
+      - REPORT_SERVICE_PORT=${REPORT_SERVICE_PORT}
     volumes:
       - ./api/pkg/auth/casbin/model.conf:/configs/model.conf
       - ./api/pkg/auth/casbin/policy.csv:/configs/policy.csv
@@ -164,42 +254,26 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
-
-  report:
-    build:
-      context: report
-      dockerfile: Dockerfile
-      target: runner
-    depends_on:
-      - rabbitmq
-      - postgres
-    networks:
-      - app-network
-    restart: unless-stopped
-    ports:
-      - "${REPORT_PORT:-8081}:${REPORT_PORT:-8081}"
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_PORT=${DB_PORT}
-      - DB_TIMEZONE=${DB_TIMEZONE}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
-      - RABBITMQ_USER=${RABBITMQ_USER}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
-      - RABBITMQ_PORT=${RABBITMQ_PORT}
-      - REPORT_PORT=${REPORT_PORT}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
 
 volumes:
   rabbitmq_data:
   postgres_data:
+  data1-1:
+  data1-2:
+  data2-1:
+  data2-2:
+  data3-1:
+  data3-2:
+  data4-1:
+  data4-2:
 
 networks:
   app-network:
     driver: bridge
-
-
 
 #for development
 
@@ -349,26 +423,51 @@ networks:
 4. Create a .env file in the root directory of the project and add the following variables:
 
 ```bash
-DB_HOST=localhost
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=postgres
 DB_PORT=5432
+DB_NAME=go_super_farmer
+DB_TEST=go_super_farmer_test
+DB_USER=postgres
+DB_PASSWORD=123
 DB_TIMEZONE=Asia/Jakarta
-JWT_SECRET_KEY=secret
-RABBITMQ_HOST=localhost
-RABBITMQ_USER=guest
-RABBITMQ_PASSWORD=guest
+
 RABBITMQ_PORT=5672
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=redis
-SMTP_HOST=localhost
-SMTP_PORT=1025
-EMAIL_FROM=noreply@example.com
-EMAIL_PASSWORD=password
-REPORT_PORT=8081
+RABBITMQ_PASSWORD=guest
+RABBITMQ_USER=guest
+
 SERVER_PORT=8080
+REPORT_PORT=50051
+
+JWT_SECRET_KEY=a1dQ3@k3lew#Ev5vcCx%z6^z0Nnm8T)u3rMed3s*cs2%w2e1fH7t#uGii8u0o@oSo4o!oewc7+q9eT30u978Y
+
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_FROM=oktaviandua4@gmail.com
+EMAIL_PASSWORD=lfxdohvgydnklurr
+
+CASBIN_MODEL_PATH=./pkg/auth/casbin/model.conf
+CASBIN_POLICY_PATH=./pkg/auth/casbin/policy.csv
+
+REPORT_SERVICE_HOST=report
+REPORT_SERVICE_PORT=50051
+
+MINIO_ENDPOINT=minio1:9000
+MINIO_ID=ryvasa
+MINIO_SECRET=Cobacoba
+
+# Container
+DB_HOST=postgres
+REDIS_HOST=redis
+RABBITMQ_HOST=rabbitmq
+
+# # localhost
+# DB_HOST=localhost
+# REDIS_HOST=localhost
+# RABBITMQ_HOST=localhost
+# MINIO_ENDPOINT=localhost:9000
+
 ```
 
 Directory Structure

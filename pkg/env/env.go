@@ -52,6 +52,11 @@ type Env struct {
 		Host string
 		Port string
 	}
+	MinIO struct {
+		ID       string
+		Secret   string
+		EndPoint string
+	}
 }
 
 func LoadEnv() (*Env, error) {
@@ -104,7 +109,12 @@ func LoadEnv() (*Env, error) {
 
 	// Report
 	env.ReportService.Host = os.Getenv("REPORT_SERVICE_HOST")
-	env.ReportService.Port = os.Getenv("REPORT_SERVICE_Port")
+	env.ReportService.Port = os.Getenv("REPORT_SERVICE_PORT")
+
+	// MINIO
+	env.MinIO.ID = os.Getenv("MINIO_ID")
+	env.MinIO.Secret = os.Getenv("MINIO_SECRET")
+	env.MinIO.EndPoint = os.Getenv("MINIO_ENDPOINT")
 
 	return env, nil
 }

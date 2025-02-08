@@ -3,16 +3,17 @@ package handler_implementation
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -20,10 +21,11 @@ import (
 type PriceHandlerImpl struct {
 	uc           usecase_interface.PriceUsecase
 	reportClient pb.ReportServiceClient
+	minioClient  *minio.Client
 }
 
-func NewPriceHandler(uc usecase_interface.PriceUsecase, reportClient pb.ReportServiceClient) handler_interface.PriceHandler {
-	return &PriceHandlerImpl{uc, reportClient}
+func NewPriceHandler(uc usecase_interface.PriceUsecase, reportClient pb.ReportServiceClient, minioClient *minio.Client) handler_interface.PriceHandler {
+	return &PriceHandlerImpl{uc, reportClient, minioClient}
 }
 
 func (h *PriceHandlerImpl) CreatePrice(c *gin.Context) {
@@ -186,52 +188,7 @@ func (h *PriceHandlerImpl) GetPricesHistoryByCommodityIDAndCityID(c *gin.Context
 	utils.SuccessResponse(c, http.StatusOK, priceHistory)
 }
 
-// TODO: change to gRPC
-func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Context) {
-	// logrus.Log.Info("Downloading price history")
-	// priceParams := &dto.PriceParamsDTO{}
-
-	// startDateStr := c.Query("start_date")
-	// if startDateStr != "" {
-	// 	startDate, err := time.Parse("2006-01-02", startDateStr)
-	// 	if err != nil {
-	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 		return
-	// 	}
-	// 	priceParams.StartDate = startDate
-	// }
-	// endDatestr := c.Query("end_date")
-	// if endDatestr != "" {
-	// 	endDate, err := time.Parse("2006-01-02", endDatestr)
-	// 	if err != nil {
-	// 		utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 		return
-	// 	}
-	// 	priceParams.EndDate = endDate
-	// }
-
-	// commodityID, err := uuid.Parse(c.Param("commodity_id"))
-	// if err != nil {
-	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 	return
-	// }
-	// priceParams.CommodityID = commodityID
-
-	// cityID, err := strconv.ParseInt(c.Param("city_id"), 10, 64)
-	// if err != nil {
-	// 	utils.ErrorResponse(c, utils.NewBadRequestError(err.Error()))
-	// 	return
-	// }
-	// priceParams.CityID = cityID
-
-	// logrus.Log.Info("Calling download price history usecase")
-	// response, err := h.uc.DownloadPriceHistoryByCommodityIDAndCityID(c, priceParams)
-	// if err != nil {
-	// 	utils.ErrorResponse(c, err)
-	// 	return
-	// }
-	// utils.SuccessResponse(c, http.StatusOK, response)
-	// Parse request parameters
+func (h *PriceHandlerImpl) GetReportPricesHistoryByCommodityIDAndCityID(c *gin.Context) {
 	commodityID, err := uuid.Parse(c.Param("commodity_id"))
 	if err != nil {
 		utils.ErrorResponse(c, utils.NewBadRequestError("invalid commodity id"))
@@ -263,14 +220,7 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Co
 		StartDate:   startDate.Format("2006-01-02"),
 		EndDate:     endDate.Format("2006-01-02"),
 	}
-	fmt.Printf("Type of req: %T\n", req)
-	// atau untuk field specific
-	fmt.Printf("Type of CommodityId: %T\n", req.CommodityId)
-	fmt.Printf("Type of CityId: %T\n", req.CityId)
-	fmt.Printf("Type of StartDate: %T\n", req.StartDate)
-	fmt.Printf("Type of EndDate: %T\n", req.EndDate)
-	logrus.Log.Info(req)
-	// Call report service
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -280,8 +230,55 @@ func (h *PriceHandlerImpl) DownloadPricesHistoryByCommodityIDAndCityID(c *gin.Co
 		return
 	}
 
+	url := fmt.Sprintf("http://localhost:8080/api/prices/history%s/download", resp.ReportUrl)
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"report_url": resp.ReportUrl,
+		"report_url": url,
 	})
+}
 
+func (h *PriceHandlerImpl) DownloadFileReport(c *gin.Context) {
+	fileName := c.Param("file_report")
+	if fileName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File parameter is required"})
+		return
+	}
+
+	bucket := c.Param("bucket")
+	if bucket == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bucket parameter is required"})
+		return
+	}
+
+	// Check if file exists
+	_, err := h.minioClient.StatObject(context.Background(), bucket, fileName, minio.StatObjectOptions{})
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check file"})
+		}
+		return
+	}
+
+	// Download file from MinIO
+	obj, err := h.minioClient.GetObject(context.Background(), bucket, fileName, minio.GetObjectOptions{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download file"})
+		return
+	}
+	defer obj.Close()
+
+	// Set header for downloading file
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Transfer-Encoding", "binary")
+
+	//Send file directly to client
+	_, err = io.Copy(c.Writer, obj)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error streaming file"})
+		return
+	}
+
+	c.Writer.Flush()
 }
