@@ -54,6 +54,7 @@ func HarvestHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.HarvestHa
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock_usecase.NewMockHarvestUsecase(ctrl)
+	// TODO: fix this
 	h := handler_implementation.NewHarvestHandler(uc)
 	r := gin.Default()
 
@@ -788,7 +789,7 @@ func TestHarvestHandler_GetHarvestDeletedByID(t *testing.T) {
 
 func TestHarvestHandler_DownloadHarvestByLandCommodityID(t *testing.T) {
 	r, h, uc, ids, _, dtos := HarvestHandlerSetUp(t)
-	r.GET("/harvests/land_commodity/:id/download", h.DownloadHarvestByLandCommodityID)
+	r.GET("/harvests/land_commodity/:id/download", h.GetReportHarvestByLandCommodityID)
 
 	t.Run("should return success response and download URL", func(t *testing.T) {
 		uc.EXPECT().DownloadHarvestByLandCommodityID(gomock.Any(), dtos.ParamsDTO).Return(dtos.ResponseDownloadDTO, nil).Times(1)

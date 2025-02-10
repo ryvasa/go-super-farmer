@@ -61,6 +61,7 @@ func PriceHandlerSetUp(t *testing.T) (*gin.Engine, handler_interface.PriceHandle
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	uc := mock_usecase.NewMockPriceUsecase(ctrl)
+	// TODO: fix this
 	h := handler_implementation.NewPriceHandler(uc)
 	r := gin.Default()
 
@@ -762,7 +763,7 @@ func TestPriceHandler_GetPricesHistoryByCommodityIDAndCityID(t *testing.T) {
 
 func TestPriceHandler_DownloadPriceByLandCommodityID(t *testing.T) {
 	r, h, uc, ids, _, dtos := PriceHandlerSetUp(t) // No usecase mocking needed here either.
-	r.GET("/prices/history/commodity/:commodity_id/city/:city_id/download", h.DownloadPricesHistoryByCommodityIDAndCityID)
+	r.GET("/prices/history/commodity/:commodity_id/city/:city_id/download", h.GetReportPricesHistoryByCommodityIDAndCityID)
 
 	t.Run("should return success response and download URL", func(t *testing.T) {
 		uc.EXPECT().DownloadPriceHistoryByCommodityIDAndCityID(gomock.Any(), dtos.ParamsDTO).Return(dtos.ResponseDownloadDTO, nil).Times(1)
