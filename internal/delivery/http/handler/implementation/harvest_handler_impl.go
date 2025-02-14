@@ -14,7 +14,6 @@ import (
 	handler_interface "github.com/ryvasa/go-super-farmer/internal/delivery/http/handler/interface"
 	"github.com/ryvasa/go-super-farmer/internal/model/dto"
 	usecase_interface "github.com/ryvasa/go-super-farmer/internal/usecase/interface"
-	"github.com/ryvasa/go-super-farmer/pkg/logrus"
 	pb "github.com/ryvasa/go-super-farmer/proto/generated"
 	"github.com/ryvasa/go-super-farmer/utils"
 )
@@ -213,20 +212,14 @@ func (h *HarvestHandlerImpl) GetReportHarvestByLandCommodityID(c *gin.Context) {
 		return
 	}
 
+	// TODO: check if file exists and download file from existing report
+
 	// Prepare gRPC request
 	req := &pb.HarvestParams{
 		LandCommodityId: landCommodityID.String(),
 		StartDate:       startDate.Format("2006-01-02"),
 		EndDate:         endDate.Format("2006-01-02"),
 	}
-
-	fmt.Printf("Type of req: %T\n", req)
-	// atau untuk field specific
-	fmt.Printf("Type of LandCommodityId: %T\n", req.LandCommodityId)
-	fmt.Printf("Type of StartDate: %T\n", req.StartDate)
-	fmt.Printf("Type of EndDate: %T\n", req.EndDate)
-	logrus.Log.Info(req)
-	// Call report service
 
 	// Call report service
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
