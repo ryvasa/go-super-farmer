@@ -213,6 +213,8 @@ func (h *PriceHandlerImpl) GetReportPricesHistoryByCommodityIDAndCityID(c *gin.C
 		return
 	}
 
+	// TODO: check if file exists and download file from existing report
+
 	// Prepare gRPC request
 	req := &pb.PriceParams{
 		CommodityId: commodityID.String(),
